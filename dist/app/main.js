@@ -1,6 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     const $ = (id) => document.getElementById(id);
-    const LOGIN_URL = '/app/login.html';
+    const isAppSubdir = window.location.pathname.startsWith('/app');
+    const LOGIN_URL = isAppSubdir ? '/app/login.html' : '/login.html';
+
+    function getBackendUrl(path) {
+        if (window.location.hostname.endsWith('onslate.in')) {
+            return 'https://management-60094939168.development.catalystserverless.in' + path;
+        }
+        return path;
+    }
 
     const empModal = $('empModal');
     const desigModal = $('desigModal');
@@ -89,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
     async function callFunction(payload) {
-        const res = await fetch('/server/management_function/execute', {
+        const url = getBackendUrl('/server/management_function/execute');
+        const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -200,28 +209,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
 
-            renderRows(prTableBody, prCount, prStatus, 'No purchase requests found.', purchaseRequests, (pr, i) => {
+            // Render Purchase Requests with Approve & Delete
+            prCount.textContent = purchaseRequests.length;
+            prStatus.style.display = purchaseRequests.length ? 'none' : 'block';
+            prStatus.textContent = 'No purchase requests found.';
+            prTableBody.innerHTML = '';
+            purchaseRequests.forEach((pr, i) => {
                 const r = pr.Purchase_request || pr;
                 const rowId = r.ROWID || '-';
                 const itemName = r.Item_name || '-';
                 const vendor = r.Preferred_vendor || '-';
                 const reqBy = r.Requested_by || '-';
                 const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                return {
-                    cells: [
-                        `<td>${i + 1}</td>`,
-                        `<td><code>${escapeHtml(rowId)}</code></td>`,
-                        `<td><strong>${escapeHtml(itemName)}</strong></td>`,
-                        `<td>${escapeHtml(vendor)}</td>`,
-                        `<td>${escapeHtml(reqBy)}</td>`,
-                        `<td>${escapeHtml(amt)}</td>`,
-                        `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`
-                    ],
-                    onDelete: () => deleteRecord('delete_pr', rowId, itemName)
-                };
+                const isApproved = r.approval_status === 'approved';
+                const statusBadge = isApproved
+                    ? `<span class="badge badge-approved">✓ Approved</span>`
+                    : `<span class="badge badge-draft">Pending</span>`;
+                const approveBtn = !isApproved
+                    ? `<button class="btn-approve btn-approve-pr" type="button" data-id="${escapeHtml(rowId)}">Approve</button> `
+                    : '';
+                const tr = document.createElement('tr');
+                tr.innerHTML = [
+                    `<td>${i + 1}</td>`,
+                    `<td><code>${escapeHtml(rowId)}</code></td>`,
+                    `<td><strong>${escapeHtml(itemName)}</strong></td>`,
+                    `<td>${escapeHtml(vendor)}</td>`,
+                    `<td>${escapeHtml(reqBy)}</td>`,
+                    `<td>${escapeHtml(amt)}</td>`,
+                    `<td>${statusBadge}</td>`,
+                    `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`,
+                    `<td>${approveBtn}<button class="btn-danger btn-del" type="button">Delete</button></td>`
+                ].join('');
+                const appBtn = tr.querySelector('.btn-approve-pr');
+                if (appBtn) {
+                    appBtn.onclick = async () => {
+                        appBtn.disabled = true;
+                        appBtn.textContent = 'Approving...';
+                        try {
+                            const res = await callFunction({ action: 'approve_pr', row_id: rowId });
+                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                            await loadData();
+                        } catch (err) {
+                            alert('Failed to approve purchase request: ' + (err.message || 'Error'));
+                            appBtn.disabled = false;
+                            appBtn.textContent = 'Approve';
+                        }
+                    };
+                }
+                tr.querySelector('.btn-del').onclick = () => deleteRecord('delete_pr', rowId, itemName);
+                prTableBody.appendChild(tr);
             });
 
-            renderRows(expenseTableBody, expenseCount, expenseStatus, 'No expenses found.', expenses, (exp, i) => {
+            // Render Expenses with Approve & Delete
+            expenseCount.textContent = expenses.length;
+            expenseStatus.style.display = expenses.length ? 'none' : 'block';
+            expenseStatus.textContent = 'No expenses found.';
+            expenseTableBody.innerHTML = '';
+            expenses.forEach((exp, i) => {
                 const r = exp.Expense || exp;
                 const rowId = r.ROWID || '-';
                 const name = r.Expense_name || '-';
@@ -229,19 +273,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 const paidBy = r.Paid_by || '-';
                 const date = r.Expense_date || '-';
                 const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                return {
-                    cells: [
-                        `<td>${i + 1}</td>`,
-                        `<td><code>${escapeHtml(rowId)}</code></td>`,
-                        `<td><strong>${escapeHtml(name)}</strong></td>`,
-                        `<td>${escapeHtml(cat)}</td>`,
-                        `<td>${escapeHtml(amt)}</td>`,
-                        `<td>${escapeHtml(date)}</td>`,
-                        `<td>${escapeHtml(paidBy)}</td>`,
-                        `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`
-                    ],
-                    onDelete: () => deleteRecord('delete_expense', rowId, name)
-                };
+                const isApproved = r.approval_status === 'approved';
+                const statusBadge = isApproved
+                    ? `<span class="badge badge-approved">✓ Approved</span>`
+                    : `<span class="badge badge-draft">Pending</span>`;
+                const approveBtn = !isApproved
+                    ? `<button class="btn-approve btn-approve-exp" type="button" data-id="${escapeHtml(rowId)}">Approve</button> `
+                    : '';
+                const tr = document.createElement('tr');
+                tr.innerHTML = [
+                    `<td>${i + 1}</td>`,
+                    `<td><code>${escapeHtml(rowId)}</code></td>`,
+                    `<td><strong>${escapeHtml(name)}</strong></td>`,
+                    `<td>${escapeHtml(cat)}</td>`,
+                    `<td>${escapeHtml(amt)}</td>`,
+                    `<td>${escapeHtml(date)}</td>`,
+                    `<td>${escapeHtml(paidBy)}</td>`,
+                    `<td>${statusBadge}</td>`,
+                    `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`,
+                    `<td>${approveBtn}<button class="btn-danger btn-del" type="button">Delete</button></td>`
+                ].join('');
+                const appBtn = tr.querySelector('.btn-approve-exp');
+                if (appBtn) {
+                    appBtn.onclick = async () => {
+                        appBtn.disabled = true;
+                        appBtn.textContent = 'Approving...';
+                        try {
+                            const res = await callFunction({ action: 'approve_expense', row_id: rowId });
+                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                            await loadData();
+                        } catch (err) {
+                            alert('Failed to approve expense: ' + (err.message || 'Error'));
+                            appBtn.disabled = false;
+                            appBtn.textContent = 'Approve';
+                        }
+                    };
+                }
+                tr.querySelector('.btn-del').onclick = () => deleteRecord('delete_expense', rowId, name);
+                expenseTableBody.appendChild(tr);
             });
 
             // Render Reports with Approve Action

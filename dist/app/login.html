@@ -406,9 +406,17 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const LOGIN_URL = '/app/login.html';
-            const APP_URL = '/app/index.html';
+            const isAppSubdir = window.location.pathname.startsWith('/app');
+            const LOGIN_URL = isAppSubdir ? '/app/login.html' : '/login.html';
+            const APP_URL = isAppSubdir ? '/app/index.html' : '/index.html';
             const SESSION_KEY = 'appUserSession';
+
+            function getBackendUrl(path) {
+                if (window.location.hostname.endsWith('onslate.in')) {
+                    return 'https://management-60094939168.development.catalystserverless.in' + path;
+                }
+                return path;
+            }
 
             const msgEl = document.getElementById('authMsg');
             const signInPane = document.getElementById('signInPane');
@@ -474,7 +482,8 @@
             }
 
             async function callManagement(payload) {
-                const res = await fetch('/server/management_function/execute', {
+                const url = getBackendUrl('/server/management_function/execute');
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

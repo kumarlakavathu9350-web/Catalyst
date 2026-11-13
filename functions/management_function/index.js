@@ -7,6 +7,8 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'zoho-catalyst-mgmt-app-use
 // Live memory state for approvals within server session
 const approvedReports = new Set(['ER-00004', 'ER-00005', 'ER-00006']);
 const approvedTrips = new Set(['TRIP-00002']);
+const approvedPRs = new Set(['98838000000042106', '98838000000042107']);
+const approvedExpenses = new Set(['98838000000030043', '98838000000030044']);
 
 function asciiStringify(obj) {
 	return JSON.stringify(obj).replace(/[\u007F-\uFFFF]/g, (ch) => {
@@ -16,13 +18,6 @@ function asciiStringify(obj) {
 
 function writeOutput(basicIO, payload) {
 	const json = asciiStringify(payload);
-	// Local `catalyst serve` Basic I/O emulator truncates each write() call to 1024 chars
-	if (process.env.X_ZOHO_CATALYST_IS_LOCAL === 'true') {
-		for (let i = 0; i < json.length; i += 1024) {
-			basicIO.write(json.slice(i, i + 1024));
-		}
-		return;
-	}
 	basicIO.write(json);
 }
 
@@ -60,6 +55,17 @@ async function findAppUserByEmail(appUserTable, email) {
 		return String(row.emp_mail || '').trim().toLowerCase() === target;
 	});
 	return match ? (match.App_user || match) : null;
+}
+
+async function isAuthorizedEmployee(empTable, email) {
+	const target = String(email || '').trim().toLowerCase();
+	if (!target) return null;
+	const rows = await fetchAllRows(empTable);
+	const match = rows.find((item) => {
+		const row = item.Emp || item;
+		return String(row.emp_email || '').trim().toLowerCase() === target;
+	});
+	return match ? (match.Emp || match) : null;
 }
 
 module.exports = async (context, basicIO) => {
@@ -119,13 +125,27 @@ module.exports = async (context, basicIO) => {
 			if (!targetEmail) {
 				writeOutput(basicIO, { status: 'Success', allowed: false, email: '', message: 'Email is required.' });
 			} else {
+				// 1. Strict Authorization: User MUST be in the Employee Directory (Emp)
+				const empRecord = await isAuthorizedEmployee(empTable, targetEmail);
+				if (!empRecord) {
+					writeOutput(basicIO, {
+						status: 'Success',
+						allowed: false,
+						email: targetEmail,
+						message: `Access denied: "${targetEmail}" is not an employee in KR Tech Solutions (Zoho Expense). Only verified organization members can sign in.`
+					});
+					context.close();
+					return;
+				}
+
+				// 2. Validate against App_user registration
 				const matched = await findAppUserByEmail(appUserTable, targetEmail);
 				if (!matched) {
 					writeOutput(basicIO, {
 						status: 'Success',
 						allowed: false,
 						email: targetEmail,
-						message: 'This account is not registered. Please sign up or contact your administrator.'
+						message: 'This account is not registered yet. Please create your account on the Sign Up tab.'
 					});
 				} else if (effectiveMode === 'password') {
 					const storedPassword = String(matched.emp_password ?? '');
@@ -136,7 +156,7 @@ module.exports = async (context, basicIO) => {
 						email: targetEmail,
 						user: isValid ? sanitizeAppUser(matched) : null,
 						session_token: isValid ? signSessionToken(targetEmail) : '',
-						message: isValid ? '' : 'Invalid password for this App_user account.'
+						message: isValid ? '' : 'Invalid password for this account.'
 					});
 				} else if (effectiveMode === 'session') {
 					const expected = signSessionToken(targetEmail);
@@ -174,6 +194,24 @@ module.exports = async (context, basicIO) => {
 				trip_number: tripNumber,
 				approval_status: 'approved',
 				message: `Trip Request "${tripNumber}" has been approved successfully.`
+			});
+		} else if (action === 'approve_purchase_request' || action === 'approve_pr') {
+			if (!rowId) throw new Error('row_id is required to approve a purchase request.');
+			approvedPRs.add(String(rowId));
+			writeOutput(basicIO, {
+				status: 'Success',
+				row_id: rowId,
+				approval_status: 'approved',
+				message: `Purchase Request (ID: ${rowId}) has been approved successfully.`
+			});
+		} else if (action === 'approve_expense') {
+			if (!rowId) throw new Error('row_id is required to approve an expense.');
+			approvedExpenses.add(String(rowId));
+			writeOutput(basicIO, {
+				status: 'Success',
+				row_id: rowId,
+				approval_status: 'approved',
+				message: `Expense record (ID: ${rowId}) has been approved successfully.`
 			});
 		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user' || action === 'delete_purchase_request' || action === 'delete_pr' || action === 'delete_expense') {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
@@ -222,10 +260,15 @@ module.exports = async (context, basicIO) => {
 				throw new Error('Emp_name, emp_mail, and emp_password are required.');
 			}
 			const normalizedEmail = appUserEmail.toLowerCase();
+			// User MUST be in the Employee Directory (Emp)
+			const empRecord = await isAuthorizedEmployee(empTable, normalizedEmail);
+			if (!empRecord) {
+				throw new Error(`Access restricted: "${normalizedEmail}" is not listed in KR Tech Solutions Employee Directory. Only verified organization employees can register.`);
+			}
 			const existing = await findAppUserByEmail(appUserTable, normalizedEmail);
-			if (existing) throw new Error(`"${normalizedEmail}" already exists in App_user.`);
+			if (existing) throw new Error(`"${normalizedEmail}" is already registered. Please sign in.`);
 			const inserted = await appUserTable.insertRow({
-				Emp_name: appUserName,
+				Emp_name: appUserName || empRecord.emp_name,
 				emp_mail: normalizedEmail,
 				emp_password: appUserPassword
 			});
@@ -239,7 +282,7 @@ module.exports = async (context, basicIO) => {
 			const data = await empTable.insertRow({ emp_name: name, emp_email: email });
 			writeOutput(basicIO, { status: 'Success', data });
 		} else {
-			const [employees, designations, rawAppUsers, purchaseRequests, expenses] = await Promise.all([
+			const [employees, designations, rawAppUsers, rawPurchaseRequests, rawExpenses] = await Promise.all([
 				fetchAllRows(empTable),
 				fetchAllRows(desigTable),
 				fetchAllRows(appUserTable),
@@ -247,6 +290,24 @@ module.exports = async (context, basicIO) => {
 				fetchAllRows(expenseTable)
 			]);
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
+
+			const purchaseRequests = rawPurchaseRequests.map((item) => {
+				const row = item?.Purchase_request || item;
+				const idStr = String(row.ROWID || '');
+				return {
+					...row,
+					approval_status: approvedPRs.has(idStr) ? 'approved' : 'pending'
+				};
+			});
+
+			const expenses = rawExpenses.map((item) => {
+				const row = item?.Expense || item;
+				const idStr = String(row.ROWID || '');
+				return {
+					...row,
+					approval_status: approvedExpenses.has(idStr) ? 'approved' : 'pending'
+				};
+			});
 
 			const reports = [
 				{ report_number: 'ER-00006', report_name: 'Purchase Requests - Submiter', status: approvedReports.has('ER-00006') ? 'approved' : 'draft', total: 461000.0, submitter_name: 'Submiter', date_range: '13 Nov 2026' },
