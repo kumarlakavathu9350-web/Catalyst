@@ -205,7 +205,12 @@ module.exports = async (context, basicIO) => {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
 			await appUserTable.deleteRow(rowId);
 			writeOutput(basicIO, { status: 'Success' });
-		} else if (action === 'webhook_expense' || action === 'add_expense' || action === 'sync_expense') {
+		} else if (
+			action === 'webhook_expense' ||
+			action === 'add_expense' ||
+			action === 'sync_expense' ||
+			Boolean(allArgs?.expense_report || allArgs?.expense || allArgs?.Expense)
+		) {
 			let payload = allArgs || {};
 			if (typeof allArgs === 'string') {
 				try { payload = JSON.parse(allArgs); } catch {}
@@ -215,16 +220,19 @@ module.exports = async (context, basicIO) => {
 				try { payload = JSON.parse(allArgs.data); } catch {}
 			}
 
-			const exp = payload.expense || payload.Expense || payload.data || payload;
+			const exp = payload.expense_report || payload.expense || payload.Expense || payload.report || payload.Report || payload.data || payload;
 
 			const expName = String(
 				exp.Expense_name ||
 				exp.expense_name ||
+				exp.report_name ||
+				exp.report_number ||
 				exp.description ||
 				exp.item_name ||
 				exp.merchant_name ||
 				arg('Expense_name') ||
 				arg('expense_name') ||
+				arg('report_name') ||
 				arg('description') ||
 				'General Expense'
 			).trim();
@@ -235,16 +243,18 @@ module.exports = async (context, basicIO) => {
 				exp.category_name ||
 				arg('Category') ||
 				arg('category') ||
-				'Office Supplies'
+				(payload.expense_report ? 'Expense Report' : 'Office Supplies')
 			).trim();
 
-			const rawAmt = exp.Amount ?? exp.amount ?? exp.total ?? exp.bcy_total ?? arg('Amount') ?? arg('amount') ?? 0;
+			const rawAmt = exp.Amount ?? exp.amount ?? exp.total ?? exp.bcy_total ?? exp.total_amount ?? arg('Amount') ?? arg('amount') ?? arg('total') ?? 0;
 			const expAmt = Number(parseFloat(rawAmt)) || 0;
 
 			const expDate = String(
 				exp.Expense_date ||
 				exp.expense_date ||
 				exp.date ||
+				exp.submitted_date ||
+				exp.created_time ||
 				arg('Expense_date') ||
 				arg('expense_date') ||
 				arg('date') ||
@@ -255,10 +265,14 @@ module.exports = async (context, basicIO) => {
 				exp.Paid_by ||
 				exp.paid_by ||
 				exp.user_name ||
+				exp.submitter_name ||
 				exp.created_by_name ||
 				exp.user_email ||
+				payload.user?.email ||
+				payload.user?.name ||
 				arg('Paid_by') ||
 				arg('paid_by') ||
+				arg('user_name') ||
 				'KR Tech Solutions'
 			).trim().slice(0, 255);
 
