@@ -5,19 +5,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const empModal = $('empModal');
     const desigModal = $('desigModal');
     const appUserModal = $('appUserModal');
+    const prModal = $('prModal');
     const empForm = $('empForm');
     const desigForm = $('desigForm');
     const appUserForm = $('appUserForm');
+    const prForm = $('prForm');
     const empTableBody = $('empTableBody');
     const desigTableBody = $('desigTableBody');
     const appUserTableBody = $('appUserTableBody');
+    const prTableBody = $('prTableBody');
     const empStatus = $('empStatus');
     const desigStatus = $('desigStatus');
     const appUserStatus = $('appUserStatus');
+    const prStatus = $('prStatus');
     const empCount = $('empCount');
     const desigCount = $('desigCount');
     const appUserCount = $('appUserCount');
+    const prCount = $('prCount');
     const desigEmpSelect = $('desigEmpSelect');
+    const prUserSelect = $('prUserSelect');
     const currentUserEl = $('currentUser');
 
     // Modal controls
@@ -27,8 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('closeDesigModalBtn').onclick = () => { desigModal.style.display = 'none'; };
     $('openAppUserModalBtn').onclick = () => { appUserModal.style.display = 'flex'; };
     $('closeAppUserModalBtn').onclick = () => { appUserModal.style.display = 'none'; };
+    $('openPrModalBtn').onclick = () => { prModal.style.display = 'flex'; };
+    $('closePrModalBtn').onclick = () => { prModal.style.display = 'none'; };
     window.onclick = (e) => {
-        if (e.target === empModal || e.target === desigModal || e.target === appUserModal) {
+        if (e.target === empModal || e.target === desigModal || e.target === appUserModal || e.target === prModal) {
             e.target.style.display = 'none';
         }
     };
@@ -91,10 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadData() {
-        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = 'block';
+        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = 'block';
         empStatus.textContent = 'Loading employees...';
         desigStatus.textContent = 'Loading designations...';
         appUserStatus.textContent = 'Loading app users...';
+        prStatus.textContent = 'Loading purchase requests...';
 
         try {
             const data = await callFunction({ action: 'getAll' });
@@ -103,8 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const employees = data.employees || [];
             const designations = data.designations || [];
             const appUsers = data.appUsers || [];
+            const purchaseRequests = data.purchaseRequests || [];
 
             desigEmpSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+            prUserSelect.innerHTML = '<option value="">-- Select Requester --</option>';
 
             renderRows(empTableBody, empCount, empStatus, 'No employees found.', employees, (emp, i) => {
                 const r = emp.Emp || emp;
@@ -113,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const email = r.emp_email || '-';
                 if (name !== '-') {
                     desigEmpSelect.add(new Option(`${name} (${email})`, name));
+                    prUserSelect.add(new Option(`${name} (${email})`, name));
                 }
                 return {
                     cells: [
@@ -159,8 +171,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     onDelete: () => deleteRecord('delete_app_user', rowId, empName)
                 };
             });
+
+            renderRows(prTableBody, prCount, prStatus, 'No purchase requests found.', purchaseRequests, (pr, i) => {
+                const r = pr.Purchase_request || pr;
+                const rowId = r.ROWID || '-';
+                const itemName = r.Item_name || '-';
+                const vendor = r.Preferred_vendor || '-';
+                const reqBy = r.Requested_by || '-';
+                const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                return {
+                    cells: [
+                        `<td>${i + 1}</td>`,
+                        `<td><code>${escapeHtml(rowId)}</code></td>`,
+                        `<td><strong>${escapeHtml(itemName)}</strong></td>`,
+                        `<td>${escapeHtml(vendor)}</td>`,
+                        `<td>${escapeHtml(reqBy)}</td>`,
+                        `<td>${escapeHtml(amt)}</td>`,
+                        `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`
+                    ],
+                    onDelete: () => deleteRecord('delete_pr', rowId, itemName)
+                };
+            });
         } catch (err) {
-            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent =
+            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent =
                 'Error: ' + (err.message || 'Unable to load records');
         }
     }
@@ -217,6 +250,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return { action: 'add_app_user', Emp_name, emp_mail, emp_password };
     }, 'add app user');
+
+    bindSubmit(prForm, prModal, () => {
+        const Item_name = $('prItemName').value.trim();
+        const Preferred_vendor = $('prVendor').value.trim();
+        const Requested_by = prUserSelect.value.trim();
+        const Amount = $('prAmount').value.trim();
+        if (!Item_name || !Preferred_vendor) {
+            alert('Please enter Item Name and Preferred Vendor.');
+            return null;
+        }
+        return { action: 'add_pr', Item_name, Preferred_vendor, Requested_by, Amount };
+    }, 'add purchase request');
 
     async function deleteRecord(action, rowId, label) {
         if (!confirm(`Delete "${label}" (ID: ${rowId})?`)) return;

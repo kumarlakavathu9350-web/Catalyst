@@ -59,6 +59,7 @@ module.exports = async (context, basicIO) => {
 		const empTable = datastore.table('Emp');
 		const desigTable = datastore.table('Designation');
 		const appUserTable = datastore.table('App_user');
+		const prTable = datastore.table('Purchase_request');
 
 		const arg = (key) => String(basicIO.getArgument(key) || '').trim();
 		const rawArg = (key) => String(basicIO.getArgument(key) ?? '');
@@ -73,6 +74,10 @@ module.exports = async (context, basicIO) => {
 		const appUserPassword = rawArg('emp_password');
 		const sessionToken = arg('session_token');
 		const rowId = arg('row_id');
+		const itemName = arg('Item_name');
+		const preferredVendor = arg('Preferred_vendor');
+		const requestedBy = arg('Requested_by');
+		const amount = arg('Amount');
 
 		if (action === 'validate_app_user') {
 			const requestedEmail = appUserEmail.toLowerCase();
@@ -134,16 +139,32 @@ module.exports = async (context, basicIO) => {
 					});
 				}
 			}
-		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user') {
+		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user' || action === 'delete_purchase_request' || action === 'delete_pr') {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
 			const tableMap = {
 				delete: empTable,
 				delete_emp: empTable,
 				delete_desig: desigTable,
-				delete_app_user: appUserTable
+				delete_app_user: appUserTable,
+				delete_purchase_request: prTable,
+				delete_pr: prTable
 			};
 			await tableMap[action].deleteRow(rowId);
 			writeOutput(basicIO, { status: 'Success' });
+		} else if (action === 'add_purchase_request' || action === 'add_pr' || (itemName && preferredVendor)) {
+			if (!itemName || !preferredVendor) {
+				throw new Error('Item_name and Preferred_vendor are required.');
+			}
+			const row = {
+				Item_name: itemName,
+				Preferred_vendor: preferredVendor,
+				Requested_by: requestedBy || 'General',
+			};
+			if (amount && !isNaN(Number(amount))) {
+				row.Amount = Number(amount);
+			}
+			const data = await prTable.insertRow(row);
+			writeOutput(basicIO, { status: 'Success', data });
 		} else if (action === 'add_app_user') {
 			if (!appUserName || !appUserEmail || !appUserPassword) {
 				throw new Error('Emp_name, emp_mail, and emp_password are required.');
@@ -166,13 +187,14 @@ module.exports = async (context, basicIO) => {
 			const data = await empTable.insertRow({ emp_name: name, emp_email: email });
 			writeOutput(basicIO, { status: 'Success', data });
 		} else {
-			const [employees, designations, rawAppUsers] = await Promise.all([
+			const [employees, designations, rawAppUsers, purchaseRequests] = await Promise.all([
 				fetchAllRows(empTable),
 				fetchAllRows(desigTable),
-				fetchAllRows(appUserTable)
+				fetchAllRows(appUserTable),
+				fetchAllRows(prTable)
 			]);
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
-			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers });
+			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests });
 		}
 	} catch (e) {
 		console.error(`Error in management_function: ${e.message || e}`);

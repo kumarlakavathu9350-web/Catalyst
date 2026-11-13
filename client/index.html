@@ -96,6 +96,33 @@
             </div>
             <p id="appUserStatus" class="status-text">Loading app users...</p>
         </section>
+
+        <!-- 4. Purchase Requests (Purchase_request) -->
+        <section class="section">
+            <div class="header">
+                <h3>Purchase Requests (<strong id="prCount">0</strong>)</h3>
+                <button id="openPrModalBtn" class="btn btn-primary" type="button">+ Add Purchase Request</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Item Name</th>
+                            <th>Preferred Vendor</th>
+                            <th>Requested By</th>
+                            <th>Amount (₹)</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prTableBody"></tbody>
+                </table>
+            </div>
+            <p id="prStatus" class="status-text">Loading purchase requests...</p>
+        </section>
     </div>
 
     <!-- Modal 1: Add Employee -->
@@ -149,6 +176,31 @@
             </label>
             <div class="actions">
                 <button type="button" id="closeAppUserModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 4: Add Purchase Request -->
+    <div id="prModal" class="modal">
+        <form id="prForm" class="modal-content">
+            <h3>Add Purchase Request</h3>
+            <label>Item Name
+                <input type="text" id="prItemName" placeholder="e.g. MacBook Pro M3" required>
+            </label>
+            <label>Preferred Vendor
+                <input type="text" id="prVendor" placeholder="e.g. Apple India" required>
+            </label>
+            <label>Requested By
+                <select id="prUserSelect" required>
+                    <option value="">-- Select Requester --</option>
+                </select>
+            </label>
+            <label>Amount (₹)
+                <input type="number" id="prAmount" placeholder="e.g. 50000" step="0.01">
+            </label>
+            <div class="actions">
+                <button type="button" id="closePrModalBtn" class="btn">Cancel</button>
                 <button type="submit" class="btn btn-primary">Submit</button>
             </div>
         </form>
