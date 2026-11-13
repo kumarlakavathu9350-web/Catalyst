@@ -217,7 +217,30 @@ module.exports = async (context, basicIO) => {
 				fetchAllRows(expenseTable)
 			]);
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
-			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests, expenses });
+
+			const reports = [
+				{ report_number: 'ER-00006', report_name: 'Purchase Requests - Submiter', status: 'approved', total: 461000.0, submitter_name: 'Submiter', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00005', report_name: 'Purchase Requests - kumar lakavthu', status: 'approved', total: 486380.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00004', report_name: 'Client Engagement & Technical Summit 2026', status: 'approved', total: 32269.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00007', report_name: 'Submiter - Q4 Cloud Operations & Client Deployment', status: 'draft', total: 0.0, submitter_name: 'Submiter', date_range: '01 Nov - 15 Nov 2026' },
+				{ report_number: 'ER-00003', report_name: 'IT & Cloud Infrastructure Operations', status: 'draft', total: 14699.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00002', report_name: 'Client Meeting & Office Operations', status: 'draft', total: 10679.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00001', report_name: 'Business Travel Expense Report', status: 'draft', total: 9150.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' }
+			];
+
+			const trips = [
+				{ trip_number: 'TRIP-00005', trip_name: 'Hyderabad System Integration & Deployment', traveler_name: 'Submiter', budget_amount: 30000.0, status: 'draft', purpose: 'Onsite backend system integration & UAT' },
+				{ trip_number: 'TRIP-00006', trip_name: 'Chennai Client UAT & Deployment Trip', traveler_name: 'Submiter', budget_amount: 22000.0, status: 'draft', purpose: 'Client UAT & Onsite Systems Go-Live' },
+				{ trip_number: 'TRIP-00002', trip_name: 'Bangalore Client Engagement & Tech Summit', traveler_name: 'kumar lakavthu', budget_amount: 25000.0, status: 'draft', purpose: 'Onsite client consultation and technical workshop' },
+				{ trip_number: 'TRIP-00003', trip_name: 'Mumbai Executive Strategy & Business Review', traveler_name: 'kumar lakavthu', budget_amount: 40000.0, status: 'draft', purpose: 'Quarterly business roadmap alignment' }
+			];
+
+			const advances = [
+				{ advance_id: '4208449000000037358', user_name: 'Submiter', amount: 15000.0, account_name: 'Petty Cash', status: 'approved', notes: 'Client Site Deployment & Travel Advance for Submiter' },
+				{ advance_id: '4208449000000034335', user_name: 'Submiter', amount: 7500.0, account_name: 'Petty Cash', status: 'approved', notes: 'Field Research & Testing Equipment' }
+			];
+
+			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests, expenses, reports, trips, advances });
 		}
 	} catch (e) {
 		console.error(`Error in management_function: ${e.message || e}`);

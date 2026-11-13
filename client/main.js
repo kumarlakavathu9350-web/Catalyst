@@ -17,16 +17,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const appUserTableBody = $('appUserTableBody');
     const prTableBody = $('prTableBody');
     const expenseTableBody = $('expenseTableBody');
+    const reportTableBody = $('reportTableBody');
+    const tripTableBody = $('tripTableBody');
+    const advanceTableBody = $('advanceTableBody');
     const empStatus = $('empStatus');
     const desigStatus = $('desigStatus');
     const appUserStatus = $('appUserStatus');
     const prStatus = $('prStatus');
     const expenseStatus = $('expenseStatus');
+    const reportStatus = $('reportStatus');
+    const tripStatus = $('tripStatus');
+    const advanceStatus = $('advanceStatus');
     const empCount = $('empCount');
     const desigCount = $('desigCount');
     const appUserCount = $('appUserCount');
     const prCount = $('prCount');
     const expenseCount = $('expenseCount');
+    const reportCount = $('reportCount');
+    const tripCount = $('tripCount');
+    const advanceCount = $('advanceCount');
     const desigEmpSelect = $('desigEmpSelect');
     const prUserSelect = $('prUserSelect');
     const expenseUserSelect = $('expenseUserSelect');
@@ -107,12 +116,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadData() {
-        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = expenseStatus.style.display = 'block';
+        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = expenseStatus.style.display = reportStatus.style.display = tripStatus.style.display = advanceStatus.style.display = 'block';
         empStatus.textContent = 'Loading employees...';
         desigStatus.textContent = 'Loading designations...';
         appUserStatus.textContent = 'Loading app users...';
         prStatus.textContent = 'Loading purchase requests...';
         expenseStatus.textContent = 'Loading expenses...';
+        reportStatus.textContent = 'Loading expense reports...';
+        tripStatus.textContent = 'Loading trips...';
+        advanceStatus.textContent = 'Loading advances...';
 
         try {
             const data = await callFunction({ action: 'getAll' });
@@ -227,8 +239,71 @@ document.addEventListener('DOMContentLoaded', () => {
                     onDelete: () => deleteRecord('delete_expense', rowId, name)
                 };
             });
+
+            // Render Reports
+            const reports = data.reports || [];
+            reportCount.textContent = reports.length;
+            reportStatus.style.display = reports.length ? 'none' : 'block';
+            reportTableBody.innerHTML = '';
+            reports.forEach((rep, i) => {
+                const tr = document.createElement('tr');
+                const amt = rep.total != null ? `₹${Number(rep.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                const badgeCls = `badge badge-${escapeHtml(rep.status || 'draft')}`;
+                tr.innerHTML = [
+                    `<td>${i + 1}</td>`,
+                    `<td><code>${escapeHtml(rep.report_number || '-')}</code></td>`,
+                    `<td><strong>${escapeHtml(rep.report_name || '-')}</strong></td>`,
+                    `<td>${escapeHtml(rep.submitter_name || '-')}</td>`,
+                    `<td>${escapeHtml(rep.date_range || '-')}</td>`,
+                    `<td>${escapeHtml(amt)}</td>`,
+                    `<td><span class="${badgeCls}">${escapeHtml(rep.status || 'draft')}</span></td>`
+                ].join('');
+                reportTableBody.appendChild(tr);
+            });
+
+            // Render Trips
+            const trips = data.trips || [];
+            tripCount.textContent = trips.length;
+            tripStatus.style.display = trips.length ? 'none' : 'block';
+            tripTableBody.innerHTML = '';
+            trips.forEach((trItem, i) => {
+                const tr = document.createElement('tr');
+                const bgt = trItem.budget_amount != null ? `₹${Number(trItem.budget_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                const badgeCls = `badge badge-${escapeHtml(trItem.status || 'draft')}`;
+                tr.innerHTML = [
+                    `<td>${i + 1}</td>`,
+                    `<td><code>${escapeHtml(trItem.trip_number || '-')}</code></td>`,
+                    `<td><strong>${escapeHtml(trItem.trip_name || '-')}</strong></td>`,
+                    `<td>${escapeHtml(trItem.traveler_name || '-')}</td>`,
+                    `<td>${escapeHtml(trItem.purpose || '-')}</td>`,
+                    `<td>${escapeHtml(bgt)}</td>`,
+                    `<td><span class="${badgeCls}">${escapeHtml(trItem.status || 'draft')}</span></td>`
+                ].join('');
+                tripTableBody.appendChild(tr);
+            });
+
+            // Render Advances
+            const advances = data.advances || [];
+            advanceCount.textContent = advances.length;
+            advanceStatus.style.display = advances.length ? 'none' : 'block';
+            advanceTableBody.innerHTML = '';
+            advances.forEach((adv, i) => {
+                const tr = document.createElement('tr');
+                const amt = adv.amount != null ? `₹${Number(adv.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                const badgeCls = `badge badge-${escapeHtml(adv.status || 'approved')}`;
+                tr.innerHTML = [
+                    `<td>${i + 1}</td>`,
+                    `<td><code>${escapeHtml(adv.advance_id || '-')}</code></td>`,
+                    `<td><strong>${escapeHtml(adv.user_name || '-')}</strong></td>`,
+                    `<td>${escapeHtml(amt)}</td>`,
+                    `<td>${escapeHtml(adv.account_name || 'Petty Cash')}</td>`,
+                    `<td>${escapeHtml(adv.notes || '-')}</td>`,
+                    `<td><span class="${badgeCls}">${escapeHtml(adv.status || 'approved')}</span></td>`
+                ].join('');
+                advanceTableBody.appendChild(tr);
+            });
         } catch (err) {
-            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent = expenseStatus.textContent =
+            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent = expenseStatus.textContent = reportStatus.textContent = tripStatus.textContent = advanceStatus.textContent =
                 'Error: ' + (err.message || 'Unable to load records');
         }
     }

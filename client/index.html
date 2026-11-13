@@ -151,6 +151,81 @@
             </div>
             <p id="expenseStatus" class="status-text">Loading expenses...</p>
         </section>
+
+        <!-- 6. Expense Reports & Approval Levels (Zoho Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Expense Reports &amp; Approval Levels (<strong id="reportCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Report #</th>
+                            <th>Report Name</th>
+                            <th>Submitter</th>
+                            <th>Date Range</th>
+                            <th>Total Amount (₹)</th>
+                            <th>Approval Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+            <p id="reportStatus" class="status-text">Loading reports...</p>
+        </section>
+
+        <!-- 7. Trips & Travel Requests (Zoho Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Trips &amp; Travel Requests (<strong id="tripCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Trip #</th>
+                            <th>Trip Name</th>
+                            <th>Traveler</th>
+                            <th>Business Purpose</th>
+                            <th>Budget (₹)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tripTableBody"></tbody>
+                </table>
+            </div>
+            <p id="tripStatus" class="status-text">Loading trips...</p>
+        </section>
+
+        <!-- 8. Advances (Zoho Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Employee Advances (<strong id="advanceCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Advance ID</th>
+                            <th>Employee</th>
+                            <th>Amount (₹)</th>
+                            <th>Paid Through</th>
+                            <th>Purpose / Notes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="advanceTableBody"></tbody>
+                </table>
+            </div>
+            <p id="advanceStatus" class="status-text">Loading advances...</p>
+        </section>
     </div>
 
     <!-- Modal 1: Add Employee -->

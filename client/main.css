@@ -172,3 +172,16 @@ tbody td button {
     justify-content: flex-end;
     gap: 8px;
 }
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+.badge-approved { background: #dcfce7; color: #15803d; }
+.badge-submitted { background: #dbeafe; color: #1d4ed8; }
+.badge-draft { background: #fef3c7; color: #b45309; }
+.badge-rejected { background: #fee2e2; color: #b91c1c; }
