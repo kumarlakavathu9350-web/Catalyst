@@ -60,6 +60,7 @@ module.exports = async (context, basicIO) => {
 		const desigTable = datastore.table('Designation');
 		const appUserTable = datastore.table('App_user');
 		const prTable = datastore.table('Purchase_request');
+		const expenseTable = datastore.table('Expense');
 
 		const arg = (key) => String(basicIO.getArgument(key) || '').trim();
 		const rawArg = (key) => String(basicIO.getArgument(key) ?? '');
@@ -78,6 +79,11 @@ module.exports = async (context, basicIO) => {
 		const preferredVendor = arg('Preferred_vendor');
 		const requestedBy = arg('Requested_by');
 		const amount = arg('Amount');
+		const expenseName = arg('Expense_name');
+		const category = arg('Category');
+		const expenseAmount = arg('Expense_amount') || amount;
+		const expenseDate = arg('Expense_date');
+		const paidBy = arg('Paid_by');
 
 		if (action === 'validate_app_user') {
 			const requestedEmail = appUserEmail.toLowerCase();
@@ -139,7 +145,7 @@ module.exports = async (context, basicIO) => {
 					});
 				}
 			}
-		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user' || action === 'delete_purchase_request' || action === 'delete_pr') {
+		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user' || action === 'delete_purchase_request' || action === 'delete_pr' || action === 'delete_expense') {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
 			const tableMap = {
 				delete: empTable,
@@ -147,10 +153,26 @@ module.exports = async (context, basicIO) => {
 				delete_desig: desigTable,
 				delete_app_user: appUserTable,
 				delete_purchase_request: prTable,
-				delete_pr: prTable
+				delete_pr: prTable,
+				delete_expense: expenseTable
 			};
 			await tableMap[action].deleteRow(rowId);
 			writeOutput(basicIO, { status: 'Success' });
+		} else if (action === 'add_expense' || (expenseName && category)) {
+			if (!expenseName || !category) {
+				throw new Error('Expense_name and Category are required.');
+			}
+			const row = {
+				Expense_name: expenseName,
+				Category: category,
+				Paid_by: paidBy || 'General',
+				Expense_date: expenseDate || new Date().toISOString().slice(0, 10)
+			};
+			if (expenseAmount && !isNaN(Number(expenseAmount))) {
+				row.Amount = Number(expenseAmount);
+			}
+			const data = await expenseTable.insertRow(row);
+			writeOutput(basicIO, { status: 'Success', data });
 		} else if (action === 'add_purchase_request' || action === 'add_pr' || (itemName && preferredVendor)) {
 			if (!itemName || !preferredVendor) {
 				throw new Error('Item_name and Preferred_vendor are required.');
@@ -187,14 +209,15 @@ module.exports = async (context, basicIO) => {
 			const data = await empTable.insertRow({ emp_name: name, emp_email: email });
 			writeOutput(basicIO, { status: 'Success', data });
 		} else {
-			const [employees, designations, rawAppUsers, purchaseRequests] = await Promise.all([
+			const [employees, designations, rawAppUsers, purchaseRequests, expenses] = await Promise.all([
 				fetchAllRows(empTable),
 				fetchAllRows(desigTable),
 				fetchAllRows(appUserTable),
-				fetchAllRows(prTable)
+				fetchAllRows(prTable),
+				fetchAllRows(expenseTable)
 			]);
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
-			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests });
+			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests, expenses });
 		}
 	} catch (e) {
 		console.error(`Error in management_function: ${e.message || e}`);

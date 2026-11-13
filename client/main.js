@@ -6,24 +6,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const desigModal = $('desigModal');
     const appUserModal = $('appUserModal');
     const prModal = $('prModal');
+    const expenseModal = $('expenseModal');
     const empForm = $('empForm');
     const desigForm = $('desigForm');
     const appUserForm = $('appUserForm');
     const prForm = $('prForm');
+    const expenseForm = $('expenseForm');
     const empTableBody = $('empTableBody');
     const desigTableBody = $('desigTableBody');
     const appUserTableBody = $('appUserTableBody');
     const prTableBody = $('prTableBody');
+    const expenseTableBody = $('expenseTableBody');
     const empStatus = $('empStatus');
     const desigStatus = $('desigStatus');
     const appUserStatus = $('appUserStatus');
     const prStatus = $('prStatus');
+    const expenseStatus = $('expenseStatus');
     const empCount = $('empCount');
     const desigCount = $('desigCount');
     const appUserCount = $('appUserCount');
     const prCount = $('prCount');
+    const expenseCount = $('expenseCount');
     const desigEmpSelect = $('desigEmpSelect');
     const prUserSelect = $('prUserSelect');
+    const expenseUserSelect = $('expenseUserSelect');
     const currentUserEl = $('currentUser');
 
     // Modal controls
@@ -35,8 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('closeAppUserModalBtn').onclick = () => { appUserModal.style.display = 'none'; };
     $('openPrModalBtn').onclick = () => { prModal.style.display = 'flex'; };
     $('closePrModalBtn').onclick = () => { prModal.style.display = 'none'; };
+    $('openExpenseModalBtn').onclick = () => { expenseModal.style.display = 'flex'; };
+    $('closeExpenseModalBtn').onclick = () => { expenseModal.style.display = 'none'; };
     window.onclick = (e) => {
-        if (e.target === empModal || e.target === desigModal || e.target === appUserModal || e.target === prModal) {
+        if (e.target === empModal || e.target === desigModal || e.target === appUserModal || e.target === prModal || e.target === expenseModal) {
             e.target.style.display = 'none';
         }
     };
@@ -99,11 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadData() {
-        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = 'block';
+        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = expenseStatus.style.display = 'block';
         empStatus.textContent = 'Loading employees...';
         desigStatus.textContent = 'Loading designations...';
         appUserStatus.textContent = 'Loading app users...';
         prStatus.textContent = 'Loading purchase requests...';
+        expenseStatus.textContent = 'Loading expenses...';
 
         try {
             const data = await callFunction({ action: 'getAll' });
@@ -113,9 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const designations = data.designations || [];
             const appUsers = data.appUsers || [];
             const purchaseRequests = data.purchaseRequests || [];
+            const expenses = data.expenses || [];
 
             desigEmpSelect.innerHTML = '<option value="">-- Select Employee --</option>';
             prUserSelect.innerHTML = '<option value="">-- Select Requester --</option>';
+            expenseUserSelect.innerHTML = '<option value="">-- Select Employee --</option>';
 
             renderRows(empTableBody, empCount, empStatus, 'No employees found.', employees, (emp, i) => {
                 const r = emp.Emp || emp;
@@ -125,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (name !== '-') {
                     desigEmpSelect.add(new Option(`${name} (${email})`, name));
                     prUserSelect.add(new Option(`${name} (${email})`, name));
+                    expenseUserSelect.add(new Option(`${name} (${email})`, name));
                 }
                 return {
                     cells: [
@@ -192,8 +204,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     onDelete: () => deleteRecord('delete_pr', rowId, itemName)
                 };
             });
+
+            renderRows(expenseTableBody, expenseCount, expenseStatus, 'No expenses found.', expenses, (exp, i) => {
+                const r = exp.Expense || exp;
+                const rowId = r.ROWID || '-';
+                const name = r.Expense_name || '-';
+                const cat = r.Category || '-';
+                const paidBy = r.Paid_by || '-';
+                const date = r.Expense_date || '-';
+                const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                return {
+                    cells: [
+                        `<td>${i + 1}</td>`,
+                        `<td><code>${escapeHtml(rowId)}</code></td>`,
+                        `<td><strong>${escapeHtml(name)}</strong></td>`,
+                        `<td>${escapeHtml(cat)}</td>`,
+                        `<td>${escapeHtml(amt)}</td>`,
+                        `<td>${escapeHtml(date)}</td>`,
+                        `<td>${escapeHtml(paidBy)}</td>`,
+                        `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`
+                    ],
+                    onDelete: () => deleteRecord('delete_expense', rowId, name)
+                };
+            });
         } catch (err) {
-            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent =
+            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent = expenseStatus.textContent =
                 'Error: ' + (err.message || 'Unable to load records');
         }
     }
@@ -262,6 +297,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return { action: 'add_pr', Item_name, Preferred_vendor, Requested_by, Amount };
     }, 'add purchase request');
+
+    bindSubmit(expenseForm, expenseModal, () => {
+        const Expense_name = $('expenseNameInput').value.trim();
+        const Category = $('expenseCategorySelect').value.trim();
+        const Amount = $('expenseAmountInput').value.trim();
+        const Expense_date = $('expenseDateInput').value;
+        const Paid_by = expenseUserSelect.value.trim();
+        if (!Expense_name || !Category || !Amount) {
+            alert('Please enter Expense Description, Category, and Amount.');
+            return null;
+        }
+        return {
+            action: 'add_expense',
+            Expense_name,
+            Category,
+            Amount,
+            Expense_date: Expense_date || new Date().toISOString().slice(0, 10),
+            Paid_by: Paid_by || 'General'
+        };
+    }, 'add expense');
 
     async function deleteRecord(action, rowId, label) {
         if (!confirm(`Delete "${label}" (ID: ${rowId})?`)) return;

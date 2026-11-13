@@ -123,6 +123,34 @@
             </div>
             <p id="prStatus" class="status-text">Loading purchase requests...</p>
         </section>
+
+        <!-- 5. Expenses (Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Expenses (<strong id="expenseCount">0</strong>)</h3>
+                <button id="openExpenseModalBtn" class="btn btn-primary" type="button">+ Add Expense</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Expense / Description</th>
+                            <th>Category</th>
+                            <th>Amount (₹)</th>
+                            <th>Date</th>
+                            <th>Paid By</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseTableBody"></tbody>
+                </table>
+            </div>
+            <p id="expenseStatus" class="status-text">Loading expenses...</p>
+        </section>
     </div>
 
     <!-- Modal 1: Add Employee -->
@@ -201,6 +229,46 @@
             </label>
             <div class="actions">
                 <button type="button" id="closePrModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 5: Add Expense -->
+    <div id="expenseModal" class="modal">
+        <form id="expenseForm" class="modal-content">
+            <h3>Add Expense</h3>
+            <label>Expense / Description
+                <input type="text" id="expenseNameInput" placeholder="e.g. Flight Tickets Bangalore to Delhi" required>
+            </label>
+            <label>Category
+                <select id="expenseCategorySelect" required>
+                    <option value="">-- Select Category --</option>
+                    <option value="Air Travel Expense">Air Travel Expense</option>
+                    <option value="Lodging">Lodging</option>
+                    <option value="Automobile Expense">Automobile Expense</option>
+                    <option value="Meals and Entertainment">Meals and Entertainment</option>
+                    <option value="IT and Internet Expenses">IT and Internet Expenses</option>
+                    <option value="Office Supplies">Office Supplies</option>
+                    <option value="Fuel/Mileage Expenses">Fuel/Mileage Expenses</option>
+                    <option value="Telephone Expense">Telephone Expense</option>
+                    <option value="Parking">Parking</option>
+                    <option value="Other">Other</option>
+                </select>
+            </label>
+            <label>Amount (₹)
+                <input type="number" id="expenseAmountInput" placeholder="e.g. 2500" step="0.01" required>
+            </label>
+            <label>Expense Date
+                <input type="date" id="expenseDateInput">
+            </label>
+            <label>Paid By
+                <select id="expenseUserSelect" required>
+                    <option value="">-- Select Employee --</option>
+                </select>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeExpenseModalBtn" class="btn">Cancel</button>
                 <button type="submit" class="btn btn-primary">Submit</button>
             </div>
         </form>
