@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KR Tech Solutions - Zoho Expense &amp; Operations Portal</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="https://static.zohocdn.com/catalyst/sdk/js/4.6.2/catalystWebSDK.js"></script>
+    <script src="/__catalyst/sdk/init.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header top-header">
+            <div>
+                <h2>KR Tech Solutions · Zoho Expense &amp; Operations Portal</h2>
+                <span style="font-size: 12px; color: #64748b;">Zoho Expense Organization: <strong>KR Tech Solutions (60095930892)</strong></span>
+            </div>
+            <div class="header-actions">
+                <span id="currentUser" class="user-badge"></span>
+                <button id="refreshBtn" class="btn" type="button">Refresh</button>
+                <button id="signOutBtn" class="btn btn-danger sign-out-btn" type="button">Sign Out</button>
+            </div>
+        </header>
+
+        <!-- 1. Employee Directory (Emp) -->
+        <section class="section">
+            <div class="header">
+                <h3>Employees (<strong id="empCount">0</strong>)</h3>
+                <button id="openEmpModalBtn" class="btn btn-primary" type="button">+ Add Employee</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="empTableBody"></tbody>
+                </table>
+            </div>
+            <p id="empStatus" class="status-text">Loading employees...</p>
+        </section>
+
+        <!-- 2. Designation Directory (Designation) -->
+        <section class="section">
+            <div class="header">
+                <h3>Designations (<strong id="desigCount">0</strong>)</h3>
+                <button id="openDesigModalBtn" class="btn btn-primary" type="button">+ Add Designation</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Designation (D_name)</th>
+                            <th>Employee Name</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="desigTableBody"></tbody>
+                </table>
+            </div>
+            <p id="desigStatus" class="status-text">Loading designations...</p>
+        </section>
+
+        <!-- 3. Allowed App Users (App_user) -->
+        <section class="section">
+            <div class="header">
+                <h3>App Users (<strong id="appUserCount">0</strong>)</h3>
+                <button id="openAppUserModalBtn" class="btn btn-primary" type="button">+ Add App User</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Employee Name (Emp_name)</th>
+                            <th>Email (emp_mail)</th>
+                            <th>Password</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appUserTableBody"></tbody>
+                </table>
+            </div>
+            <p id="appUserStatus" class="status-text">Loading app users...</p>
+        </section>
+
+        <!-- 4. Purchase Requests (Purchase_request) -->
+        <section class="section">
+            <div class="header">
+                <h3>Purchase Requests (<strong id="prCount">0</strong>)</h3>
+                <button id="openPrModalBtn" class="btn btn-primary" type="button">+ Add Purchase Request</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Item Name</th>
+                            <th>Preferred Vendor</th>
+                            <th>Requested By</th>
+                            <th>Amount (₹)</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prTableBody"></tbody>
+                </table>
+            </div>
+            <p id="prStatus" class="status-text">Loading purchase requests...</p>
+        </section>
+
+        <!-- 5. Expenses (Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Expenses (<strong id="expenseCount">0</strong>)</h3>
+                <button id="openExpenseModalBtn" class="btn btn-primary" type="button">+ Add Expense</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Expense / Description</th>
+                            <th>Category</th>
+                            <th>Amount (₹)</th>
+                            <th>Date</th>
+                            <th>Paid By</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseTableBody"></tbody>
+                </table>
+            </div>
+            <p id="expenseStatus" class="status-text">Loading expenses...</p>
+        </section>
+
+        <!-- 6. Expense Reports & Approval Levels (Zoho Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Expense Reports &amp; Approval Levels (<strong id="reportCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Report #</th>
+                            <th>Report Name</th>
+                            <th>Submitter</th>
+                            <th>Date Range</th>
+                            <th>Total Amount (₹)</th>
+                            <th>Approval Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+            <p id="reportStatus" class="status-text">Loading reports...</p>
+        </section>
+
+        <!-- 7. Trips & Travel Requests (Zoho Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Trips &amp; Travel Requests (<strong id="tripCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Trip #</th>
+                            <th>Trip Name</th>
+                            <th>Traveler</th>
+                            <th>Business Purpose</th>
+                            <th>Budget (₹)</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tripTableBody"></tbody>
+                </table>
+            </div>
+            <p id="tripStatus" class="status-text">Loading trips...</p>
+        </section>
+
+        <!-- 8. Advances (Zoho Expense) -->
+        <section class="section">
+            <div class="header">
+                <h3>Employee Advances (<strong id="advanceCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Advance ID</th>
+                            <th>Employee</th>
+                            <th>Amount (₹)</th>
+                            <th>Paid Through</th>
+                            <th>Purpose / Notes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="advanceTableBody"></tbody>
+                </table>
+            </div>
+            <p id="advanceStatus" class="status-text">Loading advances...</p>
+        </section>
+
+        <!-- 9. Corporate & Personal Cards (Cards) -->
+        <section class="section">
+            <div class="header">
+                <h3>Corporate &amp; Personal Cards (<strong id="cardCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Card ID</th>
+                            <th>Card Name</th>
+                            <th>Card Number</th>
+                            <th>Type</th>
+                            <th>Card Holder</th>
+                            <th>Limit (₹)</th>
+                            <th>Available Limit (₹)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cardTableBody"></tbody>
+                </table>
+            </div>
+            <p id="cardStatus" class="status-text">Loading cards...</p>
+        </section>
+    </div>
+
+    <!-- Modal 1: Add Employee -->
+    <div id="empModal" class="modal">
+        <form id="empForm" class="modal-content">
+            <h3>Add Employee</h3>
+            <label>Name
+                <input type="text" id="empName" placeholder="John Doe" required>
+            </label>
+            <label>Email
+                <input type="email" id="empEmail" placeholder="john@example.com" required>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeEmpModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 2: Add Designation -->
+    <div id="desigModal" class="modal">
+        <form id="desigForm" class="modal-content">
+            <h3>Add Designation</h3>
+            <label>Designation Name (D_name)
+                <input type="text" id="desigName" placeholder="e.g. Software Engineer" required>
+            </label>
+            <label>Employee Name
+                <select id="desigEmpSelect" required>
+                    <option value="">-- Select Employee --</option>
+                </select>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeDesigModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 3: Add App User -->
+    <div id="appUserModal" class="modal">
+        <form id="appUserForm" class="modal-content">
+            <h3>Add App User</h3>
+            <label>Employee Name (Emp_name)
+                <input type="text" id="appUserName" placeholder="Kumar" required>
+            </label>
+            <label>Email (emp_mail)
+                <input type="email" id="appUserEmail" placeholder="kumar@example.com" required>
+            </label>
+            <label>Password (emp_password)
+                <input type="password" id="appUserPassword" placeholder="Enter password" required>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeAppUserModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 4: Add Purchase Request -->
+    <div id="prModal" class="modal">
+        <form id="prForm" class="modal-content">
+            <h3>Add Purchase Request</h3>
+            <label>Item Name
+                <input type="text" id="prItemName" placeholder="e.g. MacBook Pro M3" required>
+            </label>
+            <label>Preferred Vendor
+                <input type="text" id="prVendor" placeholder="e.g. Apple India" required>
+            </label>
+            <label>Requested By
+                <select id="prUserSelect" required>
+                    <option value="">-- Select Requester --</option>
+                </select>
+            </label>
+            <label>Amount (₹)
+                <input type="number" id="prAmount" placeholder="e.g. 50000" step="0.01">
+            </label>
+            <div class="actions">
+                <button type="button" id="closePrModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 5: Add Expense -->
+    <div id="expenseModal" class="modal">
+        <form id="expenseForm" class="modal-content">
+            <h3>Add Expense</h3>
+            <label>Expense / Description
+                <input type="text" id="expenseNameInput" placeholder="e.g. Flight Tickets Bangalore to Delhi" required>
+            </label>
+            <label>Category
+                <select id="expenseCategorySelect" required>
+                    <option value="">-- Select Category --</option>
+                    <option value="Air Travel Expense">Air Travel Expense</option>
+                    <option value="Lodging">Lodging</option>
+                    <option value="Automobile Expense">Automobile Expense</option>
+                    <option value="Meals and Entertainment">Meals and Entertainment</option>
+                    <option value="IT and Internet Expenses">IT and Internet Expenses</option>
+                    <option value="Office Supplies">Office Supplies</option>
+                    <option value="Fuel/Mileage Expenses">Fuel/Mileage Expenses</option>
+                    <option value="Telephone Expense">Telephone Expense</option>
+                    <option value="Parking">Parking</option>
+                    <option value="Other">Other</option>
+                </select>
+            </label>
+            <label>Amount (₹)
+                <input type="number" id="expenseAmountInput" placeholder="e.g. 2500" step="0.01" required>
+            </label>
+            <label>Expense Date
+                <input type="date" id="expenseDateInput">
+            </label>
+            <label>Paid By
+                <select id="expenseUserSelect" required>
+                    <option value="">-- Select Employee --</option>
+                </select>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeExpenseModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>

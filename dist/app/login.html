@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KR Tech Solutions - Zoho Expense Portal Sign In</title>
+    <script src="https://static.zohocdn.com/catalyst/sdk/js/4.6.2/catalystWebSDK.js"></script>
+    <script src="/__catalyst/sdk/init.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            color: #1e293b;
+        }
+
+        .login-fullscreen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-banner {
+            flex-shrink: 0;
+            padding: 14px 28px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .brand-text h1 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            color: #f8fafc;
+        }
+
+        .brand-text p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .org-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            border-radius: 999px;
+            font-size: 11.5px;
+            color: #93c5fd;
+            font-weight: 500;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn,
+        .std-login-link {
+            font-size: 13px;
+            font-weight: 500;
+            padding: 7px 14px;
+            border-radius: 7px;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            color: #e2e8f0;
+            transition: all 0.15s ease;
+        }
+
+        .tab-btn:hover,
+        .std-login-link:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            color: #0f172a;
+            border-color: #fff;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .auth-stage {
+            flex: 1;
+            padding: 32px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .auth-msg {
+            text-align: center;
+            font-size: 14px;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            max-width: 440px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .auth-card {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 28px 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .auth-card h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .auth-card p.subtext {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .auth-card label {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .auth-card input {
+            padding: 10px 12px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 14px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            font-family: inherit;
+        }
+
+        .auth-card input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .auth-card input.input-valid {
+            border-color: #16a34a;
+            background: #f0fdf4;
+        }
+
+        .auth-card input.input-invalid {
+            border-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .validation-hint {
+            font-size: 11.5px;
+            font-weight: 500;
+            display: none;
+            margin-top: 2px;
+        }
+
+        .validation-hint.valid {
+            color: #15803d;
+            display: block;
+        }
+
+        .validation-hint.invalid {
+            color: #b91c1c;
+            display: block;
+        }
+
+        .primary-btn {
+            padding: 11px 18px;
+            font-size: 14.5px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4338ca, #3730a3);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .feedback-banner {
+            font-size: 13px;
+            padding: 10px 12px;
+            border-radius: 7px;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .feedback-banner.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .feedback-banner.success {
+            display: block;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .switch-mode-text {
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .switch-mode-text a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .switch-mode-text a:hover {
+            text-decoration: underline;
+        }
+
+        .login-id-pill {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 11.5px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="login-fullscreen">
+        <header class="top-banner">
+            <div class="brand-block">
+                <div class="brand-logo">₹</div>
+                <div class="brand-text">
+                    <h1>KR Tech Solutions · Zoho Expense Portal</h1>
+                    <p>Catalyst Cloud Backend &amp; Expense Synchronization</p>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button id="signInTabBtn" class="tab-btn active" type="button">Sign In</button>
+                <button id="signUpTabBtn" class="tab-btn" type="button">Sign Up</button>
+                <a class="std-login-link" href="/__catalyst/auth/login">Standard Login</a>
+            </div>
+        </header>
+
+        <section class="auth-stage">
+            <div id="authMsg" class="auth-msg" style="display:none;">Checking session...</div>
+
+            <div class="auth-container">
+                <!-- Sign In Pane -->
+                <div id="signInPane">
+                    <form id="signInForm" class="auth-card">
+                        <h2>Sign In to Portal</h2>
+                        <p class="subtext">Enter your authorized Zoho Expense member email and password to access
+                            reports, trips, and expenses.</p>
+
+                        <div id="signInFeedback" class="feedback-banner"></div>
+
+                        <label>
+                            Expense Member Email
+                            <input type="email" id="siEmail" placeholder="name@company.com" required
+                                autocomplete="email">
+                            <span id="siEmailHint" class="validation-hint"></span>
+                        </label>
+
+                        <label>
+                            Password
+                            <input type="password" id="siPassword" placeholder="Enter your password" required
+                                autocomplete="current-password">
+                        </label>
+
+                        <button id="signInSubmitBtn" class="primary-btn" type="submit">Sign In to Dashboard</button>
+
+                        <p class="switch-mode-text">
+                            New organization user? <a href="#" id="switchToSignUp">Sign Up</a> ·
+                            <a href="/__catalyst/auth/login">Standard Login</a>
+                        </p>
+                        <div class="security-badge">
+                            <span>🛡️ Verified Zoho Expense Organization Access</span>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Sign Up Pane -->
+                <div id="signUpPane" style="display: none;">
+                    <form id="signUpForm" class="auth-card">
+                        <h2>Register Expense Account</h2>
+                        <p class="subtext">Register your profile in Catalyst. Only pre-authorized Zoho Expense emails
+                            are permitted.</p>
+
+                        <div id="signUpFeedback" class="feedback-banner"></div>
+
+                        <label>
+                            Full Name
+                            <input type="text" id="suName" placeholder="Enter full name" required>
+                        </label>
+
+                        <label>
+                            Authorized Expense Email
+                            <input type="email" id="suEmail" placeholder="name@company.com" required
+                                autocomplete="email">
+                            <span id="suEmailHint" class="validation-hint"></span>
+                        </label>
+
+                        <label>
+                            Set Password
+                            <input type="password" id="suPassword" placeholder="Create a secure password" required
+                                autocomplete="new-password">
+                        </label>
+
+                        <button id="signUpSubmitBtn" class="primary-btn" type="submit">Create Expense Account</button>
+
+                        <p class="switch-mode-text">
+                            Already registered? <a href="#" id="switchToSignIn">Sign In</a> ·
+                            <a href="/__catalyst/auth/login">Standard Login</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const LOGIN_URL = '/app/login.html';
+            const APP_URL = '/app/index.html';
+            const SESSION_KEY = 'appUserSession';
+
+            const msgEl = document.getElementById('authMsg');
+            const signInPane = document.getElementById('signInPane');
+            const signUpPane = document.getElementById('signUpPane');
+            const signInTabBtn = document.getElementById('signInTabBtn');
+            const signUpTabBtn = document.getElementById('signUpTabBtn');
+            const signInForm = document.getElementById('signInForm');
+            const signUpForm = document.getElementById('signUpForm');
+            const signInFeedback = document.getElementById('signInFeedback');
+            const signUpFeedback = document.getElementById('signUpFeedback');
+            const siEmailInput = document.getElementById('siEmail');
+            const siEmailHint = document.getElementById('siEmailHint');
+            const suEmailInput = document.getElementById('suEmail');
+            const suEmailHint = document.getElementById('suEmailHint');
+            const signInSubmitBtn = document.getElementById('signInSubmitBtn');
+            const signUpSubmitBtn = document.getElementById('signUpSubmitBtn');
+
+            function showFeedback(el, text, isError) {
+                el.className = isError ? 'feedback-banner error' : 'feedback-banner success';
+                el.textContent = text;
+            }
+
+            function clearFeedback(el) {
+                el.className = 'feedback-banner';
+                el.textContent = '';
+            }
+
+            function validateEmailInput(input, hintEl, submitBtn) {
+                const val = input.value.trim();
+                if (!val) {
+                    input.className = '';
+                    hintEl.className = 'validation-hint';
+                    hintEl.textContent = '';
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+                const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+                if (isValidFormat) {
+                    input.className = 'input-valid';
+                    hintEl.className = 'validation-hint valid';
+                    hintEl.textContent = '✓ Valid email format';
+                    if (submitBtn) submitBtn.disabled = false;
+                } else {
+                    input.className = 'input-invalid';
+                    hintEl.className = 'validation-hint invalid';
+                    hintEl.textContent = '✕ Please enter a valid email address';
+                    if (submitBtn) submitBtn.disabled = true;
+                }
+            }
+
+            siEmailInput.addEventListener('input', () => validateEmailInput(siEmailInput, siEmailHint, signInSubmitBtn));
+            suEmailInput.addEventListener('input', () => validateEmailInput(suEmailInput, suEmailHint, signUpSubmitBtn));
+
+            function openTab(mode) {
+                const isSignUp = mode === 'signup';
+                msgEl.style.display = 'none';
+                clearFeedback(signInFeedback);
+                clearFeedback(signUpFeedback);
+                signInTabBtn.classList.toggle('active', !isSignUp);
+                signUpTabBtn.classList.toggle('active', isSignUp);
+                signInPane.style.display = isSignUp ? 'none' : 'block';
+                signUpPane.style.display = isSignUp ? 'block' : 'none';
+            }
+
+            async function callManagement(payload) {
+                const res = await fetch('/server/management_function/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const text = await res.text();
+                try {
+                    const raw = JSON.parse(text);
+                    return typeof raw?.output === 'string' ? JSON.parse(raw.output) : raw?.output || raw;
+                } catch {
+                    throw new Error(text || `HTTP ${res.status}`);
+                }
+            }
+
+            signInTabBtn.onclick = () => openTab('signin');
+            signUpTabBtn.onclick = () => openTab('signup');
+            document.getElementById('switchToSignUp').onclick = (e) => {
+                e.preventDefault();
+                openTab('signup');
+            };
+            document.getElementById('switchToSignIn').onclick = (e) => {
+                e.preventDefault();
+                openTab('signin');
+            };
+
+            signInForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const emp_mail = siEmailInput.value.trim().toLowerCase();
+                const emp_password = document.getElementById('siPassword').value;
+
+                if (!emp_mail || !emp_password) {
+                    showFeedback(signInFeedback, 'Please enter both email and password.', true);
+                    return;
+                }
+
+                clearFeedback(signInFeedback);
+                signInSubmitBtn.disabled = true;
+                signInSubmitBtn.textContent = 'Signing in...';
+
+                try {
+                    const result = await callManagement({
+                        action: 'validate_app_user',
+                        mode: 'password',
+                        emp_mail,
+                        emp_password
+                    });
+                    if (result?.status !== 'Success' || !result?.allowed || !result?.session_token) {
+                        throw new Error(result?.message || 'Invalid email or password.');
+                    }
+                    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+                        emp_mail: result.email || emp_mail,
+                        Emp_name: result.user?.Emp_name || '',
+                        session_token: result.session_token
+                    }));
+                    window.location.replace(APP_URL);
+                } catch (err) {
+                    showFeedback(signInFeedback, err?.message || 'Sign in failed.', true);
+                } finally {
+                    signInSubmitBtn.disabled = false;
+                    signInSubmitBtn.textContent = 'Sign In to Dashboard';
+                }
+            };
+
+            signUpForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const Emp_name = document.getElementById('suName').value.trim();
+                const emp_mail = suEmailInput.value.trim().toLowerCase();
+                const emp_password = document.getElementById('suPassword').value;
+
+                if (!Emp_name || !emp_mail || !emp_password) {
+                    showFeedback(signUpFeedback, 'Please fill in name, email, and password.', true);
+                    return;
+                }
+
+                clearFeedback(signUpFeedback);
+                signUpSubmitBtn.disabled = true;
+                signUpSubmitBtn.textContent = 'Creating Account...';
+
+                try {
+                    const result = await callManagement({
+                        action: 'add_app_user',
+                        Emp_name,
+                        emp_mail,
+                        emp_password
+                    });
+                    if (result?.status !== 'Success') {
+                        throw new Error(result?.message || 'Failed to register account.');
+                    }
+                    signUpForm.reset();
+                    suEmailHint.className = 'validation-hint';
+                    document.getElementById('siEmail').value = emp_mail;
+                    openTab('signin');
+                    showFeedback(signInFeedback, `Account created for ${emp_mail}! Please enter your password to sign in.`, false);
+                } catch (err) {
+                    showFeedback(signUpFeedback, err?.message || 'Sign up failed.', true);
+                } finally {
+                    signUpSubmitBtn.disabled = false;
+                    signUpSubmitBtn.textContent = 'Create Expense Account';
+                }
+            };
+
+            // 1. Check active App_user password session
+            try {
+                const stored = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+                if (stored?.emp_mail && stored?.session_token) {
+                    const check = await callManagement({
+                        action: 'validate_app_user',
+                        mode: 'session',
+                        emp_mail: stored.emp_mail,
+                        session_token: stored.session_token
+                    });
+                    if (check?.status === 'Success' && check?.allowed) {
+                        window.location.replace(APP_URL);
+                        return;
+                    }
+                    sessionStorage.removeItem(SESSION_KEY);
+                }
+            } catch {
+                sessionStorage.removeItem(SESSION_KEY);
+            }
+
+            // 2. Check Catalyst Standard Login session
+            let auth = null;
+            try {
+                if (window.catalyst?.auth?.isUserAuthenticated) {
+                    auth = await window.catalyst.auth.isUserAuthenticated();
+                }
+            } catch {
+                auth = null;
+            }
+
+            const user = auth?.content || auth?.data || (auth && typeof auth === 'object' ? auth : null);
+            const email = String(user?.email_id || '').trim().toLowerCase();
+            if (!auth || !email) {
+                openTab('signin');
+                return;
+            }
+
+            msgEl.style.display = 'flex';
+            msgEl.textContent = `Validating member session (${email})...`;
+            try {
+                const result = await callManagement({
+                    action: 'validate_app_user',
+                    mode: 'catalyst_auth',
+                    emp_mail: email
+                });
+                if (result?.status === 'Success' && result?.allowed) {
+                    window.location.replace(APP_URL);
+                    return;
+                }
+                throw new Error(result?.message || 'Access denied: This user account is not registered in the system.');
+            } catch (err) {
+                msgEl.innerHTML = '';
+                const badge = document.createElement('span');
+                badge.className = 'login-id-pill';
+                badge.textContent = `Login Email: ${email}`;
+
+                const errText = document.createElement('div');
+                errText.style.color = '#f87171';
+                errText.style.fontSize = '14px';
+                errText.style.fontWeight = '500';
+                errText.textContent = err?.message || 'Validation error.';
+
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'primary-btn';
+                retryBtn.textContent = 'Sign Out & Switch Account';
+                retryBtn.onclick = () => window.catalyst.auth.signOut(LOGIN_URL);
+
+                msgEl.append(badge, errText, retryBtn);
+            }
+        });
+    </script>
+</body>
+
+</html>

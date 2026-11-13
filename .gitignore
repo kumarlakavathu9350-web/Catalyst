@@ -4,6 +4,7 @@ node_modules/
 
 # Catalyst build artifacts and logs
 .build/
+.catalyst/
 *.log
 catalyst-debug.log
 
