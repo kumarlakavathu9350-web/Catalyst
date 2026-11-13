@@ -77,6 +77,7 @@ module.exports = async (context, basicIO) => {
 		const appUserTable = datastore.table('App_user');
 		const prTable = datastore.table('Purchase_request');
 		const expenseTable = datastore.table('Expense');
+		const tripTable = datastore.table('Trip');
 
 		const arg = (key) => String(basicIO.getArgument(key) || '').trim();
 		const rawArg = (key) => String(basicIO.getArgument(key) ?? '');
@@ -102,6 +103,10 @@ module.exports = async (context, basicIO) => {
 		const paidBy = arg('Paid_by');
 		const reportNumber = arg('report_number');
 		const tripNumber = arg('trip_number');
+		const tripName = arg('trip_name') || arg('Trip_name');
+		const travelerName = arg('traveler_name') || arg('Traveler_name');
+		const purpose = arg('purpose') || arg('Purpose');
+		const budgetAmount = arg('budget_amount') || arg('Budget_amount');
 
 		if (action === 'validate_app_user') {
 			const requestedEmail = appUserEmail.toLowerCase();
@@ -187,14 +192,25 @@ module.exports = async (context, basicIO) => {
 				message: `Expense Report "${reportNumber}" has been approved successfully.`
 			});
 		} else if (action === 'approve_trip') {
-			if (!tripNumber) throw new Error('trip_number is required to approve a trip.');
-			approvedTrips.add(tripNumber);
-			writeOutput(basicIO, {
-				status: 'Success',
-				trip_number: tripNumber,
-				approval_status: 'approved',
-				message: `Trip Request "${tripNumber}" has been approved successfully.`
-			});
+			if (rowId) {
+				await tripTable.updateRow({ ROWID: rowId, Status: 'approved' });
+				writeOutput(basicIO, {
+					status: 'Success',
+					row_id: rowId,
+					approval_status: 'approved',
+					message: `Trip (ID: ${rowId}) has been approved successfully.`
+				});
+			} else if (tripNumber) {
+				approvedTrips.add(tripNumber);
+				writeOutput(basicIO, {
+					status: 'Success',
+					trip_number: tripNumber,
+					approval_status: 'approved',
+					message: `Trip Request "${tripNumber}" has been approved successfully.`
+				});
+			} else {
+				throw new Error('row_id or trip_number is required to approve a trip.');
+			}
 		} else if (action === 'approve_purchase_request' || action === 'approve_pr') {
 			if (!rowId) throw new Error('row_id is required to approve a purchase request.');
 			approvedPRs.add(String(rowId));
@@ -213,7 +229,7 @@ module.exports = async (context, basicIO) => {
 				approval_status: 'approved',
 				message: `Expense record (ID: ${rowId}) has been approved successfully.`
 			});
-		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user' || action === 'delete_purchase_request' || action === 'delete_pr' || action === 'delete_expense') {
+		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user' || action === 'delete_purchase_request' || action === 'delete_pr' || action === 'delete_expense' || action === 'delete_trip') {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
 			const tableMap = {
 				delete: empTable,
@@ -222,10 +238,26 @@ module.exports = async (context, basicIO) => {
 				delete_app_user: appUserTable,
 				delete_purchase_request: prTable,
 				delete_pr: prTable,
-				delete_expense: expenseTable
+				delete_expense: expenseTable,
+				delete_trip: tripTable
 			};
 			await tableMap[action].deleteRow(rowId);
 			writeOutput(basicIO, { status: 'Success' });
+		} else if (action === 'add_trip' || (tripName && travelerName)) {
+			if (!tripName || !travelerName) {
+				throw new Error('Trip_name and Traveler_name are required.');
+			}
+			const row = {
+				Trip_name: tripName,
+				Traveler_name: travelerName,
+				Purpose: purpose || 'Business Travel & Client Engagement',
+				Status: 'draft'
+			};
+			if (budgetAmount && !isNaN(Number(budgetAmount))) {
+				row.Budget_amount = Number(budgetAmount);
+			}
+			const data = await tripTable.insertRow(row);
+			writeOutput(basicIO, { status: 'Success', data });
 		} else if (action === 'add_expense' || (expenseName && category)) {
 			if (!expenseName || !category) {
 				throw new Error('Expense_name and Category are required.');
@@ -282,12 +314,13 @@ module.exports = async (context, basicIO) => {
 			const data = await empTable.insertRow({ emp_name: name, emp_email: email });
 			writeOutput(basicIO, { status: 'Success', data });
 		} else {
-			const [employees, designations, rawAppUsers, rawPurchaseRequests, rawExpenses] = await Promise.all([
+			const [employees, designations, rawAppUsers, rawPurchaseRequests, rawExpenses, rawTrips] = await Promise.all([
 				fetchAllRows(empTable),
 				fetchAllRows(desigTable),
 				fetchAllRows(appUserTable),
 				fetchAllRows(prTable),
-				fetchAllRows(expenseTable)
+				fetchAllRows(expenseTable),
+				fetchAllRows(tripTable)
 			]);
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
 
@@ -309,6 +342,23 @@ module.exports = async (context, basicIO) => {
 				};
 			});
 
+			const trips = rawTrips.map((item, idx) => {
+				const row = item?.Trip || item;
+				const idStr = String(row.ROWID || '');
+				const currentStatus = String(row.Status || 'draft').toLowerCase();
+				const isApproved = currentStatus === 'approved' || approvedTrips.has(idStr);
+				return {
+					ROWID: row.ROWID,
+					trip_number: `TRIP-${String(idx + 1).padStart(5, '0')}`,
+					trip_name: row.Trip_name || '-',
+					traveler_name: row.Traveler_name || '-',
+					purpose: row.Purpose || '-',
+					budget_amount: row.Budget_amount != null ? Number(row.Budget_amount) : 0,
+					status: isApproved ? 'approved' : currentStatus,
+					CREATEDTIME: row.CREATEDTIME || '-'
+				};
+			});
+
 			const reports = [
 				{ report_number: 'ER-00006', report_name: 'Purchase Requests - Submiter', status: approvedReports.has('ER-00006') ? 'approved' : 'draft', total: 461000.0, submitter_name: 'Submiter', date_range: '13 Nov 2026' },
 				{ report_number: 'ER-00005', report_name: 'Purchase Requests - kumar lakavthu', status: approvedReports.has('ER-00005') ? 'approved' : 'draft', total: 486380.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
@@ -317,13 +367,6 @@ module.exports = async (context, basicIO) => {
 				{ report_number: 'ER-00003', report_name: 'IT & Cloud Infrastructure Operations', status: approvedReports.has('ER-00003') ? 'approved' : 'draft', total: 14699.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
 				{ report_number: 'ER-00002', report_name: 'Client Meeting & Office Operations', status: approvedReports.has('ER-00002') ? 'approved' : 'draft', total: 10679.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
 				{ report_number: 'ER-00001', report_name: 'Business Travel Expense Report', status: approvedReports.has('ER-00001') ? 'approved' : 'draft', total: 9150.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' }
-			];
-
-			const trips = [
-				{ trip_number: 'TRIP-00005', trip_name: 'Hyderabad System Integration & Deployment', traveler_name: 'Submiter', budget_amount: 30000.0, status: approvedTrips.has('TRIP-00005') ? 'approved' : 'draft', purpose: 'Onsite backend system integration & UAT' },
-				{ trip_number: 'TRIP-00006', trip_name: 'Chennai Client UAT & Deployment Trip', traveler_name: 'Submiter', budget_amount: 22000.0, status: approvedTrips.has('TRIP-00006') ? 'approved' : 'draft', purpose: 'Client UAT & Onsite Systems Go-Live' },
-				{ trip_number: 'TRIP-00002', trip_name: 'Bangalore Client Engagement & Tech Summit', traveler_name: 'kumar lakavthu', budget_amount: 25000.0, status: approvedTrips.has('TRIP-00002') ? 'approved' : 'draft', purpose: 'Onsite client consultation and technical workshop' },
-				{ trip_number: 'TRIP-00003', trip_name: 'Mumbai Executive Strategy & Business Review', traveler_name: 'kumar lakavthu', budget_amount: 40000.0, status: approvedTrips.has('TRIP-00003') ? 'approved' : 'draft', purpose: 'Quarterly business roadmap alignment' }
 			];
 
 			const advances = [

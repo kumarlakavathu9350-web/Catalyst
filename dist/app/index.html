@@ -183,10 +183,11 @@
             <p id="reportStatus" class="status-text">Loading reports...</p>
         </section>
 
-        <!-- 7. Trips & Travel Requests (Zoho Expense) -->
+        <!-- 7. Trips & Travel Requests (Zoho Expense & Catalyst Datastore) -->
         <section class="section">
             <div class="header">
                 <h3>Trips &amp; Travel Requests (<strong id="tripCount">0</strong>)</h3>
+                <button id="openTripModalBtn" class="btn btn-primary" type="button">+ Add Trip</button>
             </div>
 
             <div class="table-wrap">
@@ -194,12 +195,14 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>ROW ID</th>
                             <th>Trip #</th>
                             <th>Trip Name</th>
                             <th>Traveler</th>
                             <th>Business Purpose</th>
                             <th>Budget (₹)</th>
                             <th>Status</th>
+                            <th>Created Time</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -378,6 +381,31 @@
             </label>
             <div class="actions">
                 <button type="button" id="closeExpenseModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 6: Add Trip -->
+    <div id="tripModal" class="modal">
+        <form id="tripForm" class="modal-content">
+            <h3>Add Trip Request</h3>
+            <label>Trip Name
+                <input type="text" id="tripNameInput" placeholder="e.g. Hyderabad System Integration Trip" required>
+            </label>
+            <label>Traveler
+                <select id="tripUserSelect" required>
+                    <option value="">-- Select Traveler --</option>
+                </select>
+            </label>
+            <label>Business Purpose
+                <input type="text" id="tripPurposeInput" placeholder="e.g. Client deployment & UAT" required>
+            </label>
+            <label>Budget Amount (₹)
+                <input type="number" id="tripBudgetInput" placeholder="e.g. 30000" step="0.01" required>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeTripModalBtn" class="btn">Cancel</button>
                 <button type="submit" class="btn btn-primary">Submit</button>
             </div>
         </form>

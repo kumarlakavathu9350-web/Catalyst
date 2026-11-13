@@ -15,11 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const appUserModal = $('appUserModal');
     const prModal = $('prModal');
     const expenseModal = $('expenseModal');
+    const tripModal = $('tripModal');
     const empForm = $('empForm');
     const desigForm = $('desigForm');
     const appUserForm = $('appUserForm');
     const prForm = $('prForm');
     const expenseForm = $('expenseForm');
+    const tripForm = $('tripForm');
     const empTableBody = $('empTableBody');
     const desigTableBody = $('desigTableBody');
     const appUserTableBody = $('appUserTableBody');
@@ -50,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const desigEmpSelect = $('desigEmpSelect');
     const prUserSelect = $('prUserSelect');
     const expenseUserSelect = $('expenseUserSelect');
+    const tripUserSelect = $('tripUserSelect');
     const currentUserEl = $('currentUser');
 
     // Modal controls
@@ -63,8 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('closePrModalBtn').onclick = () => { prModal.style.display = 'none'; };
     $('openExpenseModalBtn').onclick = () => { expenseModal.style.display = 'flex'; };
     $('closeExpenseModalBtn').onclick = () => { expenseModal.style.display = 'none'; };
+    $('openTripModalBtn').onclick = () => { tripModal.style.display = 'flex'; };
+    $('closeTripModalBtn').onclick = () => { tripModal.style.display = 'none'; };
     window.onclick = (e) => {
-        if (e.target === empModal || e.target === desigModal || e.target === appUserModal || e.target === prModal || e.target === expenseModal) {
+        if (e.target === empModal || e.target === desigModal || e.target === appUserModal || e.target === prModal || e.target === expenseModal || e.target === tripModal) {
             e.target.style.display = 'none';
         }
     };
@@ -152,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             desigEmpSelect.innerHTML = '<option value="">-- Select Employee --</option>';
             prUserSelect.innerHTML = '<option value="">-- Select Requester --</option>';
             expenseUserSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+            tripUserSelect.innerHTML = '<option value="">-- Select Traveler --</option>';
 
             renderRows(empTableBody, empCount, empStatus, 'No employees found.', employees, (emp, i) => {
                 const r = emp.Emp || emp;
@@ -162,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     desigEmpSelect.add(new Option(`${name} (${email})`, name));
                     prUserSelect.add(new Option(`${name} (${email})`, name));
                     expenseUserSelect.add(new Option(`${name} (${email})`, name));
+                    tripUserSelect.add(new Option(`${name} (${email})`, name));
                 }
                 return {
                     cells: [
@@ -357,38 +364,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 reportTableBody.appendChild(tr);
             });
 
-            // Render Trips with Approve Action
+            // Render Trips with Approve & Delete Actions (Catalyst Datastore)
             const trips = data.trips || [];
             tripCount.textContent = trips.length;
             tripStatus.style.display = trips.length ? 'none' : 'block';
+            tripStatus.textContent = 'No trips found.';
             tripTableBody.innerHTML = '';
             trips.forEach((trItem, i) => {
                 const tr = document.createElement('tr');
+                const rowId = trItem.ROWID || '';
                 const bgt = trItem.budget_amount != null ? `₹${Number(trItem.budget_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
                 const isApproved = trItem.status === 'approved';
                 const badgeCls = `badge badge-${escapeHtml(trItem.status || 'draft')}`;
-                const actionCell = isApproved
-                    ? `<span class="badge badge-approved">✓ Approved</span>`
-                    : `<button class="btn-approve" type="button" data-trip="${escapeHtml(trItem.trip_number)}">Approve</button>`;
+                const approveBtn = !isApproved
+                    ? `<button class="btn-approve btn-approve-trip" type="button" data-id="${escapeHtml(rowId || trItem.trip_number)}">Approve</button> `
+                    : '';
+                const deleteBtn = rowId
+                    ? `<button class="btn-danger btn-del-trip" type="button">Delete</button>`
+                    : '';
 
                 tr.innerHTML = [
                     `<td>${i + 1}</td>`,
+                    `<td><code>${escapeHtml(rowId || '-')}</code></td>`,
                     `<td><code>${escapeHtml(trItem.trip_number || '-')}</code></td>`,
                     `<td><strong>${escapeHtml(trItem.trip_name || '-')}</strong></td>`,
                     `<td>${escapeHtml(trItem.traveler_name || '-')}</td>`,
                     `<td>${escapeHtml(trItem.purpose || '-')}</td>`,
                     `<td>${escapeHtml(bgt)}</td>`,
-                    `<td><span class="${badgeCls}">${escapeHtml(trItem.status || 'draft')}</span></td>`,
-                    `<td>${actionCell}</td>`
+                    `<td><span class="${badgeCls}">${isApproved ? '✓ Approved' : escapeHtml(trItem.status || 'draft')}</span></td>`,
+                    `<td>${escapeHtml(trItem.CREATEDTIME || '-')}</td>`,
+                    `<td>${approveBtn}${deleteBtn}</td>`
                 ].join('');
 
-                const btn = tr.querySelector('.btn-approve');
+                const btn = tr.querySelector('.btn-approve-trip');
                 if (btn) {
                     btn.onclick = async () => {
                         btn.disabled = true;
                         btn.textContent = 'Approving...';
                         try {
-                            const res = await callFunction({ action: 'approve_trip', trip_number: trItem.trip_number });
+                            const res = await callFunction({
+                                action: 'approve_trip',
+                                row_id: rowId || undefined,
+                                trip_number: trItem.trip_number || undefined
+                            });
                             if (res.status !== 'Success') throw new Error(res.message || 'Error');
                             await loadData();
                         } catch (err) {
@@ -398,6 +416,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     };
                 }
+
+                const delBtn = tr.querySelector('.btn-del-trip');
+                if (delBtn && rowId) {
+                    delBtn.onclick = () => deleteRecord('delete_trip', rowId, trItem.trip_name);
+                }
+
                 tripTableBody.appendChild(tr);
             });
 
@@ -535,6 +559,24 @@ document.addEventListener('DOMContentLoaded', () => {
             Paid_by: Paid_by || 'General'
         };
     }, 'add expense');
+
+    bindSubmit(tripForm, tripModal, () => {
+        const Trip_name = $('tripNameInput').value.trim();
+        const Traveler_name = tripUserSelect.value.trim();
+        const Purpose = $('tripPurposeInput').value.trim();
+        const Budget_amount = $('tripBudgetInput').value.trim();
+        if (!Trip_name || !Traveler_name || !Budget_amount) {
+            alert('Please enter Trip Name, Traveler, and Budget Amount.');
+            return null;
+        }
+        return {
+            action: 'add_trip',
+            Trip_name,
+            Traveler_name,
+            Purpose,
+            Budget_amount
+        };
+    }, 'add trip');
 
     async function deleteRecord(action, rowId, label) {
         if (!confirm(`Delete "${label}" (ID: ${rowId})?`)) return;
