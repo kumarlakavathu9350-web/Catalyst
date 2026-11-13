@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Catalyst build artifacts and logs
+.build/
+*.log
+catalyst-debug.log
+
+# Temporary cloned subfolder
+Catalyst/
+
+# Environment files
+.env

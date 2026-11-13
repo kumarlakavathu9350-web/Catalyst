@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee &amp; Designation Management</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="https://static.zohocdn.com/catalyst/sdk/js/4.6.2/catalystWebSDK.js"></script>
+    <script src="/__catalyst/sdk/init.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header top-header">
+            <h2>Employee &amp; Designation Management</h2>
+            <div class="header-actions">
+                <span id="currentUser" class="user-badge"></span>
+                <button id="refreshBtn" class="btn" type="button">Refresh</button>
+                <button id="signOutBtn" class="btn btn-danger sign-out-btn" type="button">Sign Out</button>
+            </div>
+        </header>
+
+        <!-- 1. Employee Directory (Emp) -->
+        <section class="section">
+            <div class="header">
+                <h3>Employees (<strong id="empCount">0</strong>)</h3>
+                <button id="openEmpModalBtn" class="btn btn-primary" type="button">+ Add Employee</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="empTableBody"></tbody>
+                </table>
+            </div>
+            <p id="empStatus" class="status-text">Loading employees...</p>
+        </section>
+
+        <!-- 2. Designation Directory (Designation) -->
+        <section class="section">
+            <div class="header">
+                <h3>Designations (<strong id="desigCount">0</strong>)</h3>
+                <button id="openDesigModalBtn" class="btn btn-primary" type="button">+ Add Designation</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Designation (D_name)</th>
+                            <th>Employee Name</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="desigTableBody"></tbody>
+                </table>
+            </div>
+            <p id="desigStatus" class="status-text">Loading designations...</p>
+        </section>
+
+        <!-- 3. Allowed App Users (App_user) -->
+        <section class="section">
+            <div class="header">
+                <h3>App Users (<strong id="appUserCount">0</strong>)</h3>
+                <button id="openAppUserModalBtn" class="btn btn-primary" type="button">+ Add App User</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ROW ID</th>
+                            <th>Employee Name (Emp_name)</th>
+                            <th>Email (emp_mail)</th>
+                            <th>Password</th>
+                            <th>Created Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appUserTableBody"></tbody>
+                </table>
+            </div>
+            <p id="appUserStatus" class="status-text">Loading app users...</p>
+        </section>
+    </div>
+
+    <!-- Modal 1: Add Employee -->
+    <div id="empModal" class="modal">
+        <form id="empForm" class="modal-content">
+            <h3>Add Employee</h3>
+            <label>Name
+                <input type="text" id="empName" placeholder="John Doe" required>
+            </label>
+            <label>Email
+                <input type="email" id="empEmail" placeholder="john@example.com" required>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeEmpModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 2: Add Designation -->
+    <div id="desigModal" class="modal">
+        <form id="desigForm" class="modal-content">
+            <h3>Add Designation</h3>
+            <label>Designation Name (D_name)
+                <input type="text" id="desigName" placeholder="e.g. Software Engineer" required>
+            </label>
+            <label>Employee Name
+                <select id="desigEmpSelect" required>
+                    <option value="">-- Select Employee --</option>
+                </select>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeDesigModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal 3: Add App User -->
+    <div id="appUserModal" class="modal">
+        <form id="appUserForm" class="modal-content">
+            <h3>Add App User</h3>
+            <label>Employee Name (Emp_name)
+                <input type="text" id="appUserName" placeholder="Kumar" required>
+            </label>
+            <label>Email (emp_mail)
+                <input type="email" id="appUserEmail" placeholder="kumar@example.com" required>
+            </label>
+            <label>Password (emp_password)
+                <input type="password" id="appUserPassword" placeholder="Enter password" required>
+            </label>
+            <div class="actions">
+                <button type="button" id="closeAppUserModalBtn" class="btn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>

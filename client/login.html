@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Employee &amp; Designation Management</title>
+    <script src="https://static.zohocdn.com/catalyst/sdk/js/4.6.2/catalystWebSDK.js"></script>
+    <script src="/__catalyst/sdk/init.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .login-fullscreen {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-banner {
+            flex-shrink: 0;
+            padding: 12px 24px;
+            background: #1e1b4b;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-banner h1 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn,
+        .std-login-link {
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            color: #1e1b4b;
+            border-color: #fff;
+        }
+
+        .auth-stage {
+            flex: 1;
+            min-height: 0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+        }
+
+        .auth-msg {
+            text-align: center;
+            font-size: 14px;
+            color: #475569;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #signInPane,
+        #signUpPane {
+            display: none;
+            width: 100%;
+            max-width: 390px;
+        }
+
+        .auth-card {
+            width: 100%;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 22px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .auth-card h2 {
+            font-size: 18px;
+            color: #0f172a;
+        }
+
+        .auth-card p {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .auth-card label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .auth-card input {
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .primary-btn {
+            padding: 9px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            background: #4f46e5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .feedback-text {
+            font-size: 13px;
+            display: none;
+        }
+
+        .login-id-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="login-fullscreen">
+        <header class="top-banner">
+            <h1>Employee &amp; Designation Management</h1>
+            <div class="top-actions">
+                <button id="signInTabBtn" class="tab-btn active" type="button">Sign In</button>
+                <button id="signUpTabBtn" class="tab-btn" type="button">Sign Up</button>
+                <a class="std-login-link" href="/__catalyst/auth/login">Standard Login</a>
+            </div>
+        </header>
+
+        <section class="auth-stage">
+            <div id="authMsg" class="auth-msg">Checking session...</div>
+
+            <div id="signInPane">
+                <form id="signInForm" class="auth-card">
+                    <h2>Sign In</h2>
+                    <p>Sign in with your <code>App_user</code> email and password.</p>
+                    <label>Email (emp_mail)
+                        <input type="email" id="siEmail" placeholder="kumar@example.com" required>
+                    </label>
+                    <label>Password (emp_password)
+                        <input type="password" id="siPassword" placeholder="Enter password" required>
+                    </label>
+                    <button id="signInSubmitBtn" class="primary-btn" type="submit">Sign In</button>
+                    <p id="signInFeedback" class="feedback-text"></p>
+                    <p style="text-align:center;">
+                        New user? <a href="#" id="switchToSignUp">Sign Up</a> ·
+                        <a href="/__catalyst/auth/login">Standard Login</a>
+                    </p>
+                </form>
+            </div>
+
+            <div id="signUpPane">
+                <form id="signUpForm" class="auth-card">
+                    <h2>Create Account</h2>
+                    <p>Add your details to <code>App_user</code> and set your password.</p>
+                    <label>Employee Name (Emp_name)
+                        <input type="text" id="suName" placeholder="Kumar Lakavathu" required>
+                    </label>
+                    <label>Email (emp_mail)
+                        <input type="email" id="suEmail" placeholder="kumar@example.com" required>
+                    </label>
+                    <label>Password (emp_password)
+                        <input type="password" id="suPassword" placeholder="Create password" required>
+                    </label>
+                    <button id="signUpSubmitBtn" class="primary-btn" type="submit">Sign Up</button>
+                    <p id="signUpFeedback" class="feedback-text"></p>
+                    <p style="text-align:center;">
+                        Already registered? <a href="#" id="switchToSignIn">Sign In</a> ·
+                        <a href="/__catalyst/auth/login">Standard Login</a>
+                    </p>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const LOGIN_URL = '/app/login.html';
+            const APP_URL = '/app/index.html';
+            const SESSION_KEY = 'appUserSession';
+
+            const msgEl = document.getElementById('authMsg');
+            const signInPane = document.getElementById('signInPane');
+            const signUpPane = document.getElementById('signUpPane');
+            const signInTabBtn = document.getElementById('signInTabBtn');
+            const signUpTabBtn = document.getElementById('signUpTabBtn');
+            const signInForm = document.getElementById('signInForm');
+            const signUpForm = document.getElementById('signUpForm');
+            const signInFeedback = document.getElementById('signInFeedback');
+            const signUpFeedback = document.getElementById('signUpFeedback');
+
+            function showFeedback(el, text, isError) {
+                el.style.color = isError ? '#b91c1c' : '#15803d';
+                el.textContent = text;
+                el.style.display = 'block';
+            }
+
+            function openTab(mode) {
+                const isSignUp = mode === 'signup';
+                msgEl.style.display = 'none';
+                signInTabBtn.classList.toggle('active', !isSignUp);
+                signUpTabBtn.classList.toggle('active', isSignUp);
+                signInPane.style.display = isSignUp ? 'none' : 'block';
+                signUpPane.style.display = isSignUp ? 'block' : 'none';
+            }
+
+            async function callManagement(payload) {
+                const res = await fetch('/server/management_function/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const text = await res.text();
+                try {
+                    const raw = JSON.parse(text);
+                    return typeof raw?.output === 'string' ? JSON.parse(raw.output) : raw?.output || raw;
+                } catch {
+                    throw new Error(text || `HTTP ${res.status}`);
+                }
+            }
+
+            signInTabBtn.onclick = () => openTab('signin');
+            signUpTabBtn.onclick = () => openTab('signup');
+            document.getElementById('switchToSignUp').onclick = (e) => {
+                e.preventDefault();
+                openTab('signup');
+            };
+            document.getElementById('switchToSignIn').onclick = (e) => {
+                e.preventDefault();
+                openTab('signin');
+            };
+
+            signInForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const emp_mail = document.getElementById('siEmail').value.trim().toLowerCase();
+                const emp_password = document.getElementById('siPassword').value;
+                const btn = document.getElementById('signInSubmitBtn');
+
+                if (!emp_mail || !emp_password) {
+                    showFeedback(signInFeedback, 'Please enter both email and password.', true);
+                    return;
+                }
+
+                signInFeedback.style.display = 'none';
+                btn.disabled = true;
+                try {
+                    const result = await callManagement({
+                        action: 'validate_app_user',
+                        mode: 'password',
+                        emp_mail,
+                        emp_password
+                    });
+                    if (result?.status !== 'Success' || !result?.allowed || !result?.session_token) {
+                        throw new Error(result?.message || 'Invalid email or password.');
+                    }
+                    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+                        emp_mail: result.email || emp_mail,
+                        Emp_name: result.user?.Emp_name || '',
+                        session_token: result.session_token
+                    }));
+                    window.location.replace(APP_URL);
+                } catch (err) {
+                    showFeedback(signInFeedback, err?.message || 'Sign in failed.', true);
+                } finally {
+                    btn.disabled = false;
+                }
+            };
+
+            signUpForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const Emp_name = document.getElementById('suName').value.trim();
+                const emp_mail = document.getElementById('suEmail').value.trim().toLowerCase();
+                const emp_password = document.getElementById('suPassword').value;
+                const btn = document.getElementById('signUpSubmitBtn');
+
+                if (!Emp_name || !emp_mail || !emp_password) {
+                    showFeedback(signUpFeedback, 'Please fill in name, email, and password.', true);
+                    return;
+                }
+
+                signUpFeedback.style.display = 'none';
+                btn.disabled = true;
+                try {
+                    const result = await callManagement({
+                        action: 'add_app_user',
+                        Emp_name,
+                        emp_mail,
+                        emp_password
+                    });
+                    if (result?.status !== 'Success') {
+                        throw new Error(result?.message || 'Failed to add user to App_user.');
+                    }
+                    signUpForm.reset();
+                    document.getElementById('siEmail').value = emp_mail;
+                    showFeedback(signUpFeedback, `Saved ${emp_mail} to App_user. You can now Sign In.`, false);
+                } catch (err) {
+                    showFeedback(signUpFeedback, err?.message || 'Sign up failed.', true);
+                } finally {
+                    btn.disabled = false;
+                }
+            };
+
+            // 1. Check active App_user password session
+            try {
+                const stored = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+                if (stored?.emp_mail && stored?.session_token) {
+                    const check = await callManagement({
+                        action: 'validate_app_user',
+                        mode: 'session',
+                        emp_mail: stored.emp_mail,
+                        session_token: stored.session_token
+                    });
+                    if (check?.status === 'Success' && check?.allowed) {
+                        window.location.replace(APP_URL);
+                        return;
+                    }
+                    sessionStorage.removeItem(SESSION_KEY);
+                }
+            } catch {
+                sessionStorage.removeItem(SESSION_KEY);
+            }
+
+            // 2. Check Catalyst Standard Login session
+            let auth = null;
+            try {
+                if (window.catalyst?.auth?.isUserAuthenticated) {
+                    auth = await window.catalyst.auth.isUserAuthenticated();
+                }
+            } catch {
+                auth = null;
+            }
+
+            const user = auth?.content || auth?.data || (auth && typeof auth === 'object' ? auth : null);
+            const email = String(user?.email_id || '').trim().toLowerCase();
+            if (!auth || !email) {
+                openTab('signin');
+                return;
+            }
+
+            msgEl.textContent = `Validating Login ID (${email})...`;
+            try {
+                const result = await callManagement({
+                    action: 'validate_app_user',
+                    mode: 'catalyst_auth',
+                    emp_mail: email
+                });
+                if (result?.status === 'Success' && result?.allowed) {
+                    window.location.replace(APP_URL);
+                    return;
+                }
+                throw new Error(result?.message || 'Access denied: this Login ID is not registered in App_user.');
+            } catch (err) {
+                msgEl.innerHTML = '';
+                const badge = document.createElement('span');
+                badge.className = 'login-id-pill';
+                badge.textContent = `Login ID: ${email}`;
+
+                const errText = document.createElement('div');
+                errText.style.color = '#b91c1c';
+                errText.textContent = err?.message || 'Validation error.';
+
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'primary-btn';
+                retryBtn.textContent = 'Sign Out & Switch Account';
+                retryBtn.onclick = () => window.catalyst.auth.signOut(LOGIN_URL);
+
+                msgEl.append(badge, errText, retryBtn);
+            }
+        });
+    </script>
+</body>
+
+</html>

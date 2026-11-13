@@ -1,0 +1,11 @@
+{
+	"name": "management_function",
+	"version": "1.0.0",
+	"main": "index.js",
+	"author": "kumar.r@rcidigital.com",
+	"dependencies": {
+		"@zcatalyst/auth": "latest",
+		"@zcatalyst/cache": "latest",
+		"@zcatalyst/datastore": "^1.0.0"
+	}
+}

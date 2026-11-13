@@ -1,0 +1,7 @@
+{
+    "name": "sampleApp",
+    "version": "0.0.1",
+    "homepage": "login.html",
+    "login_redirect": "index.html",
+    "logout_redirect": "login.html"
+}
