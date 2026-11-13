@@ -150,78 +150,6 @@
             gap: 16px;
         }
 
-        .info-card {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 12px;
-            padding: 16px;
-            color: #e2e8f0;
-            font-size: 13px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-        }
-
-        .info-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            color: #38bdf8;
-            margin-bottom: 8px;
-        }
-
-        .users-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .user-item {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 10px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .user-item-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .user-item-name {
-            font-weight: 600;
-            color: #f1f5f9;
-            font-size: 13px;
-        }
-
-        .user-item-role {
-            font-size: 11px;
-            color: #94a3b8;
-        }
-
-        .use-account-btn {
-            font-size: 11.5px;
-            padding: 4px 10px;
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid rgba(59, 130, 246, 0.4);
-            color: #93c5fd;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            white-space: nowrap;
-        }
-
-        .use-account-btn:hover {
-            background: #2563eb;
-            color: #fff;
-            border-color: #2563eb;
-        }
-
         .auth-card {
             width: 100%;
             background: #ffffff;
@@ -404,32 +332,6 @@
             <div id="authMsg" class="auth-msg" style="display:none;">Checking session...</div>
 
             <div class="auth-container">
-                <!-- Allowed Expense Users Helper Card -->
-                <div class="info-card">
-                    <div class="info-header">
-                        <span>🔒 Authorized Zoho Expense Organization Members</span>
-                    </div>
-                    <p style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
-                        Access is strictly restricted to verified accounts in the KR Tech Solutions Zoho Expense organization. Non-organization accounts cannot sign in or register.
-                    </p>
-                    <div class="users-list">
-                        <div class="user-item">
-                            <div class="user-item-info">
-                                <span class="user-item-name">👑 kumar lakavthu (Admin / Approver)</span>
-                                <span class="user-item-role">kumarlakavthu@gmail.com · Super Admin</span>
-                            </div>
-                            <button type="button" class="use-account-btn" onclick="fillAccount('kumarlakavthu@gmail.com', 'Admin@12345')">Select Admin</button>
-                        </div>
-                        <div class="user-item">
-                            <div class="user-item-info">
-                                <span class="user-item-name">👤 Submiter (Expense Submitter)</span>
-                                <span class="user-item-role">kumar.r@rcidigital.com · Emp # Emp -101</span>
-                            </div>
-                            <button type="button" class="use-account-btn" onclick="fillAccount('kumar.r@rcidigital.com', 'Rukmini@95533')">Select Submitter</button>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Sign In Pane -->
                 <div id="signInPane">
                     <form id="signInForm" class="auth-card">
@@ -440,7 +342,7 @@
 
                         <label>
                             Expense Member Email
-                            <input type="email" id="siEmail" placeholder="e.g. kumarlakavthu@gmail.com" required autocomplete="email">
+                            <input type="email" id="siEmail" placeholder="name@company.com" required autocomplete="email">
                             <span id="siEmailHint" class="validation-hint"></span>
                         </label>
 
@@ -471,12 +373,12 @@
 
                         <label>
                             Full Name
-                            <input type="text" id="suName" placeholder="e.g. kumar lakavthu" required>
+                            <input type="text" id="suName" placeholder="Enter full name" required>
                         </label>
 
                         <label>
                             Authorized Expense Email
-                            <input type="email" id="suEmail" placeholder="e.g. kumarlakavthu@gmail.com" required autocomplete="email">
+                            <input type="email" id="suEmail" placeholder="name@company.com" required autocomplete="email">
                             <span id="suEmailHint" class="validation-hint"></span>
                         </label>
 
@@ -499,15 +401,6 @@
 
     <script>
         const ALLOWED_EMAILS = ['kumarlakavthu@gmail.com', 'kumar.r@rcidigital.com'];
-
-        function fillAccount(email, pwd) {
-            const siEmail = document.getElementById('siEmail');
-            const siPassword = document.getElementById('siPassword');
-            siEmail.value = email;
-            siPassword.value = pwd || '';
-            siEmail.dispatchEvent(new Event('input'));
-            siEmail.focus();
-        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const LOGIN_URL = '/app/login.html';

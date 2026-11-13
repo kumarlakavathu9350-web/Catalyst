@@ -525,10 +525,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentUserEl) {
                 const displayName = check.user?.Emp_name || catalystName;
                 const emailStr = (check.email || activeEmail).toLowerCase();
-                const userRole = emailStr.includes('gmail') ? '👑 Admin / Approver' : '👤 Submitter';
                 currentUserEl.textContent = displayName
-                    ? `${userRole}: ${displayName} (${emailStr})`
-                    : `${userRole}: ${emailStr}`;
+                    ? `Logged in: ${displayName} (${emailStr})`
+                    : `Logged in: ${emailStr}`;
             }
             loadData();
         } catch {
