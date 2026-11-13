@@ -8,8 +8,14 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'zoho-catalyst-mgmt-app-use
 const approvedReports = new Set(['ER-00004', 'ER-00005', 'ER-00006']);
 const approvedTrips = new Set(['TRIP-00002']);
 
+function asciiStringify(obj) {
+	return JSON.stringify(obj).replace(/[\u007F-\uFFFF]/g, (ch) => {
+		return '\\u' + ('0000' + ch.charCodeAt(0).toString(16)).slice(-4);
+	});
+}
+
 function writeOutput(basicIO, payload) {
-	const json = JSON.stringify(payload);
+	const json = asciiStringify(payload);
 	// Local `catalyst serve` Basic I/O emulator truncates each write() call to 1024 chars
 	if (process.env.X_ZOHO_CATALYST_IS_LOCAL === 'true') {
 		for (let i = 0; i < json.length; i += 1024) {
@@ -265,10 +271,10 @@ module.exports = async (context, basicIO) => {
 			];
 
 			const cards = [
-				{ card_id: 'CARD-CORP-001', card_name: 'HDFC Corporate Visa Platinum', card_number: '•••• •••• •••• 4892', card_type: 'Corporate', card_holder: 'kumar lakavthu', limit: 500000.0, available_limit: 412500.0, status: 'active', expiry: '11/29' },
-				{ card_id: 'CARD-CORP-002', card_name: 'ICICI Corporate Business Mastercard', card_number: '•••• •••• •••• 7120', card_type: 'Corporate', card_holder: 'Submiter', limit: 200000.0, available_limit: 165000.0, status: 'active', expiry: '08/28' },
-				{ card_id: 'CARD-PERS-001', card_name: 'Axis Bank Travel & Fuel Card', card_number: '•••• •••• •••• 3041', card_type: 'Personal / Reimbursable', card_holder: 'Submiter', limit: 100000.0, available_limit: 88500.0, status: 'active', expiry: '04/27' },
-				{ card_id: 'CARD-PERS-002', card_name: 'SBI Prime Executive Card', card_number: '•••• •••• •••• 9923', card_type: 'Personal / Reimbursable', card_holder: 'kumar lakavthu', limit: 300000.0, available_limit: 275000.0, status: 'active', expiry: '01/30' }
+				{ card_id: 'CARD-CORP-001', card_name: 'HDFC Corporate Visa Platinum', card_number: '**** **** **** 4892', card_type: 'Corporate', card_holder: 'kumar lakavthu', limit: 500000.0, available_limit: 412500.0, status: 'active', expiry: '11/29' },
+				{ card_id: 'CARD-CORP-002', card_name: 'ICICI Corporate Business Mastercard', card_number: '**** **** **** 7120', card_type: 'Corporate', card_holder: 'Submiter', limit: 200000.0, available_limit: 165000.0, status: 'active', expiry: '08/28' },
+				{ card_id: 'CARD-PERS-001', card_name: 'Axis Bank Travel & Fuel Card', card_number: '**** **** **** 3041', card_type: 'Personal / Reimbursable', card_holder: 'Submiter', limit: 100000.0, available_limit: 88500.0, status: 'active', expiry: '04/27' },
+				{ card_id: 'CARD-PERS-002', card_name: 'SBI Prime Executive Card', card_number: '**** **** **** 9923', card_type: 'Personal / Reimbursable', card_holder: 'kumar lakavthu', limit: 300000.0, available_limit: 275000.0, status: 'active', expiry: '01/30' }
 			];
 
 			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests, expenses, reports, trips, advances, cards });
