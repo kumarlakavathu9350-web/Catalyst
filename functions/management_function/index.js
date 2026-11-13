@@ -4,6 +4,17 @@ const { Datastore } = require('@zcatalyst/datastore');
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'zoho-catalyst-mgmt-app-user-session-v1';
 
+// Strict Authorization: ONLY users registered in Zoho Expense Organization (KR Tech Solutions - 60095930892)
+const ALLOWED_EXPENSE_USERS = [
+	{ email: 'kumarlakavthu@gmail.com', name: 'kumar lakavthu', role: 'Super Admin & Approver', zoho_user_id: '4208449000000034001' },
+	{ email: 'kumar.r@rcidigital.com', name: 'Submiter', role: 'Expense Submitter & Field Engineer', zoho_user_id: '4208449000000037096' }
+];
+const ALLOWED_EXPENSE_EMAILS = ALLOWED_EXPENSE_USERS.map((u) => u.email.toLowerCase());
+
+// Live memory state for approvals within server session
+const approvedReports = new Set(['ER-00004', 'ER-00005', 'ER-00006']);
+const approvedTrips = new Set(['TRIP-00002']);
+
 function writeOutput(basicIO, payload) {
 	const json = JSON.stringify(payload);
 	// Local `catalyst serve` Basic I/O emulator truncates each write() call to 1024 chars
@@ -84,6 +95,8 @@ module.exports = async (context, basicIO) => {
 		const expenseAmount = arg('Expense_amount') || amount;
 		const expenseDate = arg('Expense_date');
 		const paidBy = arg('Paid_by');
+		const reportNumber = arg('report_number');
+		const tripNumber = arg('trip_number');
 
 		if (action === 'validate_app_user') {
 			const requestedEmail = appUserEmail.toLowerCase();
@@ -106,6 +119,14 @@ module.exports = async (context, basicIO) => {
 
 			if (!targetEmail) {
 				writeOutput(basicIO, { status: 'Success', allowed: false, email: '', message: 'Email is required.' });
+			} else if (!ALLOWED_EXPENSE_EMAILS.includes(targetEmail)) {
+				// Strict verification: Reject any user not in Zoho Expense organization
+				writeOutput(basicIO, {
+					status: 'Success',
+					allowed: false,
+					email: targetEmail,
+					message: 'Access denied: Only active Zoho Expense organization members (kumarlakavthu@gmail.com, kumar.r@rcidigital.com) are permitted to sign in.'
+				});
 			} else {
 				const matched = await findAppUserByEmail(appUserTable, targetEmail);
 				if (!matched) {
@@ -145,6 +166,24 @@ module.exports = async (context, basicIO) => {
 					});
 				}
 			}
+		} else if (action === 'approve_report') {
+			if (!reportNumber) throw new Error('report_number is required to approve a report.');
+			approvedReports.add(reportNumber);
+			writeOutput(basicIO, {
+				status: 'Success',
+				report_number: reportNumber,
+				approval_status: 'approved',
+				message: `Expense Report "${reportNumber}" has been approved successfully.`
+			});
+		} else if (action === 'approve_trip') {
+			if (!tripNumber) throw new Error('trip_number is required to approve a trip.');
+			approvedTrips.add(tripNumber);
+			writeOutput(basicIO, {
+				status: 'Success',
+				trip_number: tripNumber,
+				approval_status: 'approved',
+				message: `Trip Request "${tripNumber}" has been approved successfully.`
+			});
 		} else if (action === 'delete' || action === 'delete_emp' || action === 'delete_desig' || action === 'delete_app_user' || action === 'delete_purchase_request' || action === 'delete_pr' || action === 'delete_expense') {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
 			const tableMap = {
@@ -192,6 +231,9 @@ module.exports = async (context, basicIO) => {
 				throw new Error('Emp_name, emp_mail, and emp_password are required.');
 			}
 			const normalizedEmail = appUserEmail.toLowerCase();
+			if (!ALLOWED_EXPENSE_EMAILS.includes(normalizedEmail)) {
+				throw new Error('Access denied: Only active Zoho Expense organization members (kumarlakavthu@gmail.com, kumar.r@rcidigital.com) are permitted to sign up.');
+			}
 			const existing = await findAppUserByEmail(appUserTable, normalizedEmail);
 			if (existing) throw new Error(`"${normalizedEmail}" already exists in App_user.`);
 			const inserted = await appUserTable.insertRow({
@@ -219,20 +261,20 @@ module.exports = async (context, basicIO) => {
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
 
 			const reports = [
-				{ report_number: 'ER-00006', report_name: 'Purchase Requests - Submiter', status: 'approved', total: 461000.0, submitter_name: 'Submiter', date_range: '13 Nov 2026' },
-				{ report_number: 'ER-00005', report_name: 'Purchase Requests - kumar lakavthu', status: 'approved', total: 486380.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
-				{ report_number: 'ER-00004', report_name: 'Client Engagement & Technical Summit 2026', status: 'approved', total: 32269.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
-				{ report_number: 'ER-00007', report_name: 'Submiter - Q4 Cloud Operations & Client Deployment', status: 'draft', total: 0.0, submitter_name: 'Submiter', date_range: '01 Nov - 15 Nov 2026' },
-				{ report_number: 'ER-00003', report_name: 'IT & Cloud Infrastructure Operations', status: 'draft', total: 14699.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
-				{ report_number: 'ER-00002', report_name: 'Client Meeting & Office Operations', status: 'draft', total: 10679.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
-				{ report_number: 'ER-00001', report_name: 'Business Travel Expense Report', status: 'draft', total: 9150.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' }
+				{ report_number: 'ER-00006', report_name: 'Purchase Requests - Submiter', status: approvedReports.has('ER-00006') ? 'approved' : 'draft', total: 461000.0, submitter_name: 'Submiter', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00005', report_name: 'Purchase Requests - kumar lakavthu', status: approvedReports.has('ER-00005') ? 'approved' : 'draft', total: 486380.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00004', report_name: 'Client Engagement & Technical Summit 2026', status: approvedReports.has('ER-00004') ? 'approved' : 'draft', total: 32269.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00007', report_name: 'Submiter - Q4 Cloud Operations & Client Deployment', status: approvedReports.has('ER-00007') ? 'approved' : 'draft', total: 0.0, submitter_name: 'Submiter', date_range: '01 Nov - 15 Nov 2026' },
+				{ report_number: 'ER-00003', report_name: 'IT & Cloud Infrastructure Operations', status: approvedReports.has('ER-00003') ? 'approved' : 'draft', total: 14699.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00002', report_name: 'Client Meeting & Office Operations', status: approvedReports.has('ER-00002') ? 'approved' : 'draft', total: 10679.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' },
+				{ report_number: 'ER-00001', report_name: 'Business Travel Expense Report', status: approvedReports.has('ER-00001') ? 'approved' : 'draft', total: 9150.0, submitter_name: 'kumar lakavthu', date_range: '13 Nov 2026' }
 			];
 
 			const trips = [
-				{ trip_number: 'TRIP-00005', trip_name: 'Hyderabad System Integration & Deployment', traveler_name: 'Submiter', budget_amount: 30000.0, status: 'draft', purpose: 'Onsite backend system integration & UAT' },
-				{ trip_number: 'TRIP-00006', trip_name: 'Chennai Client UAT & Deployment Trip', traveler_name: 'Submiter', budget_amount: 22000.0, status: 'draft', purpose: 'Client UAT & Onsite Systems Go-Live' },
-				{ trip_number: 'TRIP-00002', trip_name: 'Bangalore Client Engagement & Tech Summit', traveler_name: 'kumar lakavthu', budget_amount: 25000.0, status: 'draft', purpose: 'Onsite client consultation and technical workshop' },
-				{ trip_number: 'TRIP-00003', trip_name: 'Mumbai Executive Strategy & Business Review', traveler_name: 'kumar lakavthu', budget_amount: 40000.0, status: 'draft', purpose: 'Quarterly business roadmap alignment' }
+				{ trip_number: 'TRIP-00005', trip_name: 'Hyderabad System Integration & Deployment', traveler_name: 'Submiter', budget_amount: 30000.0, status: approvedTrips.has('TRIP-00005') ? 'approved' : 'draft', purpose: 'Onsite backend system integration & UAT' },
+				{ trip_number: 'TRIP-00006', trip_name: 'Chennai Client UAT & Deployment Trip', traveler_name: 'Submiter', budget_amount: 22000.0, status: approvedTrips.has('TRIP-00006') ? 'approved' : 'draft', purpose: 'Client UAT & Onsite Systems Go-Live' },
+				{ trip_number: 'TRIP-00002', trip_name: 'Bangalore Client Engagement & Tech Summit', traveler_name: 'kumar lakavthu', budget_amount: 25000.0, status: approvedTrips.has('TRIP-00002') ? 'approved' : 'draft', purpose: 'Onsite client consultation and technical workshop' },
+				{ trip_number: 'TRIP-00003', trip_name: 'Mumbai Executive Strategy & Business Review', traveler_name: 'kumar lakavthu', budget_amount: 40000.0, status: approvedTrips.has('TRIP-00003') ? 'approved' : 'draft', purpose: 'Quarterly business roadmap alignment' }
 			];
 
 			const advances = [
@@ -240,7 +282,14 @@ module.exports = async (context, basicIO) => {
 				{ advance_id: '4208449000000034335', user_name: 'Submiter', amount: 7500.0, account_name: 'Petty Cash', status: 'approved', notes: 'Field Research & Testing Equipment' }
 			];
 
-			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests, expenses, reports, trips, advances });
+			const cards = [
+				{ card_id: 'CARD-CORP-001', card_name: 'HDFC Corporate Visa Platinum', card_number: '•••• •••• •••• 4892', card_type: 'Corporate', card_holder: 'kumar lakavthu', limit: 500000.0, available_limit: 412500.0, status: 'active', expiry: '11/29' },
+				{ card_id: 'CARD-CORP-002', card_name: 'ICICI Corporate Business Mastercard', card_number: '•••• •••• •••• 7120', card_type: 'Corporate', card_holder: 'Submiter', limit: 200000.0, available_limit: 165000.0, status: 'active', expiry: '08/28' },
+				{ card_id: 'CARD-PERS-001', card_name: 'Axis Bank Travel & Fuel Card', card_number: '•••• •••• •••• 3041', card_type: 'Personal / Reimbursable', card_holder: 'Submiter', limit: 100000.0, available_limit: 88500.0, status: 'active', expiry: '04/27' },
+				{ card_id: 'CARD-PERS-002', card_name: 'SBI Prime Executive Card', card_number: '•••• •••• •••• 9923', card_type: 'Personal / Reimbursable', card_holder: 'kumar lakavthu', limit: 300000.0, available_limit: 275000.0, status: 'active', expiry: '01/30' }
+			];
+
+			writeOutput(basicIO, { status: 'Success', employees, designations, appUsers, purchaseRequests, expenses, reports, trips, advances, cards });
 		}
 	} catch (e) {
 		console.error(`Error in management_function: ${e.message || e}`);

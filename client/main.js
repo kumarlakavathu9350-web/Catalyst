@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportTableBody = $('reportTableBody');
     const tripTableBody = $('tripTableBody');
     const advanceTableBody = $('advanceTableBody');
+    const cardTableBody = $('cardTableBody');
     const empStatus = $('empStatus');
     const desigStatus = $('desigStatus');
     const appUserStatus = $('appUserStatus');
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportStatus = $('reportStatus');
     const tripStatus = $('tripStatus');
     const advanceStatus = $('advanceStatus');
+    const cardStatus = $('cardStatus');
     const empCount = $('empCount');
     const desigCount = $('desigCount');
     const appUserCount = $('appUserCount');
@@ -36,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportCount = $('reportCount');
     const tripCount = $('tripCount');
     const advanceCount = $('advanceCount');
+    const cardCount = $('cardCount');
     const desigEmpSelect = $('desigEmpSelect');
     const prUserSelect = $('prUserSelect');
     const expenseUserSelect = $('expenseUserSelect');
@@ -116,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadData() {
-        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = expenseStatus.style.display = reportStatus.style.display = tripStatus.style.display = advanceStatus.style.display = 'block';
+        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = expenseStatus.style.display = reportStatus.style.display = tripStatus.style.display = advanceStatus.style.display = cardStatus.style.display = 'block';
         empStatus.textContent = 'Loading employees...';
         desigStatus.textContent = 'Loading designations...';
         appUserStatus.textContent = 'Loading app users...';
@@ -125,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportStatus.textContent = 'Loading expense reports...';
         tripStatus.textContent = 'Loading trips...';
         advanceStatus.textContent = 'Loading advances...';
+        cardStatus.textContent = 'Loading cards...';
 
         try {
             const data = await callFunction({ action: 'getAll' });
@@ -240,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
 
-            // Render Reports
+            // Render Reports with Approve Action
             const reports = data.reports || [];
             reportCount.textContent = reports.length;
             reportStatus.style.display = reports.length ? 'none' : 'block';
@@ -248,7 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
             reports.forEach((rep, i) => {
                 const tr = document.createElement('tr');
                 const amt = rep.total != null ? `₹${Number(rep.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                const isApproved = rep.status === 'approved';
                 const badgeCls = `badge badge-${escapeHtml(rep.status || 'draft')}`;
+                const actionCell = isApproved
+                    ? `<span class="badge badge-approved">✓ Approved</span>`
+                    : `<button class="btn-approve" type="button" data-report="${escapeHtml(rep.report_number)}">Approve</button>`;
+
                 tr.innerHTML = [
                     `<td>${i + 1}</td>`,
                     `<td><code>${escapeHtml(rep.report_number || '-')}</code></td>`,
@@ -256,12 +265,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     `<td>${escapeHtml(rep.submitter_name || '-')}</td>`,
                     `<td>${escapeHtml(rep.date_range || '-')}</td>`,
                     `<td>${escapeHtml(amt)}</td>`,
-                    `<td><span class="${badgeCls}">${escapeHtml(rep.status || 'draft')}</span></td>`
+                    `<td><span class="${badgeCls}">${escapeHtml(rep.status || 'draft')}</span></td>`,
+                    `<td>${actionCell}</td>`
                 ].join('');
+
+                const btn = tr.querySelector('.btn-approve');
+                if (btn) {
+                    btn.onclick = async () => {
+                        btn.disabled = true;
+                        btn.textContent = 'Approving...';
+                        try {
+                            const res = await callFunction({ action: 'approve_report', report_number: rep.report_number });
+                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                            await loadData();
+                        } catch (err) {
+                            alert('Failed to approve report: ' + (err.message || 'Error'));
+                            btn.disabled = false;
+                            btn.textContent = 'Approve';
+                        }
+                    };
+                }
                 reportTableBody.appendChild(tr);
             });
 
-            // Render Trips
+            // Render Trips with Approve Action
             const trips = data.trips || [];
             tripCount.textContent = trips.length;
             tripStatus.style.display = trips.length ? 'none' : 'block';
@@ -269,7 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
             trips.forEach((trItem, i) => {
                 const tr = document.createElement('tr');
                 const bgt = trItem.budget_amount != null ? `₹${Number(trItem.budget_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                const isApproved = trItem.status === 'approved';
                 const badgeCls = `badge badge-${escapeHtml(trItem.status || 'draft')}`;
+                const actionCell = isApproved
+                    ? `<span class="badge badge-approved">✓ Approved</span>`
+                    : `<button class="btn-approve" type="button" data-trip="${escapeHtml(trItem.trip_number)}">Approve</button>`;
+
                 tr.innerHTML = [
                     `<td>${i + 1}</td>`,
                     `<td><code>${escapeHtml(trItem.trip_number || '-')}</code></td>`,
@@ -277,8 +309,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     `<td>${escapeHtml(trItem.traveler_name || '-')}</td>`,
                     `<td>${escapeHtml(trItem.purpose || '-')}</td>`,
                     `<td>${escapeHtml(bgt)}</td>`,
-                    `<td><span class="${badgeCls}">${escapeHtml(trItem.status || 'draft')}</span></td>`
+                    `<td><span class="${badgeCls}">${escapeHtml(trItem.status || 'draft')}</span></td>`,
+                    `<td>${actionCell}</td>`
                 ].join('');
+
+                const btn = tr.querySelector('.btn-approve');
+                if (btn) {
+                    btn.onclick = async () => {
+                        btn.disabled = true;
+                        btn.textContent = 'Approving...';
+                        try {
+                            const res = await callFunction({ action: 'approve_trip', trip_number: trItem.trip_number });
+                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                            await loadData();
+                        } catch (err) {
+                            alert('Failed to approve trip: ' + (err.message || 'Error'));
+                            btn.disabled = false;
+                            btn.textContent = 'Approve';
+                        }
+                    };
+                }
                 tripTableBody.appendChild(tr);
             });
 
@@ -302,8 +352,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 ].join('');
                 advanceTableBody.appendChild(tr);
             });
+
+            // Render Corporate & Personal Cards
+            const cards = data.cards || [];
+            cardCount.textContent = cards.length;
+            cardStatus.style.display = cards.length ? 'none' : 'block';
+            cardTableBody.innerHTML = '';
+            cards.forEach((c, i) => {
+                const tr = document.createElement('tr');
+                const limit = c.limit != null ? `₹${Number(c.limit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                const avail = c.available_limit != null ? `₹${Number(c.available_limit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+                const typeBadge = c.card_type === 'Corporate' ? 'badge badge-corporate' : 'badge badge-personal';
+                tr.innerHTML = [
+                    `<td>${i + 1}</td>`,
+                    `<td><code>${escapeHtml(c.card_id || '-')}</code></td>`,
+                    `<td><strong>${escapeHtml(c.card_name || '-')}</strong></td>`,
+                    `<td><code>${escapeHtml(c.card_number || '-')}</code></td>`,
+                    `<td><span class="${typeBadge}">${escapeHtml(c.card_type || 'Corporate')}</span></td>`,
+                    `<td>${escapeHtml(c.card_holder || '-')}</td>`,
+                    `<td>${escapeHtml(limit)}</td>`,
+                    `<td>${escapeHtml(avail)}</td>`,
+                    `<td><span class="badge badge-active">${escapeHtml(c.status || 'active')}</span></td>`
+                ].join('');
+                cardTableBody.appendChild(tr);
+            });
         } catch (err) {
-            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent = expenseStatus.textContent = reportStatus.textContent = tripStatus.textContent = advanceStatus.textContent =
+            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent = expenseStatus.textContent = reportStatus.textContent = tripStatus.textContent = advanceStatus.textContent = cardStatus.textContent =
                 'Error: ' + (err.message || 'Unable to load records');
         }
     }
@@ -442,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!check || check.status !== 'Success' || !check.allowed) {
                 if (activeEmail) {
-                    alert(`Access denied: Login ID "${activeEmail}" could not be verified in App_user.`);
+                    alert(`Access denied: "${activeEmail}" is not an authorized Zoho Expense organization member.`);
                 }
                 await signOutToLogin();
                 return;
@@ -450,9 +524,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (currentUserEl) {
                 const displayName = check.user?.Emp_name || catalystName;
+                const emailStr = (check.email || activeEmail).toLowerCase();
+                const userRole = emailStr.includes('gmail') ? '👑 Admin / Approver' : '👤 Submitter';
                 currentUserEl.textContent = displayName
-                    ? `Login ID: ${displayName} (${check.email || activeEmail})`
-                    : `Login ID: ${check.email || activeEmail}`;
+                    ? `${userRole}: ${displayName} (${emailStr})`
+                    : `${userRole}: ${emailStr}`;
             }
             loadData();
         } catch {

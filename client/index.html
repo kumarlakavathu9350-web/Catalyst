@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee &amp; Designation Management</title>
+    <title>KR Tech Solutions - Zoho Expense &amp; Operations Portal</title>
     <link rel="stylesheet" href="main.css">
     <script src="https://static.zohocdn.com/catalyst/sdk/js/4.6.2/catalystWebSDK.js"></script>
     <script src="/__catalyst/sdk/init.js"></script>
@@ -13,7 +13,10 @@
 <body>
     <div class="container">
         <header class="header top-header">
-            <h2>Employee &amp; Designation Management</h2>
+            <div>
+                <h2>KR Tech Solutions · Zoho Expense &amp; Operations Portal</h2>
+                <span style="font-size: 12px; color: #64748b;">Zoho Expense Organization: <strong>KR Tech Solutions (60095930892)</strong></span>
+            </div>
             <div class="header-actions">
                 <span id="currentUser" class="user-badge"></span>
                 <button id="refreshBtn" class="btn" type="button">Refresh</button>
@@ -169,6 +172,7 @@
                             <th>Date Range</th>
                             <th>Total Amount (₹)</th>
                             <th>Approval Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody"></tbody>
@@ -194,6 +198,7 @@
                             <th>Business Purpose</th>
                             <th>Budget (₹)</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="tripTableBody"></tbody>
@@ -225,6 +230,33 @@
                 </table>
             </div>
             <p id="advanceStatus" class="status-text">Loading advances...</p>
+        </section>
+
+        <!-- 9. Corporate & Personal Cards (Cards) -->
+        <section class="section">
+            <div class="header">
+                <h3>Corporate &amp; Personal Cards (<strong id="cardCount">0</strong>)</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Card ID</th>
+                            <th>Card Name</th>
+                            <th>Card Number</th>
+                            <th>Type</th>
+                            <th>Card Holder</th>
+                            <th>Limit (₹)</th>
+                            <th>Available Limit (₹)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cardTableBody"></tbody>
+                </table>
+            </div>
+            <p id="cardStatus" class="status-text">Loading cards...</p>
         </section>
     </div>
 
