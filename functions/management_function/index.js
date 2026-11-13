@@ -4,13 +4,6 @@ const { Datastore } = require('@zcatalyst/datastore');
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'zoho-catalyst-mgmt-app-user-session-v1';
 
-// Strict Authorization: ONLY users registered in Zoho Expense Organization (KR Tech Solutions - 60095930892)
-const ALLOWED_EXPENSE_USERS = [
-	{ email: 'kumarlakavthu@gmail.com', name: 'kumar lakavthu', role: 'Super Admin & Approver', zoho_user_id: '4208449000000034001' },
-	{ email: 'kumar.r@rcidigital.com', name: 'Submiter', role: 'Expense Submitter & Field Engineer', zoho_user_id: '4208449000000037096' }
-];
-const ALLOWED_EXPENSE_EMAILS = ALLOWED_EXPENSE_USERS.map((u) => u.email.toLowerCase());
-
 // Live memory state for approvals within server session
 const approvedReports = new Set(['ER-00004', 'ER-00005', 'ER-00006']);
 const approvedTrips = new Set(['TRIP-00002']);
@@ -119,14 +112,6 @@ module.exports = async (context, basicIO) => {
 
 			if (!targetEmail) {
 				writeOutput(basicIO, { status: 'Success', allowed: false, email: '', message: 'Email is required.' });
-			} else if (!ALLOWED_EXPENSE_EMAILS.includes(targetEmail)) {
-				// Strict verification: Reject any user not in Zoho Expense organization
-				writeOutput(basicIO, {
-					status: 'Success',
-					allowed: false,
-					email: targetEmail,
-					message: 'Access denied: Only active Zoho Expense organization members (kumarlakavthu@gmail.com, kumar.r@rcidigital.com) are permitted to sign in.'
-				});
 			} else {
 				const matched = await findAppUserByEmail(appUserTable, targetEmail);
 				if (!matched) {
@@ -134,7 +119,7 @@ module.exports = async (context, basicIO) => {
 						status: 'Success',
 						allowed: false,
 						email: targetEmail,
-						message: 'This Login ID is not registered in App_user.'
+						message: 'This account is not registered. Please sign up or contact your administrator.'
 					});
 				} else if (effectiveMode === 'password') {
 					const storedPassword = String(matched.emp_password ?? '');
@@ -231,9 +216,6 @@ module.exports = async (context, basicIO) => {
 				throw new Error('Emp_name, emp_mail, and emp_password are required.');
 			}
 			const normalizedEmail = appUserEmail.toLowerCase();
-			if (!ALLOWED_EXPENSE_EMAILS.includes(normalizedEmail)) {
-				throw new Error('Access denied: Only active Zoho Expense organization members (kumarlakavthu@gmail.com, kumar.r@rcidigital.com) are permitted to sign up.');
-			}
 			const existing = await findAppUserByEmail(appUserTable, normalizedEmail);
 			if (existing) throw new Error(`"${normalizedEmail}" already exists in App_user.`);
 			const inserted = await appUserTable.insertRow({

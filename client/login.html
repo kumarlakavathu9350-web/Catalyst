@@ -321,7 +321,6 @@
                 </div>
             </div>
             <div class="top-actions">
-                <span class="org-pill">🏢 Org: 60095930892 (KR Tech Solutions)</span>
                 <button id="signInTabBtn" class="tab-btn active" type="button">Sign In</button>
                 <button id="signUpTabBtn" class="tab-btn" type="button">Sign Up</button>
                 <a class="std-login-link" href="/__catalyst/auth/login">Standard Login</a>
@@ -336,19 +335,22 @@
                 <div id="signInPane">
                     <form id="signInForm" class="auth-card">
                         <h2>Sign In to Portal</h2>
-                        <p class="subtext">Enter your authorized Zoho Expense member email and password to access reports, trips, and expenses.</p>
+                        <p class="subtext">Enter your authorized Zoho Expense member email and password to access
+                            reports, trips, and expenses.</p>
 
                         <div id="signInFeedback" class="feedback-banner"></div>
 
                         <label>
                             Expense Member Email
-                            <input type="email" id="siEmail" placeholder="name@company.com" required autocomplete="email">
+                            <input type="email" id="siEmail" placeholder="name@company.com" required
+                                autocomplete="email">
                             <span id="siEmailHint" class="validation-hint"></span>
                         </label>
 
                         <label>
                             Password
-                            <input type="password" id="siPassword" placeholder="Enter your password" required autocomplete="current-password">
+                            <input type="password" id="siPassword" placeholder="Enter your password" required
+                                autocomplete="current-password">
                         </label>
 
                         <button id="signInSubmitBtn" class="primary-btn" type="submit">Sign In to Dashboard</button>
@@ -367,7 +369,8 @@
                 <div id="signUpPane" style="display: none;">
                     <form id="signUpForm" class="auth-card">
                         <h2>Register Expense Account</h2>
-                        <p class="subtext">Register your profile in Catalyst. Only pre-authorized Zoho Expense emails are permitted.</p>
+                        <p class="subtext">Register your profile in Catalyst. Only pre-authorized Zoho Expense emails
+                            are permitted.</p>
 
                         <div id="signUpFeedback" class="feedback-banner"></div>
 
@@ -378,13 +381,15 @@
 
                         <label>
                             Authorized Expense Email
-                            <input type="email" id="suEmail" placeholder="name@company.com" required autocomplete="email">
+                            <input type="email" id="suEmail" placeholder="name@company.com" required
+                                autocomplete="email">
                             <span id="suEmailHint" class="validation-hint"></span>
                         </label>
 
                         <label>
                             Set Password
-                            <input type="password" id="suPassword" placeholder="Create a secure password" required autocomplete="new-password">
+                            <input type="password" id="suPassword" placeholder="Create a secure password" required
+                                autocomplete="new-password">
                         </label>
 
                         <button id="signUpSubmitBtn" class="primary-btn" type="submit">Create Expense Account</button>
@@ -400,8 +405,6 @@
     </main>
 
     <script>
-        const ALLOWED_EMAILS = ['kumarlakavthu@gmail.com', 'kumar.r@rcidigital.com'];
-
         document.addEventListener('DOMContentLoaded', async () => {
             const LOGIN_URL = '/app/login.html';
             const APP_URL = '/app/index.html';
@@ -434,7 +437,7 @@
             }
 
             function validateEmailInput(input, hintEl, submitBtn) {
-                const val = input.value.trim().toLowerCase();
+                const val = input.value.trim();
                 if (!val) {
                     input.className = '';
                     hintEl.className = 'validation-hint';
@@ -442,15 +445,16 @@
                     if (submitBtn) submitBtn.disabled = false;
                     return;
                 }
-                if (ALLOWED_EMAILS.includes(val)) {
+                const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+                if (isValidFormat) {
                     input.className = 'input-valid';
                     hintEl.className = 'validation-hint valid';
-                    hintEl.textContent = '✓ Verified Zoho Expense organization member';
+                    hintEl.textContent = '✓ Valid email format';
                     if (submitBtn) submitBtn.disabled = false;
                 } else {
                     input.className = 'input-invalid';
                     hintEl.className = 'validation-hint invalid';
-                    hintEl.textContent = '✕ Access denied: Not an authorized Zoho Expense user for KR Tech Solutions';
+                    hintEl.textContent = '✕ Please enter a valid email address';
                     if (submitBtn) submitBtn.disabled = true;
                 }
             }
@@ -500,11 +504,6 @@
                 const emp_mail = siEmailInput.value.trim().toLowerCase();
                 const emp_password = document.getElementById('siPassword').value;
 
-                if (!ALLOWED_EMAILS.includes(emp_mail)) {
-                    showFeedback(signInFeedback, 'Access restricted: Only authorized Zoho Expense organization members are permitted to sign in.', true);
-                    return;
-                }
-
                 if (!emp_mail || !emp_password) {
                     showFeedback(signInFeedback, 'Please enter both email and password.', true);
                     return;
@@ -512,7 +511,7 @@
 
                 clearFeedback(signInFeedback);
                 signInSubmitBtn.disabled = true;
-                signInSubmitBtn.textContent = 'Verifying with Zoho Expense...';
+                signInSubmitBtn.textContent = 'Signing in...';
 
                 try {
                     const result = await callManagement({
@@ -544,11 +543,6 @@
                 const emp_mail = suEmailInput.value.trim().toLowerCase();
                 const emp_password = document.getElementById('suPassword').value;
 
-                if (!ALLOWED_EMAILS.includes(emp_mail)) {
-                    showFeedback(signUpFeedback, 'Access restricted: Only authorized Zoho Expense organization members can register.', true);
-                    return;
-                }
-
                 if (!Emp_name || !emp_mail || !emp_password) {
                     showFeedback(signUpFeedback, 'Please fill in name, email, and password.', true);
                     return;
@@ -566,7 +560,7 @@
                         emp_password
                     });
                     if (result?.status !== 'Success') {
-                        throw new Error(result?.message || 'Failed to add user to App_user.');
+                        throw new Error(result?.message || 'Failed to register account.');
                     }
                     signUpForm.reset();
                     suEmailHint.className = 'validation-hint';
@@ -585,17 +579,15 @@
             try {
                 const stored = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
                 if (stored?.emp_mail && stored?.session_token) {
-                    if (ALLOWED_EMAILS.includes(stored.emp_mail.toLowerCase())) {
-                        const check = await callManagement({
-                            action: 'validate_app_user',
-                            mode: 'session',
-                            emp_mail: stored.emp_mail,
-                            session_token: stored.session_token
-                        });
-                        if (check?.status === 'Success' && check?.allowed) {
-                            window.location.replace(APP_URL);
-                            return;
-                        }
+                    const check = await callManagement({
+                        action: 'validate_app_user',
+                        mode: 'session',
+                        emp_mail: stored.emp_mail,
+                        session_token: stored.session_token
+                    });
+                    if (check?.status === 'Success' && check?.allowed) {
+                        window.location.replace(APP_URL);
+                        return;
                     }
                     sessionStorage.removeItem(SESSION_KEY);
                 }
@@ -621,7 +613,7 @@
             }
 
             msgEl.style.display = 'flex';
-            msgEl.textContent = `Validating Zoho Expense Member (${email})...`;
+            msgEl.textContent = `Validating member session (${email})...`;
             try {
                 const result = await callManagement({
                     action: 'validate_app_user',
@@ -632,7 +624,7 @@
                     window.location.replace(APP_URL);
                     return;
                 }
-                throw new Error(result?.message || 'Access denied: This email is not an authorized Zoho Expense organization member.');
+                throw new Error(result?.message || 'Access denied: This user account is not registered in the system.');
             } catch (err) {
                 msgEl.innerHTML = '';
                 const badge = document.createElement('span');
