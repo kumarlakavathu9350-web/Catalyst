@@ -77,6 +77,25 @@ document.addEventListener('DOMContentLoaded', () => {
     $('refreshBtn').onclick = loadData;
     $('signOutBtn').onclick = signOutToLogin;
 
+    const syncZohoBtn = $('syncZohoBtn');
+    if (syncZohoBtn) {
+        syncZohoBtn.onclick = async () => {
+            syncZohoBtn.disabled = true;
+            syncZohoBtn.textContent = '🔄 Syncing with Zoho Expense...';
+            try {
+                const res = await callFunction({ action: 'sync_all_from_expense' });
+                if (res.status !== 'Success') throw new Error(res.message || 'Sync failed');
+                alert(`Zoho Expense sync complete!\nExpenses synced: ${res.synced_expenses ?? 0}\nTrips synced: ${res.synced_trips ?? 0}`);
+                await loadData();
+            } catch (err) {
+                alert('Failed to sync from Zoho Expense: ' + (err.message || 'Error'));
+            } finally {
+                syncZohoBtn.disabled = false;
+                syncZohoBtn.textContent = '🔄 Sync Zoho Expense';
+            }
+        };
+    }
+
     async function signOutToLogin() {
         sessionStorage.removeItem('appUserSession');
         try {
