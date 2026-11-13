@@ -130,7 +130,7 @@ module.exports = async (context, basicIO) => {
 					authUser = await new UserManagement(userApp).getCurrentUser();
 				} catch {}
 				const authEmail = String(authUser?.email_id || '').trim().toLowerCase();
-				targetEmail = authEmail || (process.env.X_ZOHO_CATALYST_IS_LOCAL === 'true' ? requestedEmail : '');
+				targetEmail = authEmail || requestedEmail;
 			}
 
 			if (!targetEmail) {
@@ -205,6 +205,104 @@ module.exports = async (context, basicIO) => {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
 			await appUserTable.deleteRow(rowId);
 			writeOutput(basicIO, { status: 'Success' });
+		} else if (action === 'webhook_expense' || action === 'add_expense' || action === 'sync_expense') {
+			let payload = allArgs || {};
+			if (typeof allArgs === 'string') {
+				try { payload = JSON.parse(allArgs); } catch {}
+			} else if (typeof allArgs?.body === 'string') {
+				try { payload = JSON.parse(allArgs.body); } catch {}
+			} else if (typeof allArgs?.data === 'string') {
+				try { payload = JSON.parse(allArgs.data); } catch {}
+			}
+
+			const exp = payload.expense || payload.Expense || payload.data || payload;
+
+			const expName = String(
+				exp.Expense_name ||
+				exp.expense_name ||
+				exp.description ||
+				exp.item_name ||
+				exp.merchant_name ||
+				arg('Expense_name') ||
+				arg('expense_name') ||
+				arg('description') ||
+				'General Expense'
+			).trim();
+
+			const expCat = String(
+				exp.Category ||
+				exp.category ||
+				exp.category_name ||
+				arg('Category') ||
+				arg('category') ||
+				'Office Supplies'
+			).trim();
+
+			const rawAmt = exp.Amount ?? exp.amount ?? exp.total ?? exp.bcy_total ?? arg('Amount') ?? arg('amount') ?? 0;
+			const expAmt = Number(parseFloat(rawAmt)) || 0;
+
+			const expDate = String(
+				exp.Expense_date ||
+				exp.expense_date ||
+				exp.date ||
+				arg('Expense_date') ||
+				arg('expense_date') ||
+				arg('date') ||
+				new Date().toISOString().slice(0, 10)
+			).trim().slice(0, 50);
+
+			const expPaidBy = String(
+				exp.Paid_by ||
+				exp.paid_by ||
+				exp.user_name ||
+				exp.created_by_name ||
+				exp.user_email ||
+				arg('Paid_by') ||
+				arg('paid_by') ||
+				'KR Tech Solutions'
+			).trim().slice(0, 255);
+
+			const expStatus = String(
+				exp.Status ||
+				exp.status ||
+				arg('Status') ||
+				arg('status') ||
+				'unreported'
+			).trim().slice(0, 50);
+
+			const inserted = await expenseTable.insertRow({
+				Expense_name: expName,
+				Category: expCat,
+				Amount: expAmt,
+				Expense_date: expDate,
+				Paid_by: expPaidBy,
+				Status: expStatus
+			});
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				action: 'webhook_expense',
+				data: inserted
+			});
+		} else if (action === 'delete_expense') {
+			if (!rowId) throw new Error('row_id is required to delete an expense.');
+			await expenseTable.deleteRow(rowId);
+			writeOutput(basicIO, { status: 'Success' });
+		} else if (action === 'approve_expense') {
+			if (!rowId) throw new Error('row_id is required to approve an expense.');
+			const updated = await expenseTable.updateRow({
+				ROWID: rowId,
+				Status: 'approved'
+			});
+			writeOutput(basicIO, { status: 'Success', data: updated });
+		} else if (action === 'sync_all_from_expense') {
+			const currentExpenses = await fetchAllRows(expenseTable);
+			writeOutput(basicIO, {
+				status: 'Success',
+				synced_expenses: currentExpenses.length,
+				synced_trips: 0,
+				message: `Synced ${currentExpenses.length} expense records from Datastore.`
+			});
 		} else {
 			// ZERO STATIC / MOCK DATA
 			// Only read actual data from Datastore

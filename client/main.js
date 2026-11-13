@@ -247,10 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const vendor = r.Preferred_vendor || '-';
                 const reqBy = r.Requested_by || '-';
                 const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const isApproved = r.approval_status === 'approved';
+                const rawStatus = String(r.Status || r.approval_status || 'unreported').toLowerCase();
+                const isApproved = rawStatus === 'approved';
                 const statusBadge = isApproved
                     ? `<span class="badge badge-approved">✓ Approved</span>`
-                    : `<span class="badge badge-draft">Pending</span>`;
+                    : `<span class="badge badge-draft">${escapeHtml(r.Status || 'unreported')}</span>`;
                 const approveBtn = !isApproved
                     ? `<button class="btn-approve btn-approve-pr" type="button" data-id="${escapeHtml(rowId)}">Approve</button> `
                     : '';
@@ -299,10 +300,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const paidBy = r.Paid_by || '-';
                 const date = r.Expense_date || '-';
                 const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const isApproved = r.approval_status === 'approved';
+                const rawStatus = String(r.Status || r.approval_status || 'unreported').toLowerCase();
+                const isApproved = rawStatus === 'approved';
                 const statusBadge = isApproved
                     ? `<span class="badge badge-approved">✓ Approved</span>`
-                    : `<span class="badge badge-draft">Pending</span>`;
+                    : `<span class="badge badge-draft">${escapeHtml(r.Status || 'unreported')}</span>`;
                 const approveBtn = !isApproved
                     ? `<button class="btn-approve btn-approve-exp" type="button" data-id="${escapeHtml(rowId)}">Approve</button> `
                     : '';
