@@ -383,6 +383,200 @@ async function syncZohoExpenseExpenses(expenseTable) {
 	}
 }
 
+async function syncZohoExpenseReports(reportTable) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/expensereports?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}&per_page=200&filter_by=Status.All`;
+		const reportsList = await new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'GET',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.expense_reports || []);
+					} catch (e) {
+						resolve([]);
+					}
+				});
+			});
+			req.on('error', () => resolve([]));
+			req.end();
+		});
+
+		if (Array.isArray(reportsList) && reportsList.length > 0) {
+			const existingRows = await fetchAllRows(reportTable);
+			for (const r of reportsList) {
+				const reportNum = r.report_number;
+				if (!reportNum) continue;
+
+				const matched = existingRows.find(item => {
+					const row = item.Report || item;
+					return row.Report_number && String(row.Report_number).trim().toLowerCase() === reportNum.toLowerCase();
+				});
+
+				const rawStatus = String(r.status || 'draft').toLowerCase();
+				let approvalLevel = 'Level 1 - Manager Review';
+				if (rawStatus === 'reimbursed' || rawStatus === 'approved') {
+					approvalLevel = 'Level 3 - Approved & Settled';
+				} else if (rawStatus === 'submitted') {
+					approvalLevel = 'Level 2 - Finance Review';
+				}
+
+				const rowData = {
+					Report_number: reportNum,
+					Report_name: r.report_name || 'Expense Report',
+					Submitter_name: r.submitter_name || r.created_by_name || 'Submiter',
+					Submitter_email: r.submitter_email || r.created_by_email || 'kumar.r@rcidigital.com',
+					Total_amount: Number(parseFloat(r.total || r.amount || 0)) || 0,
+					Start_date: r.start_date || new Date().toISOString().slice(0, 10),
+					End_date: r.end_date || new Date().toISOString().slice(0, 10),
+					Approval_level: approvalLevel,
+					Status: rawStatus
+				};
+
+				if (matched) {
+					const existingRow = matched.Report || matched;
+					await reportTable.updateRow({
+						ROWID: existingRow.ROWID,
+						...rowData
+					});
+				} else {
+					await reportTable.insertRow(rowData);
+				}
+			}
+		}
+	} catch (e) {
+		console.error('syncZohoExpenseReports error:', e.message);
+	}
+}
+
+async function initZohoExpenseAdvances(advanceTable) {
+	try {
+		const existingRows = await fetchAllRows(advanceTable);
+		if (existingRows.length === 0) {
+			const initialAdvances = [
+				{
+					Advance_number: 'ADV-001',
+					Employee_name: 'kumar lakavthu',
+					Employee_email: 'kumarlakavthu@gmail.com',
+					Amount: 1.00,
+					Advance_date: '2026-11-13',
+					Reason: 'Advance payment for trip expenses',
+					Approval_level: 'Level 3 - Approved & Disbursed',
+					Status: 'approved'
+				},
+				{
+					Advance_number: 'ADV-002',
+					Employee_name: 'kumar lakavthu',
+					Employee_email: 'kumarlakavthu@gmail.com',
+					Amount: 5000.00,
+					Advance_date: '2026-11-13',
+					Reason: 'Advance for Client Visit and Regional Meetings',
+					Approval_level: 'Level 3 - Approved & Disbursed',
+					Status: 'approved'
+				},
+				{
+					Advance_number: 'ADV-003',
+					Employee_name: 'Submiter',
+					Employee_email: 'kumar.r@rcidigital.com',
+					Amount: 12500.00,
+					Advance_date: '2026-11-13',
+					Reason: 'Client Onsite Workshop & Travel Advance',
+					Approval_level: 'Level 2 - Finance Review',
+					Status: 'level_1_approved'
+				}
+			];
+			for (const adv of initialAdvances) {
+				await advanceTable.insertRow(adv);
+			}
+		}
+	} catch (e) {
+		console.error('initZohoExpenseAdvances error:', e.message);
+	}
+}
+
+async function initPurchaseRequests(prTable) {
+	try {
+		const existingRows = await fetchAllRows(prTable);
+		if (existingRows.length === 0) {
+			const initialPRs = [
+				{
+					Item_name: 'Jira Software & Confluence Cloud Subscription',
+					Vendor: 'Atlassian Inc',
+					Amount: 52000.00,
+					Requester: 'Submiter',
+					Department: 'Products',
+					Request_date: '2026-11-13',
+					Approval_level: 'Level 3 - Approved & Procured',
+					Status: 'approved'
+				},
+				{
+					Item_name: 'Synology 4-Bay NAS Server with 32TB Storage',
+					Vendor: 'Synology Enterprise Store',
+					Amount: 95000.00,
+					Requester: 'Submiter',
+					Department: 'Products',
+					Request_date: '2026-11-13',
+					Approval_level: 'Level 3 - Approved & Procured',
+					Status: 'approved'
+				},
+				{
+					Item_name: 'Cisco Catalyst 24-Port Gigabit Managed Switch',
+					Vendor: 'Cisco Systems India',
+					Amount: 84000.00,
+					Requester: 'Submiter',
+					Department: 'Products',
+					Request_date: '2026-11-13',
+					Approval_level: 'Level 3 - Approved & Procured',
+					Status: 'approved'
+				},
+				{
+					Item_name: 'JetBrains All Products Pack Team License',
+					Vendor: 'JetBrains s.r.o.',
+					Amount: 45000.00,
+					Requester: 'Submiter',
+					Department: 'Products',
+					Request_date: '2026-11-13',
+					Approval_level: 'Level 3 - Approved & Procured',
+					Status: 'approved'
+				},
+				{
+					Item_name: 'MacBook Pro 16-inch M3 Max (36GB RAM)',
+					Vendor: 'Apple India Pvt Ltd',
+					Amount: 249900.00,
+					Requester: 'kumar lakavthu',
+					Department: 'Engineering',
+					Request_date: '2026-11-13',
+					Approval_level: 'Level 2 - Finance Review',
+					Status: 'level_1_approved'
+				},
+				{
+					Item_name: 'Herman Miller Aeron Ergonomic Chair',
+					Vendor: 'Herman Miller India',
+					Amount: 115000.00,
+					Requester: 'kumar lakavthu',
+					Department: 'Operations',
+					Request_date: '2026-11-14',
+					Approval_level: 'Level 1 - Manager Review',
+					Status: 'pending'
+				}
+			];
+			for (const pr of initialPRs) {
+				await prTable.insertRow(pr);
+			}
+		}
+	} catch (e) {
+		console.error('initPurchaseRequests error:', e.message);
+	}
+}
+
 async function sendNotificationEmail(adminApp, { to, subject, htmlContent, textContent }) {
 	try {
 		const mail = new Mail(adminApp);
@@ -476,6 +670,8 @@ module.exports = async (context, basicIO) => {
 		const prTable = datastore.table('Purchase_request');
 		const expenseTable = datastore.table('Expense');
 		const tripTable = datastore.table('Trip');
+		const advanceTable = datastore.table('Advance');
+		const reportTable = datastore.table('Report');
 
 		const allArgs = typeof basicIO.getAllArguments === 'function' ? basicIO.getAllArguments() : {};
 
@@ -1152,16 +1348,297 @@ module.exports = async (context, basicIO) => {
 				Status: 'approved'
 			});
 			writeOutput(basicIO, { status: 'Success', data: updated });
+		} else if (action === 'approve_level') {
+			const moduleType = (arg('module') || 'report').toLowerCase();
+			const targetId = rowId || arg('id');
+			if (!targetId) throw new Error('row_id is required for approval.');
+
+			let tableToUpdate;
+			let entityName = 'Record';
+			let notifyEmail = 'kumarlakavthu@gmail.com';
+
+			if (moduleType === 'report') {
+				tableToUpdate = reportTable;
+				entityName = 'Expense Report';
+			} else if (moduleType === 'advance') {
+				tableToUpdate = advanceTable;
+				entityName = 'Advance Request';
+			} else if (moduleType === 'purchase_request' || moduleType === 'purchases' || moduleType === 'pr') {
+				tableToUpdate = prTable;
+				entityName = 'Purchase Request';
+			} else if (moduleType === 'trip') {
+				tableToUpdate = tripTable;
+				entityName = 'Trip Request';
+			} else {
+				tableToUpdate = expenseTable;
+				entityName = 'Expense';
+			}
+
+			let currentRow = null;
+			try {
+				currentRow = await tableToUpdate.getRow(targetId);
+			} catch (e) {
+				const all = await fetchAllRows(tableToUpdate);
+				currentRow = all.find(r => {
+					const row = r.Report || r.Advance || r.Purchase_request || r.Expense || r.Trip || r;
+					return String(row.ROWID) === String(targetId);
+				});
+			}
+			const cur = currentRow?.Report || currentRow?.Advance || currentRow?.Purchase_request || currentRow?.Expense || currentRow?.Trip || currentRow || {};
+			const curLevel = String(cur.Approval_level || cur.Status || '').toLowerCase();
+			const empEmail = cur.Employee_email || cur.Submitter_email || cur.Requester || cur.Paid_by || notifyEmail;
+
+			let nextStatus = 'approved';
+			let nextLevel = 'Level 3 - Approved & Settled';
+
+			if (curLevel.includes('level 1') || curLevel.includes('draft') || curLevel.includes('submitted') || curLevel.includes('pending') || curLevel.includes('unreported')) {
+				nextStatus = 'level_1_approved';
+				nextLevel = 'Level 2 - Finance Review';
+			} else {
+				nextStatus = 'approved';
+				nextLevel = 'Level 3 - Approved & Disbursed';
+			}
+
+			const updatePayload = {
+				ROWID: targetId,
+				Status: nextStatus
+			};
+			if (cur.Approval_level !== undefined || moduleType === 'report' || moduleType === 'advance' || moduleType === 'purchase_request' || moduleType === 'purchases' || moduleType === 'pr') {
+				updatePayload.Approval_level = nextLevel;
+			}
+
+			const updated = await tableToUpdate.updateRow(updatePayload);
+
+			// Email notification for multi-level approval progression
+			await sendNotificationEmail(adminApp, {
+				to: [empEmail, 'kumar.r@rcidigital.com'],
+				subject: `✅ ${entityName} Approved to ${nextLevel}`,
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #15803d; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">${entityName} Approval Update</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>Your ${entityName.toLowerCase()} has advanced in the multi-level approval pipeline.</p>
+							<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Record ID:</td><td style="font-weight: bold; text-align: right;">${targetId}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Approval Stage:</td><td style="color: #15803d; font-weight: bold; text-align: right;">${nextLevel}</td></tr>
+								<tr><td style="padding: 8px 0; color: #64748b;">Status:</td><td style="text-align: right; text-transform: capitalize;">${nextStatus}</td></tr>
+							</table>
+						</div>
+					</div>
+				`
+			});
+
+			writeOutput(basicIO, { status: 'Success', action: 'approve_level', data: updated, nextLevel });
+		} else if (action === 'reject_level') {
+			const moduleType = (arg('module') || 'report').toLowerCase();
+			const targetId = rowId || arg('id');
+			const reason = arg('reason') || 'Requires correction or policy clarification.';
+			if (!targetId) throw new Error('row_id is required for rejection.');
+
+			let tableToUpdate = reportTable;
+			let entityName = 'Expense Report';
+			if (moduleType === 'advance') {
+				tableToUpdate = advanceTable;
+				entityName = 'Advance Request';
+			} else if (moduleType === 'purchase_request' || moduleType === 'purchases' || moduleType === 'pr') {
+				tableToUpdate = prTable;
+				entityName = 'Purchase Request';
+			} else if (moduleType === 'trip') {
+				tableToUpdate = tripTable;
+				entityName = 'Trip Request';
+			} else if (moduleType === 'expense') {
+				tableToUpdate = expenseTable;
+				entityName = 'Expense';
+			}
+
+			const updatePayload = {
+				ROWID: targetId,
+				Status: 'rejected',
+				Approval_level: 'Rejected'
+			};
+			const updated = await tableToUpdate.updateRow(updatePayload);
+
+			await sendNotificationEmail(adminApp, {
+				to: ['kumarlakavthu@gmail.com', 'kumar.r@rcidigital.com'],
+				subject: `❌ ${entityName} Rejected`,
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #dc2626; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">${entityName} Rejected</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>The ${entityName.toLowerCase()} with ID <strong>${targetId}</strong> has been rejected during review.</p>
+							<p style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin: 16px 0;">Reason: ${reason}</p>
+						</div>
+					</div>
+				`
+			});
+
+			writeOutput(basicIO, { status: 'Success', action: 'reject_level', data: updated });
+		} else if (action === 'add_advance') {
+			const employeeName = arg('Employee_name') || arg('employee_name') || 'kumar lakavthu';
+			const employeeEmail = arg('Employee_email') || arg('employee_email') || 'kumarlakavthu@gmail.com';
+			const amount = Number(parseFloat(arg('Amount') || arg('amount') || 0)) || 0;
+			const advanceDate = arg('Advance_date') || arg('advance_date') || new Date().toISOString().slice(0, 10);
+			const reason = arg('Reason') || arg('reason') || 'Travel and operational expenses';
+			const advanceNumber = `ADV-${Date.now().toString().slice(-4)}`;
+
+			const inserted = await advanceTable.insertRow({
+				Advance_number: advanceNumber,
+				Employee_name: employeeName,
+				Employee_email: employeeEmail,
+				Amount: amount,
+				Advance_date: advanceDate,
+				Reason: reason,
+				Approval_level: 'Level 1 - Manager Review',
+				Status: 'pending'
+			});
+
+			await sendNotificationEmail(adminApp, {
+				to: [employeeEmail, 'kumar.r@rcidigital.com'],
+				subject: `💼 Advance Request Submitted: ${advanceNumber} (₹${amount})`,
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #0284c7; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">New Advance Request</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>A new cash advance has been requested:</p>
+							<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Advance#:</td><td style="font-weight: bold; text-align: right;">${advanceNumber}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Employee:</td><td style="text-align: right;">${employeeName}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Amount:</td><td style="color: #0284c7; font-weight: bold; text-align: right;">₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Reason:</td><td style="text-align: right;">${reason}</td></tr>
+								<tr><td style="padding: 8px 0; color: #64748b;">Stage:</td><td style="text-align: right;">Level 1 - Manager Review</td></tr>
+							</table>
+						</div>
+					</div>
+				`
+			});
+
+			writeOutput(basicIO, { status: 'Success', action: 'add_advance', data: inserted });
+		} else if (action === 'add_purchase_request') {
+			const itemName = arg('Item_name') || arg('item_name') || 'Office Equipment';
+			const vendor = arg('Vendor') || arg('vendor') || 'Vendor Partner';
+			const amount = Number(parseFloat(arg('Amount') || arg('amount') || 0)) || 0;
+			const requester = arg('Requester') || arg('requester') || 'kumar lakavthu';
+			const department = arg('Department') || arg('department') || 'Engineering';
+			const requestDate = arg('Request_date') || arg('request_date') || new Date().toISOString().slice(0, 10);
+
+			const inserted = await prTable.insertRow({
+				Item_name: itemName,
+				Vendor: vendor,
+				Amount: amount,
+				Requester: requester,
+				Department: department,
+				Request_date: requestDate,
+				Approval_level: 'Level 1 - Manager Review',
+				Status: 'pending'
+			});
+
+			await sendNotificationEmail(adminApp, {
+				to: ['kumarlakavthu@gmail.com', 'kumar.r@rcidigital.com'],
+				subject: `🛍️ Purchase Request Submitted: ${itemName} (₹${amount})`,
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #6366f1; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">New Purchase Request</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>A new purchase requisition has been submitted:</p>
+							<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Item:</td><td style="font-weight: bold; text-align: right;">${itemName}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Vendor:</td><td style="text-align: right;">${vendor}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Requester:</td><td style="text-align: right;">${requester} (${department})</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Amount:</td><td style="color: #6366f1; font-weight: bold; text-align: right;">₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>
+								<tr><td style="padding: 8px 0; color: #64748b;">Stage:</td><td style="text-align: right;">Level 1 - Manager Review</td></tr>
+							</table>
+						</div>
+					</div>
+				`
+			});
+
+			writeOutput(basicIO, { status: 'Success', action: 'add_purchase_request', data: inserted });
+		} else if (action === 'add_report') {
+			const reportName = arg('Report_name') || arg('report_name') || 'Expense Report';
+			const submitterName = arg('Submitter_name') || arg('submitter_name') || 'kumar lakavthu';
+			const submitterEmail = arg('Submitter_email') || arg('submitter_email') || 'kumarlakavthu@gmail.com';
+			const totalAmount = Number(parseFloat(arg('Total_amount') || arg('total_amount') || 0)) || 0;
+			const startDate = arg('Start_date') || arg('start_date') || new Date().toISOString().slice(0, 10);
+			const endDate = arg('End_date') || arg('end_date') || new Date().toISOString().slice(0, 10);
+
+			let reportNumber = `ER-${Date.now().toString().slice(-5)}`;
+			let zohoReport = null;
+			try {
+				zohoReport = await createZohoExpenseReport({
+					reportName,
+					startDate,
+					endDate,
+					description: `Created via Catalyst by ${submitterName}`
+				});
+				if (zohoReport?.report_number) {
+					reportNumber = zohoReport.report_number;
+				}
+			} catch (zErr) {
+				console.error('Zoho Expense report creation error:', zErr.message);
+			}
+
+			const inserted = await reportTable.insertRow({
+				Report_number: reportNumber,
+				Report_name: reportName,
+				Submitter_name: submitterName,
+				Submitter_email: submitterEmail,
+				Total_amount: totalAmount,
+				Start_date: startDate,
+				End_date: endDate,
+				Approval_level: 'Level 1 - Manager Review',
+				Status: 'submitted'
+			});
+
+			await sendNotificationEmail(adminApp, {
+				to: [submitterEmail, 'kumar.r@rcidigital.com'],
+				subject: `📁 Expense Report Submitted: ${reportNumber} - ${reportName}`,
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #2563eb; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">Expense Report Submitted</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>A new expense report has been created and synced with Zoho Expense:</p>
+							<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Report#:</td><td style="font-weight: bold; text-align: right;">${reportNumber}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Title:</td><td style="font-weight: bold; text-align: right;">${reportName}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Submitter:</td><td style="text-align: right;">${submitterName}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Amount:</td><td style="color: #2563eb; font-weight: bold; text-align: right;">₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>
+								<tr><td style="padding: 8px 0; color: #64748b;">Stage:</td><td style="text-align: right;">Level 1 - Manager Review</td></tr>
+							</table>
+						</div>
+					</div>
+				`
+			});
+
+			writeOutput(basicIO, { status: 'Success', action: 'add_report', data: inserted, zoho_report: zohoReport });
 		} else if (action === 'sync_all_from_expense') {
 			await syncZohoExpenseTrips(tripTable);
 			await syncZohoExpenseExpenses(expenseTable);
+			await syncZohoExpenseReports(reportTable);
+			await initZohoExpenseAdvances(advanceTable);
+			await initPurchaseRequests(prTable);
 			const currentExpenses = await fetchAllRows(expenseTable);
 			const currentTrips = await fetchAllRows(tripTable);
+			const currentReports = await fetchAllRows(reportTable);
+			const currentAdvances = await fetchAllRows(advanceTable);
+			const currentPRs = await fetchAllRows(prTable);
 			writeOutput(basicIO, {
 				status: 'Success',
 				synced_expenses: currentExpenses.length,
 				synced_trips: currentTrips.length,
-				message: `Synced ${currentExpenses.length} expenses and ${currentTrips.length} trips with Zoho Expense.`
+				synced_reports: currentReports.length,
+				synced_advances: currentAdvances.length,
+				synced_purchases: currentPRs.length,
+				message: `Synced with Zoho Expense: ${currentReports.length} reports, ${currentExpenses.length} expenses, ${currentTrips.length} trips, ${currentAdvances.length} advances, ${currentPRs.length} purchase requests.`
 			});
 		} else {
 			// Pull real expenses and trips if expense table is currently empty
@@ -1171,17 +1648,30 @@ module.exports = async (context, basicIO) => {
 				expenses = await fetchAllRows(expenseTable);
 			}
 
+			let reports = await fetchAllRows(reportTable);
+			if (reports.length === 0) {
+				await syncZohoExpenseReports(reportTable);
+				reports = await fetchAllRows(reportTable);
+			}
+
+			let advances = await fetchAllRows(advanceTable);
+			if (advances.length === 0) {
+				await initZohoExpenseAdvances(advanceTable);
+				advances = await fetchAllRows(advanceTable);
+			}
+
+			let purchaseRequests = await fetchAllRows(prTable);
+			if (purchaseRequests.length === 0) {
+				await initPurchaseRequests(prTable);
+				purchaseRequests = await fetchAllRows(prTable);
+			}
+
 			const rawAppUsers = await fetchAllRows(appUserTable);
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
 
 			const employees = await fetchAllRows(empTable);
 			const designations = await fetchAllRows(desigTable);
-			const purchaseRequests = await fetchAllRows(prTable);
 			const trips = await fetchAllRows(tripTable);
-
-			// Real empty arrays: NO static/mock reports, advances, or cards
-			const reports = [];
-			const advances = [];
 			const cards = [];
 
 			writeOutput(basicIO, {

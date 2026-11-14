@@ -380,9 +380,15 @@
                 <section id="view-reports" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>📁 Expense Reports Summary</h3>
-                            <span class="badge-pill" id="reportsCountBadge">7 Reports</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>📁 Expense Reports &amp; Multi-Level Approvals</h3>
+                                <span class="badge-pill" id="reportsCountBadge">0 Reports</span>
+                            </div>
+                            <button type="button" id="openReportModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Report</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Consolidated expense reports synced with Zoho Expense with multi-level approval pipeline (Level 1 Manager ➔ Level 2 Finance ➔ Level 3 Settled).
+                        </p>
                         <div class="zoho-table-wrapper">
                             <table class="zoho-table" id="reportsTable">
                                 <thead>
@@ -390,67 +396,18 @@
                                         <th>Report#</th>
                                         <th>Report Name</th>
                                         <th>Submitter</th>
-                                        <th>Submitted Date</th>
+                                        <th>Dates</th>
+                                        <th>Approval Stage</th>
                                         <th>Status</th>
                                         <th style="text-align: right;">Total Amount</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="reportsTableBody">
                                     <tr>
-                                        <td><strong>ER-00009</strong></td>
-                                        <td>Submiter - ER-00009 13/11/2026</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,000.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00008</strong></td>
-                                        <td>Submiter - ER-00008 27/11/2026</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹111.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00007</strong></td>
-                                        <td>Submiter - Q4 Cloud Operations &amp; Client Deployment</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹10,876.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00006</strong></td>
-                                        <td>Purchase Requests - Submiter</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-reimbursed">Reimbursed</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹4,61,000.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00005</strong></td>
-                                        <td>Purchase Requests - kumar lakavthu</td>
-                                        <td>kumar lakavthu</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-reimbursed">Reimbursed</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹4,86,380.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00004</strong></td>
-                                        <td>Client Engagement &amp; Technical Summit 2026</td>
-                                        <td>kumar lakavthu</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,470.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00002</strong></td>
-                                        <td>kumar lakavthu - ER-00002 25/11/2026</td>
-                                        <td>kumar lakavthu</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,000.00</td>
+                                        <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading reports from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -464,29 +421,34 @@
                 <section id="view-advances" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>💼 Employee Advances</h3>
-                            <span class="badge-pill">Float Balance: ₹0.00</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>💼 Cash &amp; Travel Advances</h3>
+                                <span class="badge-pill" id="advancesCountBadge">0 Advances</span>
+                            </div>
+                            <button type="button" id="openAdvanceModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Advance</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Pre-trip and operational cash advances requested by employees with multi-level sign-off and disbursal tracking.
+                        </p>
                         <div class="zoho-table-wrapper">
-                            <table class="zoho-table">
+                            <table class="zoho-table" id="advancesTable">
                                 <thead>
                                     <tr>
                                         <th>Advance#</th>
                                         <th>Employee</th>
                                         <th>Date</th>
-                                        <th>Payment Mode</th>
+                                        <th>Reason</th>
+                                        <th>Approval Stage</th>
                                         <th>Status</th>
                                         <th style="text-align: right;">Amount</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="advancesTableBody">
                                     <tr>
-                                        <td><strong>ADV-0001</strong></td>
-                                        <td>kumar lakavthu</td>
-                                        <td>10/11/2026</td>
-                                        <td>Bank Transfer</td>
-                                        <td><span class="status-badge-chip chip-approved">Settled</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹5,000.00</td>
+                                        <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading employee advances from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -500,34 +462,34 @@
                 <section id="view-purchases" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>🛍️ Purchase Requests</h3>
-                            <span class="badge-pill">Procurement V2</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>🛍️ Purchase Requests &amp; Procurement</h3>
+                                <span class="badge-pill" id="purchasesCountBadge">0 Requests</span>
+                            </div>
+                            <button type="button" id="openPurchaseModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Purchase Request</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Enterprise procurement requisitions with budget verification, multi-level approvals, and vendor tracking.
+                        </p>
                         <div class="zoho-table-wrapper">
-                            <table class="zoho-table">
+                            <table class="zoho-table" id="purchasesTable">
                                 <thead>
                                     <tr>
                                         <th>Item Name</th>
                                         <th>Vendor</th>
-                                        <th>Requester</th>
+                                        <th>Requester &amp; Dept</th>
+                                        <th>Date</th>
+                                        <th>Approval Stage</th>
                                         <th>Status</th>
                                         <th style="text-align: right;">Amount</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="purchasesTableBody">
                                     <tr>
-                                        <td><strong>MacBook Pro 16-inch M3 Max</strong></td>
-                                        <td>Apple India Pvt Ltd</td>
-                                        <td>kumar lakavthu</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹2,49,900.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>AWS Cloud Reserved Instances</strong></td>
-                                        <td>Amazon Web Services</td>
-                                        <td>Submiter</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,85,000.00</td>
+                                        <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading purchase requests from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -732,6 +694,143 @@
             <div class="modal-actions">
                 <button type="button" id="cancelTripModalBtn" class="btn btn-light">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save Trip</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Report Modal (Popup)
+         ================================================================ -->
+    <div id="reportModal" class="modal-backdrop">
+        <form id="reportForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>📁 New Expense Report</h3>
+                <button type="button" id="closeReportModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="reportNameInput">Report Title / Name</label>
+                <input type="text" id="reportNameInput" placeholder="e.g. Q4 Client Workshop & Travel" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="reportStartDateInput">Start Date</label>
+                    <input type="date" id="reportStartDateInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="reportEndDateInput">End Date</label>
+                    <input type="date" id="reportEndDateInput" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reportSubmitterSelect">Submitter</label>
+                <select id="reportSubmitterSelect" required>
+                    <option value="kumar lakavthu">kumar lakavthu (kumarlakavthu@gmail.com)</option>
+                    <option value="Submiter">Submiter (kumar.r@rcidigital.com)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="reportTotalAmountInput">Total Amount (₹)</label>
+                <input type="number" id="reportTotalAmountInput" placeholder="e.g. 15000.00" step="0.01" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelReportModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Report</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Advance Modal (Popup)
+         ================================================================ -->
+    <div id="advanceModal" class="modal-backdrop">
+        <form id="advanceForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>💼 Request Cash Advance</h3>
+                <button type="button" id="closeAdvanceModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceEmployeeSelect">Employee</label>
+                <select id="advanceEmployeeSelect" required>
+                    <option value="kumar lakavthu">kumar lakavthu (kumarlakavthu@gmail.com)</option>
+                    <option value="Submiter">Submiter (kumar.r@rcidigital.com)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceAmountInput">Advance Amount (₹)</label>
+                <input type="number" id="advanceAmountInput" placeholder="e.g. 5000.00" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceDateInput">Request Date</label>
+                <input type="date" id="advanceDateInput" required>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceReasonInput">Purpose / Reason</label>
+                <input type="text" id="advanceReasonInput" placeholder="e.g. Regional travel & onsite meal expenses" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelAdvanceModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Advance</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Purchase Request Modal (Popup)
+         ================================================================ -->
+    <div id="purchaseModal" class="modal-backdrop">
+        <form id="purchaseForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>🛍️ New Purchase Request</h3>
+                <button type="button" id="closePurchaseModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="purchaseItemInput">Item / Service Description</label>
+                <input type="text" id="purchaseItemInput" placeholder="e.g. Synology NAS 4-Bay Server" required>
+            </div>
+
+            <div class="form-group">
+                <label for="purchaseVendorInput">Vendor Name</label>
+                <input type="text" id="purchaseVendorInput" placeholder="e.g. Synology Enterprise Store" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="purchaseAmountInput">Amount (₹)</label>
+                    <input type="number" id="purchaseAmountInput" placeholder="e.g. 45000.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="purchaseDeptSelect">Department</label>
+                    <select id="purchaseDeptSelect" required>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Products">Products</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="purchaseRequesterSelect">Requester</label>
+                <select id="purchaseRequesterSelect" required>
+                    <option value="kumar lakavthu">kumar lakavthu</option>
+                    <option value="Submiter">Submiter</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelPurchaseModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Request</button>
             </div>
         </form>
     </div>
