@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const expenseModal = $('expenseModal');
     const expenseForm = $('expenseForm');
     const openExpenseModalBtn = $('openExpenseModalBtn');
+    const headerNewExpenseBtn = $('headerNewExpenseBtn');
     const quickAddExpenseNavBtn = $('quickAddExpenseNavBtn');
     const closeExpenseModalBtn = $('closeExpenseModalBtn');
     const cancelExpenseModalBtn = $('cancelExpenseModalBtn');
@@ -22,13 +23,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
     const viewPanels = document.querySelectorAll('.view-panel');
 
-    // Toolbar & filter elements
-    const searchInput = $('expenseSearchInput');
-    const filterBtns = document.querySelectorAll('.filter-tab-btn');
-    const streamContainer = $('expenseStreamContainer');
-    const streamCountBadge = $('streamCountBadge');
+    // View toggles (Table vs Card view)
+    const btnToggleTableView = $('btnToggleTableView');
+    const btnToggleCardView = $('btnToggleCardView');
+    const expenseTableViewContainer = $('expenseTableViewContainer');
+    const expenseCardViewContainer = $('expenseCardViewContainer');
 
-    // KPI & Analytics elements
+    // Filters and Search
+    const expenseStatusViewSelect = $('expenseStatusViewSelect');
+    const globalTopSearch = $('globalTopSearch');
+    const totalExpenseCounter = $('totalExpenseCounter');
+
+    // Table elements
+    const expenseTableBody = $('expenseTableBody');
+    const selectAllCheckbox = $('selectAllCheckbox');
+    const batchActionBar = $('batchActionBar');
+    const selectedCountText = $('selectedCountText');
+    const batchApproveBtn = $('batchApproveBtn');
+    const batchDeleteBtn = $('batchDeleteBtn');
+    const batchDeselectBtn = $('batchDeselectBtn');
+
+    // KPI & Stream elements
+    const streamContainer = $('expenseStreamContainer');
+    const cardStreamCountBadge = $('cardStreamCountBadge');
     const kpiTotalSpend = $('kpiTotalSpend');
     const kpiTotalCount = $('kpiTotalCount');
     const kpiApprovedSpend = $('kpiApprovedSpend');
@@ -46,24 +63,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const healthReimbursedAmt = $('healthReimbursedAmt');
     const currentUserEl = $('currentUser');
     const userInitialEl = $('userInitial');
-    const reportsListContainer = $('reportsListContainer');
-    const reportsCountBadge = $('reportsCountBadge');
     const fullAnalyticsBreakdown = $('fullAnalyticsBreakdown');
 
     let allExpenses = [];
     let currentFilter = 'all';
     let searchQuery = '';
+    let selectedRowIds = new Set();
+    let currentViewMode = 'table'; // 'table' or 'card'
 
     // =========================================================================
     // Sidebar Tab Switching
     // =========================================================================
     navLinks.forEach((link) => {
         link.addEventListener('click', (e) => {
-            // If user clicked the '+' inside the Expenses tab, don't re-switch tab
-            if (e.target.closest('#quickAddExpenseNavBtn')) {
-                return;
-            }
-
+            if (e.target.closest('#quickAddExpenseNavBtn')) return;
             const targetTab = link.getAttribute('data-tab');
             if (!targetTab) return;
 
@@ -79,12 +92,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Quick Add Expense button inside the Expenses tab pill
-    if (quickAddExpenseNavBtn) {
-        quickAddExpenseNavBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openExpenseModal();
-        });
+    // View Mode Toggle (Table View vs Card View)
+    if (btnToggleTableView && btnToggleCardView) {
+        btnToggleTableView.onclick = () => {
+            currentViewMode = 'table';
+            btnToggleTableView.classList.add('active');
+            btnToggleCardView.classList.remove('active');
+            expenseTableViewContainer.style.display = 'block';
+            expenseCardViewContainer.style.display = 'none';
+        };
+
+        btnToggleCardView.onclick = () => {
+            currentViewMode = 'card';
+            btnToggleCardView.classList.add('active');
+            btnToggleTableView.classList.remove('active');
+            expenseTableViewContainer.style.display = 'none';
+            expenseCardViewContainer.style.display = 'flex';
+        };
     }
 
     // Modal controls
@@ -96,33 +120,112 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (openExpenseModalBtn) openExpenseModalBtn.onclick = openExpenseModal;
+    if (headerNewExpenseBtn) headerNewExpenseBtn.onclick = openExpenseModal;
+    if (quickAddExpenseNavBtn) {
+        quickAddExpenseNavBtn.onclick = (e) => {
+            e.stopPropagation();
+            openExpenseModal();
+        };
+    }
     if (closeExpenseModalBtn) closeExpenseModalBtn.onclick = closeExpenseModal;
     if (cancelExpenseModalBtn) cancelExpenseModalBtn.onclick = closeExpenseModal;
     window.onclick = (e) => {
-        if (e.target === expenseModal) {
-            closeExpenseModal();
-        }
+        if (e.target === expenseModal) closeExpenseModal();
     };
 
     $('refreshBtn').onclick = loadData;
     $('signOutBtn').onclick = signOutToLogin;
 
-    // Search and Filter controls
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
+    // Filters and Search
+    if (expenseStatusViewSelect) {
+        expenseStatusViewSelect.onchange = (e) => {
+            currentFilter = e.target.value;
+            renderAllViews();
+        };
+    }
+
+    if (globalTopSearch) {
+        globalTopSearch.addEventListener('input', (e) => {
             searchQuery = e.target.value.trim().toLowerCase();
-            renderStream();
+            renderAllViews();
         });
     }
 
-    filterBtns.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            filterBtns.forEach((b) => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilter = btn.getAttribute('data-filter') || 'all';
-            renderStream();
-        });
-    });
+    // Batch Actions
+    if (selectAllCheckbox) {
+        selectAllCheckbox.onchange = (e) => {
+            const isChecked = e.target.checked;
+            const checkboxes = expenseTableBody.querySelectorAll('.row-select-checkbox');
+            checkboxes.forEach((cb) => {
+                cb.checked = isChecked;
+                const id = cb.getAttribute('data-id');
+                if (isChecked) selectedRowIds.add(id);
+                else selectedRowIds.delete(id);
+            });
+            updateBatchActionBar();
+        };
+    }
+
+    if (batchDeselectBtn) {
+        batchDeselectBtn.onclick = () => {
+            selectedRowIds.clear();
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            const checkboxes = expenseTableBody.querySelectorAll('.row-select-checkbox');
+            checkboxes.forEach((cb) => cb.checked = false);
+            updateBatchActionBar();
+        };
+    }
+
+    if (batchApproveBtn) {
+        batchApproveBtn.onclick = async () => {
+            if (!selectedRowIds.size) return;
+            batchApproveBtn.disabled = true;
+            batchApproveBtn.textContent = 'Approving...';
+            try {
+                for (const rowId of selectedRowIds) {
+                    await callFunction({ action: 'approve_expense', row_id: rowId });
+                }
+                selectedRowIds.clear();
+                await loadData();
+            } catch (err) {
+                alert('Batch approve error: ' + (err.message || 'Error'));
+            } finally {
+                batchApproveBtn.disabled = false;
+                batchApproveBtn.textContent = 'Approve Selected';
+            }
+        };
+    }
+
+    if (batchDeleteBtn) {
+        batchDeleteBtn.onclick = async () => {
+            if (!selectedRowIds.size) return;
+            if (!confirm(`Delete ${selectedRowIds.size} selected expenses?`)) return;
+            batchDeleteBtn.disabled = true;
+            batchDeleteBtn.textContent = 'Deleting...';
+            try {
+                for (const rowId of selectedRowIds) {
+                    await callFunction({ action: 'delete_expense', row_id: rowId });
+                }
+                selectedRowIds.clear();
+                await loadData();
+            } catch (err) {
+                alert('Batch delete error: ' + (err.message || 'Error'));
+            } finally {
+                batchDeleteBtn.disabled = false;
+                batchDeleteBtn.textContent = 'Delete Selected';
+            }
+        };
+    }
+
+    function updateBatchActionBar() {
+        const count = selectedRowIds.size;
+        if (count > 0) {
+            batchActionBar.classList.add('visible');
+            selectedCountText.textContent = `${count} expense(s) selected`;
+        } else {
+            batchActionBar.classList.remove('visible');
+        }
+    }
 
     const syncZohoBtn = $('syncZohoBtn');
     if (syncZohoBtn) {
@@ -200,12 +303,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadData() {
-        if (streamContainer) {
-            streamContainer.innerHTML = `
-                <div class="empty-placeholder">
-                    <div class="empty-icon">⏳</div>
-                    <p>Loading live expenses from Catalyst Datastore...</p>
-                </div>
+        if (expenseTableBody) {
+            expenseTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 36px; color: #64748b;">
+                        Loading expenses from Catalyst Datastore...
+                    </td>
+                </tr>
             `;
         }
 
@@ -274,23 +378,300 @@ document.addEventListener('DOMContentLoaded', () => {
             if (healthReimbursedCount) healthReimbursedCount.textContent = `${reimbursedCount} item(s) settled`;
             if (healthReimbursedAmt) healthReimbursedAmt.textContent = formatINR(reimbursedSpend);
 
-            // 4. Render Expense Activity Stream
-            renderStream();
+            // 4. Render All Views
+            renderAllViews();
 
-            // 5. Render Reports & Full Analytics Views
-            renderReportsView();
+            // 5. Render Full Analytics View
             renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
 
         } catch (err) {
-            if (streamContainer) {
-                streamContainer.innerHTML = `
-                    <div class="empty-placeholder" style="color: #dc2626;">
-                        <div class="empty-icon">⚠️</div>
-                        <p>Failed to load expenses: ${escapeHtml(err.message || 'Error connecting to server')}</p>
-                    </div>
+            if (expenseTableBody) {
+                expenseTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 36px; color: #dc2626;">
+                            Failed to load expenses: ${escapeHtml(err.message || 'Error connecting to server')}
+                        </td>
+                    </tr>
                 `;
             }
         }
+    }
+
+    function getFilteredExpenses() {
+        return allExpenses.filter((item) => {
+            const r = item.Expense || item;
+            const status = String(r.Status || 'unreported').toLowerCase();
+
+            // Status filter
+            if (currentFilter === 'approved' && status !== 'approved') return false;
+            if (currentFilter === 'pending' && status !== 'pending' && status !== 'submitted') return false;
+            if (currentFilter === 'reimbursed' && status !== 'reimbursed') return false;
+            if (currentFilter === 'unreported' && status !== 'unreported') return false;
+
+            // Search query filter
+            if (searchQuery) {
+                const name = String(r.Expense_name || '').toLowerCase();
+                const cat = String(r.Category || '').toLowerCase();
+                const paidBy = String(r.Paid_by || '').toLowerCase();
+                if (!name.includes(searchQuery) && !cat.includes(searchQuery) && !paidBy.includes(searchQuery)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    function renderAllViews() {
+        const filtered = getFilteredExpenses();
+
+        if (totalExpenseCounter) {
+            totalExpenseCounter.textContent = `${filtered.length} of ${allExpenses.length} records`;
+        }
+        if (cardStreamCountBadge) {
+            cardStreamCountBadge.textContent = `${filtered.length} Total`;
+        }
+
+        renderTableView(filtered);
+        renderCardStream(filtered);
+    }
+
+    // =========================================================================
+    // 1. Classic Zoho Expense Table Rendering
+    // =========================================================================
+    function renderTableView(filtered) {
+        if (!expenseTableBody) return;
+
+        if (!filtered.length) {
+            expenseTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 36px; color: #64748b;">
+                        🔍 No matching expenses found in KR Tech Solutions.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        expenseTableBody.innerHTML = '';
+
+        filtered.forEach((item) => {
+            const r = item.Expense || item;
+            const rowId = r.ROWID || '';
+            const name = r.Expense_name || 'General Expense';
+            const cat = r.Category || 'Office Supplies';
+            const paidBy = r.Paid_by || 'KR Tech Solutions';
+            const date = r.Expense_date || 'Today';
+            const amt = Number(parseFloat(r.Amount)) || 0;
+            const rawStatus = String(r.Status || 'unreported').toLowerCase();
+
+            const iconInfo = getCategoryIcon(cat);
+
+            let statusClass = 'chip-unreported';
+            let statusLabel = 'Unreported';
+            if (rawStatus === 'approved') {
+                statusClass = 'chip-approved';
+                statusLabel = 'Approved';
+            } else if (rawStatus === 'reimbursed') {
+                statusClass = 'chip-reimbursed';
+                statusLabel = 'Reimbursed';
+            } else if (rawStatus === 'pending' || rawStatus === 'submitted') {
+                statusClass = 'chip-pending';
+                statusLabel = 'In Review';
+            }
+
+            const tr = document.createElement('tr');
+            if (selectedRowIds.has(rowId)) tr.classList.add('selected');
+
+            const approveBtnHtml = rawStatus !== 'approved' && rawStatus !== 'reimbursed'
+                ? `<button class="btn-row-approve btn-approve-action" type="button" data-id="${escapeHtml(rowId)}">Approve</button>`
+                : '';
+
+            tr.innerHTML = `
+                <td class="cell-checkbox">
+                    <input type="checkbox" class="zoho-checkbox row-select-checkbox" data-id="${escapeHtml(rowId)}" ${selectedRowIds.has(rowId) ? 'checked' : ''}>
+                </td>
+                <td style="color: #64748b; font-size: 13px;">${escapeHtml(date)}</td>
+                <td class="cell-title" title="${escapeHtml(name)}">${escapeHtml(name)}</td>
+                <td>
+                    <div class="cell-category">
+                        <span>${iconInfo.icon}</span>
+                        <span>${escapeHtml(cat)}</span>
+                    </div>
+                </td>
+                <td style="color: #475569;">${escapeHtml(paidBy)}</td>
+                <td>
+                    <span class="status-badge-chip ${statusClass}">${statusLabel}</span>
+                </td>
+                <td class="cell-amount">${formatINR(amt)}</td>
+                <td class="cell-actions">
+                    ${approveBtnHtml}
+                    <button class="btn-row-delete btn-delete-action" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-name="${escapeHtml(name)}">🗑️</button>
+                </td>
+            `;
+
+            const cb = tr.querySelector('.row-select-checkbox');
+            cb.onchange = (e) => {
+                if (e.target.checked) {
+                    selectedRowIds.add(rowId);
+                    tr.classList.add('selected');
+                } else {
+                    selectedRowIds.delete(rowId);
+                    tr.classList.remove('selected');
+                }
+                updateBatchActionBar();
+            };
+
+            const approveBtn = tr.querySelector('.btn-approve-action');
+            if (approveBtn) {
+                approveBtn.onclick = async () => {
+                    approveBtn.disabled = true;
+                    approveBtn.textContent = '...';
+                    try {
+                        const res = await callFunction({ action: 'approve_expense', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to approve: ' + (err.message || 'Error'));
+                        approveBtn.disabled = false;
+                        approveBtn.textContent = 'Approve';
+                    }
+                };
+            }
+
+            const delBtn = tr.querySelector('.btn-delete-action');
+            if (delBtn) {
+                delBtn.onclick = async () => {
+                    if (!confirm(`Delete "${name}"?`)) return;
+                    delBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'delete_expense', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        selectedRowIds.delete(rowId);
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to delete: ' + (err.message || 'Error'));
+                        delBtn.disabled = false;
+                    }
+                };
+            }
+
+            expenseTableBody.appendChild(tr);
+        });
+    }
+
+    // =========================================================================
+    // 2. Executive Card Stream Rendering
+    // =========================================================================
+    function renderCardStream(filtered) {
+        if (!streamContainer) return;
+
+        if (!filtered.length) {
+            streamContainer.innerHTML = `
+                <div class="empty-placeholder">
+                    <div class="empty-icon">🔍</div>
+                    <p>No matching expenses found.</p>
+                </div>
+            `;
+            return;
+        }
+
+        streamContainer.innerHTML = '';
+
+        filtered.forEach((item) => {
+            const r = item.Expense || item;
+            const rowId = r.ROWID || '';
+            const name = r.Expense_name || 'General Expense';
+            const cat = r.Category || 'Office Supplies';
+            const paidBy = r.Paid_by || 'KR Tech Solutions';
+            const date = r.Expense_date || 'Today';
+            const amt = Number(parseFloat(r.Amount)) || 0;
+            const rawStatus = String(r.Status || 'unreported').toLowerCase();
+
+            const iconInfo = getCategoryIcon(cat);
+
+            let statusClass = 'chip-unreported';
+            let statusLabel = 'Unreported';
+            if (rawStatus === 'approved') {
+                statusClass = 'chip-approved';
+                statusLabel = '✓ Approved';
+            } else if (rawStatus === 'reimbursed') {
+                statusClass = 'chip-reimbursed';
+                statusLabel = '💎 Reimbursed';
+            } else if (rawStatus === 'pending' || rawStatus === 'submitted') {
+                statusClass = 'chip-pending';
+                statusLabel = '⏳ In Review';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'expense-row-card';
+
+            const approveBtnHtml = rawStatus !== 'approved' && rawStatus !== 'reimbursed'
+                ? `<button class="btn-card-approve btn-approve-card-action" type="button" data-id="${escapeHtml(rowId)}">Approve</button>`
+                : '';
+
+            card.innerHTML = `
+                <div class="exp-left-cluster">
+                    <div class="cat-icon-container" style="background: ${iconInfo.bg}; color: ${iconInfo.color};">
+                        ${iconInfo.icon}
+                    </div>
+                    <div class="exp-info-col">
+                        <div class="exp-title-text" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+                        <div class="exp-meta-pills">
+                            <span class="tag-pill">📅 ${escapeHtml(date)}</span>
+                            <span class="tag-pill">👤 ${escapeHtml(paidBy)}</span>
+                            <span class="tag-pill">🏷️ ${escapeHtml(cat)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="exp-right-cluster">
+                    <div class="exp-amount-block">
+                        <div class="exp-amount-text">${formatINR(amt)}</div>
+                        <span class="status-badge-chip ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="action-btn-group">
+                        ${approveBtnHtml}
+                        <button class="btn-card-delete btn-delete-card-action" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-name="${escapeHtml(name)}">🗑️</button>
+                    </div>
+                </div>
+            `;
+
+            const approveBtn = card.querySelector('.btn-approve-card-action');
+            if (approveBtn) {
+                approveBtn.onclick = async () => {
+                    approveBtn.disabled = true;
+                    approveBtn.textContent = 'Approving...';
+                    try {
+                        const res = await callFunction({ action: 'approve_expense', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to approve: ' + (err.message || 'Error'));
+                        approveBtn.disabled = false;
+                        approveBtn.textContent = 'Approve';
+                    }
+                };
+            }
+
+            const delBtn = card.querySelector('.btn-delete-card-action');
+            if (delBtn) {
+                delBtn.onclick = async () => {
+                    if (!confirm(`Delete "${name}"?`)) return;
+                    delBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'delete_expense', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to delete: ' + (err.message || 'Error'));
+                        delBtn.disabled = false;
+                    }
+                };
+            }
+
+            streamContainer.appendChild(card);
+        });
     }
 
     function renderCategoryBreakdown(catMap, totalSpend) {
@@ -330,197 +711,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    function renderStream() {
-        if (!streamContainer) return;
-
-        let filtered = allExpenses.filter((item) => {
-            const r = item.Expense || item;
-            const status = String(r.Status || 'unreported').toLowerCase();
-
-            // Status filter
-            if (currentFilter === 'approved' && status !== 'approved') return false;
-            if (currentFilter === 'pending' && status === 'approved') return false;
-            if (currentFilter === 'reimbursed' && status !== 'reimbursed') return false;
-
-            // Search filter
-            if (searchQuery) {
-                const name = String(r.Expense_name || '').toLowerCase();
-                const cat = String(r.Category || '').toLowerCase();
-                const paidBy = String(r.Paid_by || '').toLowerCase();
-                if (!name.includes(searchQuery) && !cat.includes(searchQuery) && !paidBy.includes(searchQuery)) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-
-        if (streamCountBadge) streamCountBadge.textContent = `${filtered.length} of ${allExpenses.length}`;
-
-        if (!filtered.length) {
-            streamContainer.innerHTML = `
-                <div class="empty-placeholder">
-                    <div class="empty-icon">🔍</div>
-                    <p>No matching expenses found.</p>
-                </div>
-            `;
-            return;
-        }
-
-        streamContainer.innerHTML = '';
-
-        filtered.forEach((item) => {
-            const r = item.Expense || item;
-            const rowId = r.ROWID || '';
-            const name = r.Expense_name || 'General Expense';
-            const cat = r.Category || 'Office Supplies';
-            const paidBy = r.Paid_by || 'KR Tech Solutions';
-            const date = r.Expense_date || 'Today';
-            const amt = Number(parseFloat(r.Amount)) || 0;
-            const rawStatus = String(r.Status || 'unreported').toLowerCase();
-
-            const iconInfo = getCategoryIcon(cat);
-
-            let statusClass = 'chip-pending';
-            let statusLabel = '⏳ In Review';
-            if (rawStatus === 'approved') {
-                statusClass = 'chip-approved';
-                statusLabel = '✓ Approved';
-            } else if (rawStatus === 'reimbursed') {
-                statusClass = 'chip-reimbursed';
-                statusLabel = '💎 Reimbursed';
-            }
-
-            const card = document.createElement('div');
-            card.className = 'expense-row-card';
-
-            const approveBtnHtml = rawStatus !== 'approved'
-                ? `<button class="btn-card-approve btn-approve-action" type="button" data-id="${escapeHtml(rowId)}">Approve</button>`
-                : '';
-
-            card.innerHTML = `
-                <div class="exp-left-cluster">
-                    <div class="cat-icon-container" style="background: ${iconInfo.bg}; color: ${iconInfo.color};">
-                        ${iconInfo.icon}
-                    </div>
-                    <div class="exp-info-col">
-                        <div class="exp-title-text" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
-                        <div class="exp-meta-pills">
-                            <span class="tag-pill">📅 ${escapeHtml(date)}</span>
-                            <span class="tag-pill">👤 ${escapeHtml(paidBy)}</span>
-                            <span class="tag-pill">🏷️ ${escapeHtml(cat)}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="exp-right-cluster">
-                    <div class="exp-amount-block">
-                        <div class="exp-amount-text">${formatINR(amt)}</div>
-                        <span class="status-badge-chip ${statusClass}">${statusLabel}</span>
-                    </div>
-                    <div class="action-btn-group">
-                        ${approveBtnHtml}
-                        <button class="btn-card-delete btn-delete-action" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-name="${escapeHtml(name)}">🗑️</button>
-                    </div>
-                </div>
-            `;
-
-            const approveBtn = card.querySelector('.btn-approve-action');
-            if (approveBtn) {
-                approveBtn.onclick = async () => {
-                    approveBtn.disabled = true;
-                    approveBtn.textContent = 'Approving...';
-                    try {
-                        const res = await callFunction({ action: 'approve_expense', row_id: rowId });
-                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                        await loadData();
-                    } catch (err) {
-                        alert('Failed to approve: ' + (err.message || 'Error'));
-                        approveBtn.disabled = false;
-                        approveBtn.textContent = 'Approve';
-                    }
-                };
-            }
-
-            const delBtn = card.querySelector('.btn-delete-action');
-            if (delBtn) {
-                delBtn.onclick = async () => {
-                    if (!confirm(`Delete "${name}"?`)) return;
-                    delBtn.disabled = true;
-                    try {
-                        const res = await callFunction({ action: 'delete_expense', row_id: rowId });
-                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                        await loadData();
-                    } catch (err) {
-                        alert('Failed to delete: ' + (err.message || 'Error'));
-                        delBtn.disabled = false;
-                    }
-                };
-            }
-
-            streamContainer.appendChild(card);
-        });
-    }
-
-    function renderReportsView() {
-        if (!reportsListContainer) return;
-        const reports = allExpenses.filter((item) => {
-            const r = item.Expense || item;
-            const cat = String(r.Category || '').toLowerCase();
-            const name = String(r.Expense_name || '').toLowerCase();
-            return cat.includes('report') || name.startsWith('er-') || name.includes('report');
-        });
-
-        if (reportsCountBadge) reportsCountBadge.textContent = `${reports.length} Reports`;
-
-        if (!reports.length) {
-            reportsListContainer.innerHTML = `
-                <div class="empty-placeholder">
-                    <div class="empty-icon">📄</div>
-                    <p>No submitted expense reports found in Datastore.</p>
-                </div>
-            `;
-            return;
-        }
-
-        let tableHtml = `
-            <div style="overflow-x: auto;">
-                <table class="clean-table">
-                    <thead>
-                        <tr>
-                            <th>Report Name</th>
-                            <th>Submitter</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th style="text-align: right;">Total Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-
-        reports.forEach((item) => {
-            const r = item.Expense || item;
-            const name = r.Expense_name || 'Report';
-            const paidBy = r.Paid_by || 'KR Tech Solutions';
-            const date = r.Expense_date || 'Today';
-            const amt = Number(parseFloat(r.Amount)) || 0;
-            const status = String(r.Status || 'unreported');
-
-            tableHtml += `
-                <tr>
-                    <td><strong>${escapeHtml(name)}</strong></td>
-                    <td>${escapeHtml(paidBy)}</td>
-                    <td>${escapeHtml(date)}</td>
-                    <td><span class="status-badge-chip chip-approved">${escapeHtml(status)}</span></td>
-                    <td style="text-align: right; font-weight: 700;">${formatINR(amt)}</td>
-                </tr>
-            `;
-        });
-
-        tableHtml += '</tbody></table></div>';
-        reportsListContainer.innerHTML = tableHtml;
-    }
-
     function renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap) {
         if (!fullAnalyticsBreakdown) return;
         const catEntries = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
@@ -550,9 +740,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px;">
-                    <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #0f172a;">Top 3 Expenditure Categories</h4>
+                    <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #0f172a;">Top Expenditure Categories</h4>
                     <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px;">
-                        ${catEntries.slice(0, 3).map(([cat, amt]) => `
+                        ${catEntries.slice(0, 5).map(([cat, amt]) => `
                             <div style="display: flex; justify-content: space-between;">
                                 <span>${escapeHtml(cat)}</span>
                                 <span style="font-weight: 700;">${formatINR(amt)}</span>
@@ -573,6 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const Amount = $('expenseAmountInput').value.trim();
             const Expense_date = $('expenseDateInput').value;
             const Paid_by = $('expenseUserSelect').value.trim();
+            const Status = $('expenseStatusSelect')?.value || 'unreported';
 
             if (!Expense_name || !Category || !Amount) {
                 alert('Please enter description, category, and amount.');
@@ -590,7 +781,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     Category,
                     Amount,
                     Expense_date: Expense_date || new Date().toISOString().slice(0, 10),
-                    Paid_by: Paid_by || 'KR Tech Solutions'
+                    Paid_by: Paid_by || 'kumar lakavthu',
+                    Status
                 });
                 if (res.status !== 'Success') throw new Error(res.message || 'Failed to save');
 

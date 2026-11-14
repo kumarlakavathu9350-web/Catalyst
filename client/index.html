@@ -99,14 +99,20 @@
         </aside>
 
         <!-- ================================================================
-             Main Executive Workspace
+             Main Workspace Area
              ================================================================ -->
         <main class="main-wrapper">
             <!-- Top Navbar -->
             <header class="top-navbar">
                 <div class="nav-org-info">
-                    <span class="nav-org-title">KR Tech Solutions</span>
+                    <span class="nav-org-title">KR Tech Solutions ▾</span>
                     <span class="nav-org-badge"><span class="live-dot"></span> Org: 60095930892 · Live Datastore</span>
+                </div>
+
+                <!-- Global Search -->
+                <div class="top-search-wrap">
+                    <span class="top-search-icon">🔍</span>
+                    <input type="text" id="globalTopSearch" class="top-search-input" placeholder="Search in KR Tech Solutions ( / )">
                 </div>
 
                 <div class="navbar-right">
@@ -114,7 +120,7 @@
                         <span class="user-avatar-circle" id="userInitial">U</span>
                         <span id="currentUser">Loading session...</span>
                     </div>
-                    <button id="openExpenseModalBtn" class="btn btn-primary" type="button">+ Add Expense</button>
+                    <button id="openExpenseModalBtn" class="btn btn-primary" type="button">+ New Expense</button>
                     <button id="syncZohoBtn" class="btn btn-sync" type="button">🔄 Sync Zoho</button>
                     <button id="refreshBtn" class="btn btn-light" type="button">Refresh</button>
                     <button id="signOutBtn" class="btn btn-danger" type="button">Sign Out</button>
@@ -127,126 +133,170 @@
                      1. VIEW: Expenses (Default Active Tab)
                      ============================================================ -->
                 <section id="view-expenses" class="view-panel active">
-                    <!-- Top Metric KPI Cards -->
-                    <div class="metrics-row">
-                        <div class="metric-box">
-                            <div class="metric-head">
-                                <span class="metric-title">Total Spend</span>
-                                <div class="metric-icon-wrap" style="background: #eef2ff; color: #4f46e5;">💳</div>
-                            </div>
-                            <div class="metric-val" id="kpiTotalSpend">₹0.00</div>
-                            <div class="metric-sub" id="kpiTotalCount">0 Transactions</div>
+                    <!-- Action Bar with View Selector, New Expense, and List/Card Toggle -->
+                    <div class="zoho-action-bar">
+                        <div class="action-bar-left">
+                            <select id="expenseStatusViewSelect" class="view-dropdown-select">
+                                <option value="all">All Expenses ▾</option>
+                                <option value="unreported">Unreported Expenses</option>
+                                <option value="pending">In Review / Submitted</option>
+                                <option value="approved">Approved</option>
+                                <option value="reimbursed">Reimbursed</option>
+                            </select>
+                            <span class="badge-pill" id="totalExpenseCounter">0 records</span>
                         </div>
 
-                        <div class="metric-box">
-                            <div class="metric-head">
-                                <span class="metric-title">Approved Spend</span>
-                                <div class="metric-icon-wrap" style="background: #ecfdf5; color: #059669;">🛡️</div>
-                            </div>
-                            <div class="metric-val" id="kpiApprovedSpend">₹0.00</div>
-                            <div class="metric-sub" id="kpiApprovedCount">0 Approved Items</div>
-                        </div>
-
-                        <div class="metric-box">
-                            <div class="metric-head">
-                                <span class="metric-title">In Review &amp; Processing</span>
-                                <div class="metric-icon-wrap" style="background: #fffbeb; color: #d97706;">⏳</div>
-                            </div>
-                            <div class="metric-val" id="kpiPendingSpend">₹0.00</div>
-                            <div class="metric-sub" id="kpiPendingCount">0 In Review</div>
-                        </div>
-
-                        <div class="metric-box">
-                            <div class="metric-head">
-                                <span class="metric-title">Organization Members</span>
-                                <div class="metric-icon-wrap" style="background: #eff6ff; color: #2563eb;">👥</div>
-                            </div>
-                            <div class="metric-val" id="kpiMembersCount">2</div>
-                            <div class="metric-sub">Active in Org 60095930892</div>
-                        </div>
-                    </div>
-
-                    <!-- Analytics Row: Spend by Category & Workflow Health -->
-                    <div class="analytics-row">
-                        <div class="white-card">
-                            <div class="card-header-bar">
-                                <h3>📊 Spend by Category</h3>
-                                <span class="badge-pill" id="categoryCountBadge">0 Categories</span>
-                            </div>
-                            <div class="category-bars-list" id="categoryListContainer">
-                                <div class="empty-placeholder">Loading categories...</div>
-                            </div>
-                        </div>
-
-                        <div class="white-card">
-                            <div class="card-header-bar">
-                                <h3>📈 Workflow &amp; Approval Health</h3>
-                                <span class="badge-pill">Zoho Expense V3</span>
-                            </div>
-                            <div class="status-pill-list">
-                                <div class="status-row-item">
-                                    <div class="status-left">
-                                        <span class="status-dot-indicator" style="background: #10b981;"></span>
-                                        <div>
-                                            <div class="status-title-text">Approved &amp; Verified</div>
-                                            <div class="status-count-sub" id="healthApprovedCount">0 items approved</div>
-                                        </div>
-                                    </div>
-                                    <div class="status-amount-bold" id="healthApprovedAmt">₹0.00</div>
-                                </div>
-
-                                <div class="status-row-item">
-                                    <div class="status-left">
-                                        <span class="status-dot-indicator" style="background: #f59e0b;"></span>
-                                        <div>
-                                            <div class="status-title-text">In Review / Unreported</div>
-                                            <div class="status-count-sub" id="healthPendingCount">0 items in review</div>
-                                        </div>
-                                    </div>
-                                    <div class="status-amount-bold" id="healthPendingAmt">₹0.00</div>
-                                </div>
-
-                                <div class="status-row-item">
-                                    <div class="status-left">
-                                        <span class="status-dot-indicator" style="background: #0284c7;"></span>
-                                        <div>
-                                            <div class="status-title-text">Reimbursed &amp; Settled</div>
-                                            <div class="status-count-sub" id="healthReimbursedCount">0 items settled</div>
-                                        </div>
-                                    </div>
-                                    <div class="status-amount-bold" id="healthReimbursedAmt">₹0.00</div>
-                                </div>
+                        <div class="action-bar-right">
+                            <button id="headerNewExpenseBtn" class="btn btn-primary" type="button">+ New Expense</button>
+                            <div style="display: flex; gap: 4px;">
+                                <button type="button" id="btnToggleTableView" class="btn-toggle-view active" title="Table View">☰</button>
+                                <button type="button" id="btnToggleCardView" class="btn-toggle-view" title="Card View">▦</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- High-Level Live Expense Stream (Clean Card-Based Feed) -->
-                    <div class="stream-card-box">
-                        <div class="stream-top-tools">
-                            <div class="stream-heading-group">
-                                <h3>Expenses Stream</h3>
-                                <span class="stream-badge-count" id="streamCountBadge">0 Total</span>
+                    <!-- Floating Multi-select Batch Action Bar -->
+                    <div id="batchActionBar" class="batch-action-bar">
+                        <div class="batch-count-text">
+                            <span id="selectedCountText">0 items selected</span>
+                        </div>
+                        <div class="batch-actions-btns">
+                            <button type="button" id="batchApproveBtn" class="btn" style="background: #10b981; color: #fff; padding: 5px 12px; font-size: 12px;">Approve Selected</button>
+                            <button type="button" id="batchDeleteBtn" class="btn" style="background: #ef4444; color: #fff; padding: 5px 12px; font-size: 12px;">Delete Selected</button>
+                            <button type="button" id="batchDeselectBtn" class="btn btn-light" style="padding: 5px 12px; font-size: 12px;">Deselect All</button>
+                        </div>
+                    </div>
+
+                    <!-- PRIMARY VIEW: Classic Zoho Expense Table View -->
+                    <div id="expenseTableViewContainer" class="zoho-table-wrapper">
+                        <table class="zoho-table" id="expenseMainTable">
+                            <thead>
+                                <tr>
+                                    <th class="cell-checkbox">
+                                        <input type="checkbox" id="selectAllCheckbox" class="zoho-checkbox" title="Select All">
+                                    </th>
+                                    <th>Date</th>
+                                    <th>Expense Name / Merchant</th>
+                                    <th>Category</th>
+                                    <th>Paid By / Submitter</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Amount</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; padding: 36px; color: #64748b;">
+                                        Loading expenses from Catalyst Datastore...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- SECONDARY VIEW: Executive Card & Analytics View (Toggled on Demand) -->
+                    <div id="expenseCardViewContainer" style="display: none; flex-direction: column; gap: 20px;">
+                        <!-- Top Metric KPI Cards -->
+                        <div class="metrics-row">
+                            <div class="metric-box">
+                                <div class="metric-head">
+                                    <span class="metric-title">Total Spend</span>
+                                    <div class="metric-icon-wrap" style="background: #eef2ff; color: #4f46e5;">💳</div>
+                                </div>
+                                <div class="metric-val" id="kpiTotalSpend">₹0.00</div>
+                                <div class="metric-sub" id="kpiTotalCount">0 Transactions</div>
                             </div>
 
-                            <div class="stream-filter-tools">
-                                <div class="search-box-wrap">
-                                    <span class="search-ico">🔍</span>
-                                    <input type="text" id="expenseSearchInput" class="search-field" placeholder="Search expense, submitter, category...">
+                            <div class="metric-box">
+                                <div class="metric-head">
+                                    <span class="metric-title">Approved Spend</span>
+                                    <div class="metric-icon-wrap" style="background: #ecfdf5; color: #059669;">🛡️</div>
                                 </div>
-                                <div class="filter-button-group">
-                                    <button type="button" class="filter-tab-btn active" data-filter="all">All</button>
-                                    <button type="button" class="filter-tab-btn" data-filter="approved">Approved</button>
-                                    <button type="button" class="filter-tab-btn" data-filter="pending">In Review</button>
-                                    <button type="button" class="filter-tab-btn" data-filter="reimbursed">Reimbursed</button>
+                                <div class="metric-val" id="kpiApprovedSpend">₹0.00</div>
+                                <div class="metric-sub" id="kpiApprovedCount">0 Approved Items</div>
+                            </div>
+
+                            <div class="metric-box">
+                                <div class="metric-head">
+                                    <span class="metric-title">In Review &amp; Processing</span>
+                                    <div class="metric-icon-wrap" style="background: #fffbeb; color: #d97706;">⏳</div>
+                                </div>
+                                <div class="metric-val" id="kpiPendingSpend">₹0.00</div>
+                                <div class="metric-sub" id="kpiPendingCount">0 In Review</div>
+                            </div>
+
+                            <div class="metric-box">
+                                <div class="metric-head">
+                                    <span class="metric-title">Organization Members</span>
+                                    <div class="metric-icon-wrap" style="background: #eff6ff; color: #2563eb;">👥</div>
+                                </div>
+                                <div class="metric-val" id="kpiMembersCount">2</div>
+                                <div class="metric-sub">Active in Org 60095930892</div>
+                            </div>
+                        </div>
+
+                        <!-- Spend by Category & Workflow Health -->
+                        <div class="analytics-row">
+                            <div class="white-card">
+                                <div class="card-header-bar">
+                                    <h3>📊 Spend by Category</h3>
+                                    <span class="badge-pill" id="categoryCountBadge">0 Categories</span>
+                                </div>
+                                <div class="category-bars-list" id="categoryListContainer">
+                                    <div class="empty-placeholder">Loading categories...</div>
+                                </div>
+                            </div>
+
+                            <div class="white-card">
+                                <div class="card-header-bar">
+                                    <h3>📈 Workflow &amp; Approval Health</h3>
+                                    <span class="badge-pill">Zoho Expense V3</span>
+                                </div>
+                                <div class="status-pill-list">
+                                    <div class="status-row-item">
+                                        <div class="status-left">
+                                            <span class="status-dot-indicator" style="background: #10b981;"></span>
+                                            <div>
+                                                <div class="status-title-text">Approved &amp; Verified</div>
+                                                <div class="status-count-sub" id="healthApprovedCount">0 items approved</div>
+                                            </div>
+                                        </div>
+                                        <div class="status-amount-bold" id="healthApprovedAmt">₹0.00</div>
+                                    </div>
+
+                                    <div class="status-row-item">
+                                        <div class="status-left">
+                                            <span class="status-dot-indicator" style="background: #f59e0b;"></span>
+                                            <div>
+                                                <div class="status-title-text">In Review / Unreported</div>
+                                                <div class="status-count-sub" id="healthPendingCount">0 items in review</div>
+                                            </div>
+                                        </div>
+                                        <div class="status-amount-bold" id="healthPendingAmt">₹0.00</div>
+                                    </div>
+
+                                    <div class="status-row-item">
+                                        <div class="status-left">
+                                            <span class="status-dot-indicator" style="background: #0284c7;"></span>
+                                            <div>
+                                                <div class="status-title-text">Reimbursed &amp; Settled</div>
+                                                <div class="status-count-sub" id="healthReimbursedCount">0 items settled</div>
+                                            </div>
+                                        </div>
+                                        <div class="status-amount-bold" id="healthReimbursedAmt">₹0.00</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Card Stream List -->
-                        <div class="stream-cards-list" id="expenseStreamContainer">
-                            <div class="empty-placeholder">
-                                <div class="empty-icon">📂</div>
-                                <p>Loading live expenses from Catalyst Datastore...</p>
+                        <!-- Stream Cards List -->
+                        <div class="white-card">
+                            <div class="card-header-bar">
+                                <h3>📑 Expense Cards Stream</h3>
+                                <span class="badge-pill" id="cardStreamCountBadge">0 Total</span>
+                            </div>
+                            <div class="stream-cards-list" id="expenseStreamContainer">
+                                <div class="empty-placeholder">Loading stream...</div>
                             </div>
                         </div>
                     </div>
@@ -296,9 +346,29 @@
                         <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
                             Pre-approved corporate trips and itineraries linked to automated per-diem and expense reporting.
                         </p>
-                        <div class="empty-placeholder">
-                            <div class="empty-icon">🧳</div>
-                            <p>No active trips scheduled at this moment.</p>
+                        <div class="zoho-table-wrapper">
+                            <table class="zoho-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trip#</th>
+                                        <th>Trip Name</th>
+                                        <th>Destination</th>
+                                        <th>Departure</th>
+                                        <th>Dates</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>TRIP-00004</strong></td>
+                                        <td>Vagamon2.1</td>
+                                        <td>Afutara</td>
+                                        <td>Aiken</td>
+                                        <td>05/11/2026 - 10/11/2026</td>
+                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -310,13 +380,79 @@
                     <div class="white-card">
                         <div class="card-header-bar">
                             <h3>📁 Expense Reports Summary</h3>
-                            <span class="badge-pill" id="reportsCountBadge">0 Reports</span>
+                            <span class="badge-pill" id="reportsCountBadge">7 Reports</span>
                         </div>
-                        <div id="reportsListContainer">
-                            <div class="empty-placeholder">
-                                <div class="empty-icon">📄</div>
-                                <p>Loading expense reports from Catalyst Datastore...</p>
-                            </div>
+                        <div class="zoho-table-wrapper">
+                            <table class="zoho-table" id="reportsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Report#</th>
+                                        <th>Report Name</th>
+                                        <th>Submitter</th>
+                                        <th>Submitted Date</th>
+                                        <th>Status</th>
+                                        <th style="text-align: right;">Total Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportsTableBody">
+                                    <tr>
+                                        <td><strong>ER-00009</strong></td>
+                                        <td>Submiter - ER-00009 13/11/2026</td>
+                                        <td>Submiter</td>
+                                        <td>13/11/2026</td>
+                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹1,000.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ER-00008</strong></td>
+                                        <td>Submiter - ER-00008 27/11/2026</td>
+                                        <td>Submiter</td>
+                                        <td>13/11/2026</td>
+                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹111.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ER-00007</strong></td>
+                                        <td>Submiter - Q4 Cloud Operations &amp; Client Deployment</td>
+                                        <td>Submiter</td>
+                                        <td>13/11/2026</td>
+                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹10,876.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ER-00006</strong></td>
+                                        <td>Purchase Requests - Submiter</td>
+                                        <td>Submiter</td>
+                                        <td>13/11/2026</td>
+                                        <td><span class="status-badge-chip chip-reimbursed">Reimbursed</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹4,61,000.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ER-00005</strong></td>
+                                        <td>Purchase Requests - kumar lakavthu</td>
+                                        <td>kumar lakavthu</td>
+                                        <td>13/11/2026</td>
+                                        <td><span class="status-badge-chip chip-reimbursed">Reimbursed</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹4,86,380.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ER-00004</strong></td>
+                                        <td>Client Engagement &amp; Technical Summit 2026</td>
+                                        <td>kumar lakavthu</td>
+                                        <td>13/11/2026</td>
+                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹1,470.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ER-00002</strong></td>
+                                        <td>kumar lakavthu - ER-00002 25/11/2026</td>
+                                        <td>kumar lakavthu</td>
+                                        <td>13/11/2026</td>
+                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹1,000.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -330,9 +466,29 @@
                             <h3>💼 Employee Advances</h3>
                             <span class="badge-pill">Float Balance: ₹0.00</span>
                         </div>
-                        <div class="empty-placeholder">
-                            <div class="empty-icon">👛</div>
-                            <p>No pending advance payment requests.</p>
+                        <div class="zoho-table-wrapper">
+                            <table class="zoho-table">
+                                <thead>
+                                    <tr>
+                                        <th>Advance#</th>
+                                        <th>Employee</th>
+                                        <th>Date</th>
+                                        <th>Payment Mode</th>
+                                        <th>Status</th>
+                                        <th style="text-align: right;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>ADV-0001</strong></td>
+                                        <td>kumar lakavthu</td>
+                                        <td>10/11/2026</td>
+                                        <td>Bank Transfer</td>
+                                        <td><span class="status-badge-chip chip-approved">Settled</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹5,000.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -346,9 +502,34 @@
                             <h3>🛍️ Purchase Requests</h3>
                             <span class="badge-pill">Procurement V2</span>
                         </div>
-                        <div class="empty-placeholder">
-                            <div class="empty-icon">🛍️</div>
-                            <p>No active purchase requests pending procurement approval.</p>
+                        <div class="zoho-table-wrapper">
+                            <table class="zoho-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th>Vendor</th>
+                                        <th>Requester</th>
+                                        <th>Status</th>
+                                        <th style="text-align: right;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>MacBook Pro 16-inch M3 Max</strong></td>
+                                        <td>Apple India Pvt Ltd</td>
+                                        <td>kumar lakavthu</td>
+                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹2,49,900.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>AWS Cloud Reserved Instances</strong></td>
+                                        <td>Amazon Web Services</td>
+                                        <td>Submiter</td>
+                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
+                                        <td style="text-align: right; font-weight: 700;">₹1,85,000.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -362,9 +543,27 @@
                             <h3>💳 Corporate Cards &amp; Automated Feeds</h3>
                             <span class="badge-pill">Mastercard / Visa Sync</span>
                         </div>
-                        <div class="empty-placeholder">
-                            <div class="empty-icon">💳</div>
-                            <p>Corporate credit card direct bank feed is connected.</p>
+                        <div class="zoho-table-wrapper">
+                            <table class="zoho-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cardholder</th>
+                                        <th>Card Number</th>
+                                        <th>Bank / Provider</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>kumar lakavthu</strong></td>
+                                        <td>•••• •••• •••• 4589</td>
+                                        <td>HDFC Corporate Banking</td>
+                                        <td>Mastercard Corporate</td>
+                                        <td><span class="status-badge-chip chip-approved">Active Feed</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -378,9 +577,6 @@
                             <h3>📈 Executive Financial &amp; Policy Analytics</h3>
                             <span class="badge-pill">Real-time Datastore</span>
                         </div>
-                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 20px;">
-                            Detailed departmental spending analysis, policy violation audits, and approval velocity benchmarks.
-                        </p>
                         <div id="fullAnalyticsBreakdown">
                             <!-- Populated dynamically via JS -->
                         </div>
@@ -423,12 +619,12 @@
     <div id="expenseModal" class="modal-backdrop">
         <form id="expenseForm" class="modal-box">
             <div class="modal-header-row">
-                <h3>+ Quick Add Expense</h3>
+                <h3>+ New Expense</h3>
                 <button type="button" id="closeExpenseModalBtn" class="btn-close-modal">&times;</button>
             </div>
 
             <div class="form-group">
-                <label for="expenseNameInput">Expense Description / Report Title</label>
+                <label for="expenseNameInput">Expense Description / Merchant Name</label>
                 <input type="text" id="expenseNameInput" placeholder="e.g. Flight Tickets Bangalore to Delhi" required>
             </div>
 
@@ -461,8 +657,18 @@
             <div class="form-group">
                 <label for="expenseUserSelect">Paid By / Submitter</label>
                 <select id="expenseUserSelect" required>
-                    <option value="kumar.r@rcidigital.com">Submiter (kumar.r@rcidigital.com)</option>
                     <option value="kumar lakavthu">kumar lakavthu (Super Admin)</option>
+                    <option value="kumar.r@rcidigital.com">Submiter (kumar.r@rcidigital.com)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="expenseStatusSelect">Status</label>
+                <select id="expenseStatusSelect">
+                    <option value="unreported">Unreported</option>
+                    <option value="pending">In Review / Submitted</option>
+                    <option value="approved">Approved</option>
+                    <option value="reimbursed">Reimbursed</option>
                 </select>
             </div>
 

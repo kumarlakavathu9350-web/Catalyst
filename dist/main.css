@@ -1,6 +1,6 @@
 /* ==========================================================================
    KR Tech Solutions - Zoho Expense Authentic UI & Sidebar System
-   Matches Zoho Expense's Exact Sidebar and Executive Dashboard
+   Matches Zoho Expense's Exact Sidebar, Views, and Functionality
    ========================================================================== */
 
 :root {
@@ -21,6 +21,8 @@
     --status-pending-text: #b45309;
     --status-reimbursed-bg: #e0f2fe;
     --status-reimbursed-text: #0369a1;
+    --status-unreported-bg: #f1f5f9;
+    --status-unreported-text: #475569;
     --danger-red: #ef4444;
 }
 
@@ -209,6 +211,10 @@ body {
     font-size: 15px;
     font-weight: 700;
     color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
 }
 
 .nav-org-badge {
@@ -230,6 +236,40 @@ body {
     border-radius: 50%;
     background: #15803d;
     box-shadow: 0 0 6px #15803d;
+}
+
+/* Top Global Search Bar */
+.top-search-wrap {
+    flex: 1;
+    max-width: 360px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.top-search-input {
+    width: 100%;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 6px 36px 6px 32px;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.top-search-input:focus {
+    background: #ffffff;
+    border-color: var(--zoho-blue);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.top-search-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 13px;
+    color: #94a3b8;
 }
 
 .navbar-right {
@@ -324,22 +364,277 @@ body {
     padding: 24px 28px 48px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    max-width: 1280px;
+    gap: 20px;
+    max-width: 1400px;
     width: 100%;
 }
 
 .view-panel {
     display: none;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
 }
 
 .view-panel.active {
     display: flex;
 }
 
-/* Metric KPI Cards (Top Row) */
+/* ==========================================================================
+   Zoho Expense Header Bar & View Switcher
+   ========================================================================== */
+
+.zoho-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: #ffffff;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.action-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.view-dropdown-select {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding-right: 8px;
+}
+
+.view-dropdown-select option {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1e293b;
+    background: #ffffff;
+}
+
+.action-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-toggle-view {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    border-radius: 6px;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 15px;
+    transition: all 0.15s;
+}
+
+.btn-toggle-view:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.btn-toggle-view.active {
+    background: #eff6ff;
+    border-color: var(--zoho-blue);
+    color: var(--zoho-blue);
+}
+
+/* Floating Batch Action Bar */
+.batch-action-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--zoho-navy);
+    color: #ffffff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.batch-action-bar.visible {
+    display: flex;
+}
+
+.batch-count-text {
+    font-weight: 600;
+}
+
+.batch-actions-btns {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   Classic Zoho Expense Data Table
+   ========================================================================== */
+
+.zoho-table-wrapper {
+    background: #ffffff;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    overflow-x: auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.zoho-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    white-space: nowrap;
+}
+
+.zoho-table th {
+    background: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 12px 16px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    text-align: left;
+}
+
+.zoho-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.zoho-table tr:hover td {
+    background: #f8faff;
+}
+
+.zoho-table tr.selected td {
+    background: #eff6ff;
+}
+
+.cell-checkbox {
+    width: 36px;
+    text-align: center;
+}
+
+.zoho-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--zoho-blue);
+}
+
+.cell-title {
+    font-weight: 600;
+    color: #0f172a;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cell-category {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.cell-amount {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: right;
+}
+
+/* Status Chips */
+.status-badge-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    text-transform: capitalize;
+}
+
+.chip-approved {
+    background: var(--status-approved-bg);
+    color: var(--status-approved-text);
+}
+
+.chip-pending {
+    background: var(--status-pending-bg);
+    color: var(--status-pending-text);
+}
+
+.chip-reimbursed {
+    background: var(--status-reimbursed-bg);
+    color: var(--status-reimbursed-text);
+}
+
+.chip-unreported {
+    background: var(--status-unreported-bg);
+    color: var(--status-unreported-text);
+}
+
+/* Actions */
+.cell-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.btn-row-approve {
+    background: #10b981;
+    border: none;
+    color: #ffffff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-row-approve:hover {
+    background: #059669;
+}
+
+.btn-row-delete {
+    background: transparent;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-row-delete:hover {
+    background: #fef2f2;
+}
+
+/* ==========================================================================
+   Executive KPI & Card Grid (Secondary Toggle)
+   ========================================================================== */
+
 .metrics-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -401,7 +696,6 @@ body {
     color: var(--text-muted);
 }
 
-/* Analytics Row (Spend by Category & Workflow Health) */
 .analytics-row {
     display: grid;
     grid-template-columns: 3fr 2fr;
@@ -540,121 +834,7 @@ body {
     color: #0f172a;
 }
 
-/* ==========================================================================
-   Executive Expense Stream (Clean Card-Based List)
-   ========================================================================== */
-
-.stream-card-box {
-    background: #ffffff;
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 22px 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.stream-top-tools {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    flex-wrap: wrap;
-    padding-bottom: 14px;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.stream-heading-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.stream-heading-group h3 {
-    font-size: 16.5px;
-    font-weight: 700;
-    color: #0f172a;
-}
-
-.stream-badge-count {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1d4ed8;
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 2px 9px;
-    border-radius: 999px;
-}
-
-.stream-filter-tools {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.search-box-wrap {
-    position: relative;
-    min-width: 240px;
-}
-
-.search-field {
-    width: 100%;
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 7px 12px 7px 32px;
-    font-family: inherit;
-    font-size: 13px;
-    color: #0f172a;
-    outline: none;
-    transition: all 0.2s;
-}
-
-.search-field:focus {
-    border-color: var(--zoho-blue);
-    background: #ffffff;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-}
-
-.search-ico {
-    position: absolute;
-    left: 9px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 13px;
-}
-
-.filter-button-group {
-    display: flex;
-    align-items: center;
-    background: #f1f5f9;
-    padding: 2px;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-}
-
-.filter-tab-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.filter-tab-btn.active {
-    background: #ffffff;
-    color: var(--zoho-blue);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Stream Cards Container */
+/* Card Stream List */
 .stream-cards-list {
     display: flex;
     flex-direction: column;
@@ -750,47 +930,22 @@ body {
     color: #0f172a;
 }
 
-.status-badge-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 999px;
-    text-transform: capitalize;
-}
-
-.chip-approved {
-    background: var(--status-approved-bg);
-    color: var(--status-approved-text);
-}
-
-.chip-pending {
-    background: var(--status-pending-bg);
-    color: var(--status-pending-text);
-}
-
-.chip-reimbursed {
-    background: var(--status-reimbursed-bg);
-    color: var(--status-reimbursed-text);
-}
-
 .action-btn-group {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .btn-card-approve {
     background: #10b981;
-    color: #fff;
     border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
+    color: #ffffff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.15s;
 }
 .btn-card-approve:hover {
     background: #059669;
@@ -822,35 +977,6 @@ body {
 }
 
 /* ==========================================================================
-   Generic Tables for other tabs (Reports, Trips, Cards, etc.)
-   ========================================================================== */
-
-.clean-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-}
-
-.clean-table th {
-    background: #f8fafc;
-    border-bottom: 2px solid #e2e8f0;
-    padding: 10px 14px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-align: left;
-}
-
-.clean-table td {
-    padding: 12px 14px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
-}
-
-.clean-table tr:hover {
-    background: #f8fafc;
-}
-
-/* ==========================================================================
    Add Expense Modal
    ========================================================================== */
 
@@ -872,7 +998,7 @@ body {
     border-radius: 12px;
     padding: 24px;
     width: 100%;
-    max-width: 440px;
+    max-width: 480px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
@@ -913,7 +1039,8 @@ body {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
@@ -926,7 +1053,8 @@ body {
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     border-color: var(--zoho-blue);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
@@ -955,6 +1083,9 @@ body {
         flex-direction: column;
         height: auto;
         padding: 12px 16px;
+    }
+    .top-search-wrap {
+        max-width: 100%;
     }
     .expense-row-card {
         flex-direction: column;
