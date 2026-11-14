@@ -18,9 +18,34 @@ const ZOHO_EXPENSE_CONFIG = {
 	apiUrl: 'https://www.zohoapis.in/expense/v1',
 	clientId: '1000.S1KTSSPRXHMAYOY20SY3CP93G79ZPB',
 	clientSecret: '68b084222d8104a939b142dfe7f63e6d4667cda54b',
-	refreshToken: '1000.981eb6b8feac1da370d95fdd7de1b038.3ec083abb127c882b5767af8a23bef52',
+	refreshToken: '1000.c1e8858a4f463d7378ff1af83ecd5ed6.a5f53fd9a4dd54187b12defec0ff69fd',
 	organizationId: '60095930892'
 };
+
+const EXPENSE_CATEGORIES = {
+	'Office Supplies': '4208449000000000498',
+	'IT and Internet Expenses': '4208449000000000525',
+	'Meals and Entertainment': '4208449000000000546',
+	'Fuel/Mileage Expenses': '4208449000000034137',
+	'Labor': '4208449000000034052',
+	'Job Costing': '4208449000000034055',
+	'Telephone Expense': '4208449000000000531',
+	'Automobile Expense': '4208449000000000540',
+	'Lodging': '4208449000000000552'
+};
+
+function getCategoryId(categoryName) {
+	if (!categoryName) return EXPENSE_CATEGORIES['Office Supplies'];
+	for (const [name, id] of Object.entries(EXPENSE_CATEGORIES)) {
+		if (name.toLowerCase() === categoryName.toLowerCase()) return id;
+	}
+	const lower = categoryName.toLowerCase();
+	if (lower.includes('it') || lower.includes('internet')) return EXPENSE_CATEGORIES['IT and Internet Expenses'];
+	if (lower.includes('meal') || lower.includes('food')) return EXPENSE_CATEGORIES['Meals and Entertainment'];
+	if (lower.includes('fuel') || lower.includes('mileage')) return EXPENSE_CATEGORIES['Fuel/Mileage Expenses'];
+	if (lower.includes('hotel') || lower.includes('lodg')) return EXPENSE_CATEGORIES['Lodging'];
+	return EXPENSE_CATEGORIES['Office Supplies'];
+}
 
 let cachedAccessToken = null;
 let tokenExpiresAt = 0;
@@ -188,6 +213,171 @@ async function syncZohoExpenseTrips(tripTable) {
 		}
 	} catch (e) {
 		console.error('syncZohoExpenseTrips error:', e.message);
+	}
+}
+
+async function createZohoExpense(expenseDetails) {
+	const accessToken = await getZohoExpenseAccessToken();
+
+	const categoryId = getCategoryId(expenseDetails.category);
+	const zohoPayload = {
+		date: expenseDetails.expenseDate || new Date().toISOString().slice(0, 10),
+		currency_id: '4208449000000000064',
+		amount: Number(expenseDetails.amount) || 0,
+		description: expenseDetails.expenseName || 'Expense via Catalyst',
+		category_id: categoryId
+	};
+
+	const postData = querystring.stringify({
+		JSONString: JSON.stringify(zohoPayload)
+	});
+
+	const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/expenses?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+
+	return new Promise((resolve, reject) => {
+		const req = https.request(url, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					const json = JSON.parse(data);
+					if (json.code === 0 && Array.isArray(json.expenses) && json.expenses.length > 0) {
+						resolve(json.expenses[0]);
+					} else {
+						reject(new Error(json.message || `Zoho API Error code ${json.code}`));
+					}
+				} catch (e) {
+					reject(new Error(`Failed to parse Zoho response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+}
+
+async function createZohoExpenseReport(reportDetails) {
+	const accessToken = await getZohoExpenseAccessToken();
+
+	const zohoPayload = {
+		report_name: reportDetails.reportName || 'Expense Report via Catalyst',
+		start_date: reportDetails.startDate || new Date().toISOString().slice(0, 10),
+		end_date: reportDetails.endDate || new Date().toISOString().slice(0, 10),
+		description: reportDetails.description || 'Created via Catalyst 2-Way Sync'
+	};
+
+	const postData = querystring.stringify({
+		JSONString: JSON.stringify(zohoPayload)
+	});
+
+	const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/expensereports?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+
+	return new Promise((resolve, reject) => {
+		const req = https.request(url, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					const json = JSON.parse(data);
+					if (json.code === 0 && json.expense_report) {
+						resolve(json.expense_report);
+					} else {
+						reject(new Error(json.message || `Zoho API Error code ${json.code}`));
+					}
+				} catch (e) {
+					reject(new Error(`Failed to parse Zoho response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+}
+
+async function syncZohoExpenseExpenses(expenseTable) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/expenses?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}&per_page=200`;
+		const expensesList = await new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'GET',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.expenses || []);
+					} catch (e) {
+						resolve([]);
+					}
+				});
+			});
+			req.on('error', () => resolve([]));
+			req.end();
+		});
+
+		if (Array.isArray(expensesList) && expensesList.length > 0) {
+			const existingRows = await fetchAllRows(expenseTable);
+			for (const exp of expensesList) {
+				const expName = exp.description || exp.reference_number || exp.report_name || 'General Expense';
+				const expDate = exp.date || new Date().toISOString().slice(0, 10);
+				const expAmt = Number(parseFloat(exp.total || exp.amount || 0)) || 0;
+				const expCat = exp.category_name || 'Office Supplies';
+				const expPaidBy = exp.user_name || exp.created_by_name || 'KR Tech Solutions';
+				const expStatus = exp.status || 'unreported';
+
+				const matched = existingRows.find(item => {
+					const row = item.Expense || item;
+					const sameName = row.Expense_name && String(row.Expense_name).trim().toLowerCase() === expName.toLowerCase();
+					const sameDate = row.Expense_date && String(row.Expense_date).trim() === expDate.trim();
+					return sameName && (sameDate || expName.toLowerCase().includes('er-') || expCat === 'Expense Report');
+				});
+
+				const rowData = {
+					Expense_name: expName,
+					Category: expCat,
+					Amount: expAmt,
+					Expense_date: expDate,
+					Paid_by: expPaidBy,
+					Status: expStatus
+				};
+
+				if (matched) {
+					const existingRow = matched.Expense || matched;
+					await expenseTable.updateRow({
+						ROWID: existingRow.ROWID,
+						...rowData
+					});
+				} else {
+					await expenseTable.insertRow(rowData);
+				}
+			}
+		}
+	} catch (e) {
+		console.error('syncZohoExpenseExpenses error:', e.message);
 	}
 }
 
@@ -386,9 +576,94 @@ module.exports = async (context, basicIO) => {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
 			await appUserTable.deleteRow(rowId);
 			writeOutput(basicIO, { status: 'Success' });
+		} else if (action === 'add_expense') {
+			const expName = arg('Expense_name') || arg('expense_name') || arg('description') || 'General Expense';
+			const expCat = arg('Category') || arg('category') || 'Office Supplies';
+			const rawAmt = arg('Amount') || arg('amount') || 0;
+			const expAmt = Number(parseFloat(rawAmt)) || 0;
+			const expDate = arg('Expense_date') || arg('expense_date') || arg('date') || new Date().toISOString().slice(0, 10);
+			const expPaidBy = arg('Paid_by') || arg('paid_by') || 'Submiter';
+			const expStatus = arg('Status') || arg('status') || 'unreported';
+
+			let zohoExp = null;
+			try {
+				zohoExp = await createZohoExpense({
+					expenseName: expName,
+					category: expCat,
+					amount: expAmt,
+					expenseDate: expDate,
+					paidBy: expPaidBy,
+					status: expStatus
+				});
+			} catch (zohoErr) {
+				console.error('Zoho Expense API create expense error:', zohoErr.message);
+				throw new Error(`Failed to record expense in Zoho Expense: ${zohoErr.message}`);
+			}
+
+			// Idempotent upsert in Datastore
+			const existingExpenses = await fetchAllRows(expenseTable);
+			const matchedExpense = existingExpenses.find((item) => {
+				const row = item.Expense || item;
+				const sameName = row.Expense_name && String(row.Expense_name).trim().toLowerCase() === expName.toLowerCase();
+				const sameDate = row.Expense_date && String(row.Expense_date).trim() === expDate.trim();
+				return sameName && sameDate;
+			});
+
+			let inserted;
+			if (matchedExpense) {
+				const existingRow = matchedExpense.Expense || matchedExpense;
+				inserted = await expenseTable.updateRow({
+					ROWID: existingRow.ROWID,
+					Expense_name: expName,
+					Category: expCat,
+					Amount: expAmt,
+					Expense_date: expDate,
+					Paid_by: expPaidBy,
+					Status: expStatus
+				});
+			} else {
+				inserted = await expenseTable.insertRow({
+					Expense_name: expName,
+					Category: expCat,
+					Amount: expAmt,
+					Expense_date: expDate,
+					Paid_by: expPaidBy,
+					Status: expStatus
+				});
+			}
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				action: 'add_expense',
+				data: inserted,
+				zoho_expense: zohoExp
+			});
+		} else if (action === 'add_report') {
+			const reportName = arg('Report_name') || arg('report_name') || 'Expense Report';
+			const startDate = arg('Start_date') || arg('start_date') || new Date().toISOString().slice(0, 10);
+			const endDate = arg('End_date') || arg('end_date') || new Date().toISOString().slice(0, 10);
+			const desc = arg('Description') || arg('description') || 'Created via Catalyst 2-Way Sync';
+
+			let zohoReport = null;
+			try {
+				zohoReport = await createZohoExpenseReport({
+					reportName,
+					startDate,
+					endDate,
+					description: desc
+				});
+			} catch (zohoErr) {
+				console.error('Zoho Expense API create report error:', zohoErr.message);
+				throw new Error(`Failed to create report in Zoho Expense: ${zohoErr.message}`);
+			}
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				action: 'add_report',
+				data: zohoReport
+			});
 		} else if (
 			action === 'webhook_expense' ||
-			action === 'add_expense' ||
 			action === 'sync_expense' ||
 			Boolean(allArgs?.expense_report || allArgs?.expense || allArgs?.Expense)
 		) {
@@ -721,6 +996,7 @@ module.exports = async (context, basicIO) => {
 			writeOutput(basicIO, { status: 'Success', data: updated });
 		} else if (action === 'sync_all_from_expense') {
 			await syncZohoExpenseTrips(tripTable);
+			await syncZohoExpenseExpenses(expenseTable);
 			const currentExpenses = await fetchAllRows(expenseTable);
 			const currentTrips = await fetchAllRows(tripTable);
 			writeOutput(basicIO, {
@@ -730,15 +1006,19 @@ module.exports = async (context, basicIO) => {
 				message: `Synced ${currentExpenses.length} expenses and ${currentTrips.length} trips with Zoho Expense.`
 			});
 		} else {
-			// ZERO STATIC / MOCK DATA
-			// Only read actual data from Datastore
+			// Pull real expenses and trips if expense table is currently empty
+			let expenses = await fetchAllRows(expenseTable);
+			if (expenses.length <= 1) {
+				await syncZohoExpenseExpenses(expenseTable);
+				expenses = await fetchAllRows(expenseTable);
+			}
+
 			const rawAppUsers = await fetchAllRows(appUserTable);
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
 
 			const employees = await fetchAllRows(empTable);
 			const designations = await fetchAllRows(desigTable);
 			const purchaseRequests = await fetchAllRows(prTable);
-			const expenses = await fetchAllRows(expenseTable);
 			const trips = await fetchAllRows(tripTable);
 
 			// Real empty arrays: NO static/mock reports, advances, or cards
