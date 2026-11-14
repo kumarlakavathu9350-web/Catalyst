@@ -6,6 +6,7 @@
 	"dependencies": {
 		"@zcatalyst/auth": "latest",
 		"@zcatalyst/cache": "latest",
-		"@zcatalyst/datastore": "^1.0.0"
+		"@zcatalyst/datastore": "^1.0.0",
+		"@zcatalyst/mail": "^1.0.0"
 	}
 }

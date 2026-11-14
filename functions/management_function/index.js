@@ -3,8 +3,10 @@ const https = require('https');
 const querystring = require('querystring');
 const { zcAuth, UserManagement } = require('@zcatalyst/auth');
 const { Datastore } = require('@zcatalyst/datastore');
+const { Mail } = require('@zcatalyst/mail');
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'zoho-catalyst-mgmt-app-user-session-v1';
+const SENDER_EMAIL = 'kumarlakavathu9350@gmail.com';
 
 // Strict Authorization: Verified Organization Members in Zoho Expense (KR Tech Solutions - 60095930892)
 const VERIFIED_EXPENSE_EMAILS = new Set([
@@ -381,6 +383,36 @@ async function syncZohoExpenseExpenses(expenseTable) {
 	}
 }
 
+async function sendNotificationEmail(adminApp, { to, subject, htmlContent, textContent }) {
+	try {
+		const mail = new Mail(adminApp);
+		let recipients = [];
+		if (Array.isArray(to)) {
+			recipients = to.filter(Boolean);
+		} else if (typeof to === 'string' && to.trim()) {
+			recipients = [to.trim()];
+		}
+		if (recipients.length === 0) {
+			recipients = ['kumar.r@rcidigital.com'];
+		}
+
+		const mailPayload = {
+			from_email: SENDER_EMAIL,
+			to_email: recipients,
+			subject: subject,
+			content: htmlContent || textContent || 'Notification from KR Tech Solutions',
+			html_mode: Boolean(htmlContent)
+		};
+
+		const result = await mail.sendMail(mailPayload);
+		console.log('Catalyst email sent successfully:', result);
+		return { success: true, result };
+	} catch (err) {
+		console.error('Failed to send Catalyst email:', err.message || err);
+		return { success: false, error: err.message || String(err) };
+	}
+}
+
 function asciiStringify(obj) {
 	return JSON.stringify(obj).replace(/[\u007F-\uFFFF]/g, (ch) => {
 		return '\\u' + ('0000' + ch.charCodeAt(0).toString(16)).slice(-4);
@@ -571,6 +603,30 @@ module.exports = async (context, basicIO) => {
 				emp_mail: normalizedEmail,
 				emp_password: appUserPassword
 			});
+
+			// Email Notification: User Account Created & Verified
+			await sendNotificationEmail(adminApp, {
+				to: normalizedEmail,
+				subject: 'Welcome to KR Tech Solutions - Expense & Travel Portal',
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #2563eb; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">Welcome to KR Tech Solutions</h2>
+							<p style="margin: 5px 0 0; opacity: 0.9;">Catalyst &amp; Zoho Expense Integrated Portal</p>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>Hello <strong>${appUserName}</strong>,</p>
+							<p>Your account has been registered and verified successfully in KR Tech Solutions.</p>
+							<div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 14px; margin: 18px 0;">
+								<p style="margin: 0;"><strong>Registered Email:</strong> ${normalizedEmail}</p>
+								<p style="margin: 6px 0 0;"><strong>Status:</strong> Verified Active Member</p>
+							</div>
+							<p>You can now sign in to manage expenses and travel requests with full real-time Zoho Expense 2-way sync.</p>
+						</div>
+					</div>
+				`
+			});
+
 			writeOutput(basicIO, { status: 'Success', data: sanitizeAppUser(inserted) });
 		} else if (action === 'delete_app_user' || action === 'delete') {
 			if (!rowId) throw new Error('row_id is required to delete a record.');
@@ -631,6 +687,32 @@ module.exports = async (context, basicIO) => {
 					Status: expStatus
 				});
 			}
+
+			// Email Notification: Expense Recorded
+			const notifyRecipient = expPaidBy.includes('@') ? expPaidBy : 'kumar.r@rcidigital.com';
+			await sendNotificationEmail(adminApp, {
+				to: [notifyRecipient, 'kumarlakavthu@gmail.com'],
+				subject: `💳 Expense Recorded: ${expName} (₹${expAmt})`,
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #10b981; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">Expense Recorded Successfully</h2>
+							<p style="margin: 5px 0 0; opacity: 0.9;">Synced with Zoho Expense &amp; Catalyst</p>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>A new expense has been recorded in KR Tech Solutions:</p>
+							<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Description:</td><td style="font-weight: bold; text-align: right;">${expName}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Category:</td><td style="text-align: right;">${expCat}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Amount:</td><td style="font-weight: bold; color: #059669; text-align: right;">₹${expAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Date:</td><td style="text-align: right;">${expDate}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Paid By:</td><td style="text-align: right;">${expPaidBy}</td></tr>
+								<tr><td style="padding: 8px 0; color: #64748b;">Status:</td><td style="text-align: right; text-transform: capitalize;">${expStatus}</td></tr>
+							</table>
+						</div>
+					</div>
+				`
+			});
 
 			writeOutput(basicIO, {
 				status: 'Success',
@@ -787,6 +869,26 @@ module.exports = async (context, basicIO) => {
 				ROWID: rowId,
 				Status: 'approved'
 			});
+
+			// Email Notification: Expense Approved
+			await sendNotificationEmail(adminApp, {
+				to: ['kumar.r@rcidigital.com', 'kumarlakavthu@gmail.com'],
+				subject: '✅ Expense Approved - KR Tech Solutions',
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #15803d; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">Expense Approved</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>The expense with Record ID <strong>${rowId}</strong> has been successfully approved by the manager.</p>
+							<div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 14px; margin: 18px 0;">
+								<p style="margin: 0; color: #15803d; font-weight: bold;">Status: Approved &amp; Cleared for Processing</p>
+							</div>
+						</div>
+					</div>
+				`
+			});
+
 			writeOutput(basicIO, { status: 'Success', data: updated });
 		} else if (action === 'add_trip') {
 			const tripName = arg('Trip_name') || arg('trip_name') || 'Corporate Business Trip';
@@ -855,11 +957,67 @@ module.exports = async (context, basicIO) => {
 				});
 			}
 
+			// Email Notification: Trip Request Created
+			await sendNotificationEmail(adminApp, {
+				to: ['kumar.r@rcidigital.com', 'kumarlakavthu@gmail.com'],
+				subject: `✈️ Trip Request Created: ${tripNumber} - ${tripName}`,
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #0284c7; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">New Trip Request Created</h2>
+							<p style="margin: 5px 0 0; opacity: 0.9;">Zoho Expense &amp; Catalyst 2-Way Sync</p>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>A new business travel request has been generated and synced with Zoho Expense:</p>
+							<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Trip Number:</td><td style="font-weight: bold; text-align: right;">${tripNumber}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Trip Name:</td><td style="font-weight: bold; text-align: right;">${tripName}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Route:</td><td style="text-align: right;">${departure} ➔ ${destination}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Dates:</td><td style="text-align: right;">${startDate} to ${endDate}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Submitter:</td><td style="text-align: right;">${submitter}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Budget:</td><td style="color: #0284c7; font-weight: bold; text-align: right;">₹${budget.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>
+								<tr><td style="padding: 8px 0; color: #64748b;">Status:</td><td style="text-align: right; text-transform: capitalize;">${status}</td></tr>
+							</table>
+						</div>
+					</div>
+				`
+			});
+
 			writeOutput(basicIO, {
 				status: 'Success',
 				action: 'add_trip',
 				data: insertedTrip,
 				zoho_trip: zohoTrip
+			});
+		} else if (action === 'send_test_email') {
+			const toEmail = arg('to_email') || arg('to') || 'kumarlakavathu9350@gmail.com';
+			const mailRes = await sendNotificationEmail(adminApp, {
+				to: toEmail,
+				subject: '🔔 Test Notification from KR Tech Solutions (Catalyst Mail)',
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #2563eb; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">Catalyst Mail Configured Successfully!</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>Hello,</p>
+							<p>This is a test email sent from <strong>Catalyst Mail</strong> using sender address <code>${SENDER_EMAIL}</code>.</p>
+							<p>Email notifications are configured and active for:</p>
+							<ul>
+								<li>✈️ New Trip Creation (Synced with Zoho Expense)</li>
+								<li>💳 New Expense Recording</li>
+								<li>✅ Expense Approvals</li>
+								<li>👤 User Registrations &amp; Verification</li>
+							</ul>
+							<p style="color: #10b981; font-weight: bold;">Status: All email triggers verified and operational.</p>
+						</div>
+					</div>
+				`
+			});
+			writeOutput(basicIO, {
+				status: mailRes.success ? 'Success' : 'Error',
+				message: mailRes.success ? `Test email successfully sent to ${toEmail}` : `Failed to send email: ${mailRes.error}`,
+				mail_response: mailRes
 			});
 		} else if (
 			action === 'webhook_trip' ||
