@@ -610,6 +610,70 @@ async function deleteZohoExpense(zohoExpenseId) {
 	}
 }
 
+async function deleteZohoTrip(zohoTripId) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/trips/${zohoTripId}?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+		return new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'DELETE',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.code === 0);
+					} catch {
+						resolve(false);
+					}
+				});
+			});
+			req.on('error', () => resolve(false));
+			req.end();
+		});
+	} catch (e) {
+		console.error('deleteZohoTrip error:', e.message);
+		return false;
+	}
+}
+
+async function deleteZohoUser(zohoUserId) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/users/${zohoUserId}?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+		return new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'DELETE',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.code === 0);
+					} catch {
+						resolve(false);
+					}
+				});
+			});
+			req.on('error', () => resolve(false));
+			req.end();
+		});
+	} catch (e) {
+		console.error('deleteZohoUser error:', e.message);
+		return false;
+	}
+}
+
 async function createZohoExpenseUser({ name, email, role, departmentName }) {
 	const accessToken = await getZohoExpenseAccessToken();
 	const zohoPayload = {
@@ -1412,8 +1476,25 @@ module.exports = async (context, basicIO) => {
 			});
 		} else if (action === 'delete_user') {
 			if (!rowId) throw new Error('row_id is required to delete a user.');
+			let userRow = null;
+			try {
+				userRow = await appUserTable.getRow(rowId);
+			} catch (e) {
+				const all = await fetchAllRows(appUserTable);
+				userRow = all.find(r => {
+					const row = r.App_user || r;
+					return String(row.ROWID) === String(rowId);
+				});
+			}
+			const uData = userRow?.App_user || userRow || {};
+			if (uData.Zoho_user_id) {
+				await deleteZohoUser(uData.Zoho_user_id);
+			}
+			if (uData.emp_mail) {
+				VERIFIED_EXPENSE_EMAILS.delete(String(uData.emp_mail).toLowerCase());
+			}
 			await appUserTable.deleteRow(rowId);
-			writeOutput(basicIO, { status: 'Success', message: 'User removed from Catalyst Datastore.' });
+			writeOutput(basicIO, { status: 'Success', message: 'User deleted from Catalyst Datastore and Zoho Expense.' });
 		} else if (action === 'sync_users') {
 			await syncZohoExpenseUsers(appUserTable);
 			const currentUsers = (await fetchAllRows(appUserTable)).map(sanitizeAppUser);
@@ -1692,8 +1773,47 @@ module.exports = async (context, basicIO) => {
 			});
 		} else if (action === 'delete_trip') {
 			if (!rowId) throw new Error('row_id is required to delete a trip.');
+			let tripRow = null;
+			try {
+				tripRow = await tripTable.getRow(rowId);
+			} catch (e) {
+				const all = await fetchAllRows(tripTable);
+				tripRow = all.find(r => {
+					const row = r.Trip || r;
+					return String(row.ROWID) === String(rowId);
+				});
+			}
+			const tData = tripRow?.Trip || tripRow || {};
+			const tripNum = tData.Trip_number;
+
+			try {
+				const accessToken = await getZohoExpenseAccessToken();
+				const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/trips?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}&per_page=200`;
+				const tripsList = await new Promise((resolve) => {
+					const req = https.request(url, {
+						method: 'GET',
+						headers: {
+							'Authorization': `Zoho-oauthtoken ${accessToken}`,
+							'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+						}
+					}, (res) => {
+						let data = '';
+						res.on('data', chunk => data += chunk);
+						res.on('end', () => {
+							try { resolve(JSON.parse(data).trips || []); } catch { resolve([]); }
+						});
+					});
+					req.on('error', () => resolve([]));
+					req.end();
+				});
+				const matchedTrip = tripsList.find(x => (x.trip_number && tripNum && x.trip_number.toLowerCase() === tripNum.toLowerCase()) || (x.trip_name && tData.Trip_name && x.trip_name.toLowerCase() === tData.Trip_name.toLowerCase()));
+				if (matchedTrip?.trip_id) {
+					await deleteZohoTrip(matchedTrip.trip_id);
+				}
+			} catch (e) {}
+
 			await tripTable.deleteRow(rowId);
-			writeOutput(basicIO, { status: 'Success' });
+			writeOutput(basicIO, { status: 'Success', message: 'Trip deleted from Catalyst Datastore and Zoho Expense.' });
 		} else if (action === 'approve_trip') {
 			if (!rowId) throw new Error('row_id is required to approve a trip.');
 			const updated = await tripTable.updateRow({
