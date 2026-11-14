@@ -309,13 +309,124 @@ module.exports = async (context, basicIO) => {
 				Status: 'approved'
 			});
 			writeOutput(basicIO, { status: 'Success', data: updated });
+		} else if (
+			action === 'webhook_trip' ||
+			action === 'add_trip' ||
+			Boolean(allArgs?.trip || allArgs?.Trip)
+		) {
+			let payload = allArgs || {};
+			if (typeof allArgs === 'string') {
+				try { payload = JSON.parse(allArgs); } catch {}
+			} else if (typeof allArgs?.body === 'string') {
+				try { payload = JSON.parse(allArgs.body); } catch {}
+			}
+			const t = payload.trip || payload.Trip || payload.data || payload;
+
+			const tripNumber = String(
+				t.Trip_number ||
+				t.trip_number ||
+				arg('Trip_number') ||
+				arg('trip_number') ||
+				`TRIP-${Date.now().toString().slice(-5)}`
+			).trim();
+
+			const tripName = String(
+				t.Trip_name ||
+				t.trip_name ||
+				arg('Trip_name') ||
+				arg('trip_name') ||
+				'Corporate Business Trip'
+			).trim();
+
+			const departure = String(
+				t.Departure ||
+				t.departure ||
+				arg('Departure') ||
+				arg('departure') ||
+				'Headquarters'
+			).trim();
+
+			const destination = String(
+				t.Destination ||
+				t.destination ||
+				t.destination_city ||
+				arg('Destination') ||
+				arg('destination') ||
+				'Client Site'
+			).trim();
+
+			const startDate = String(
+				t.Start_date ||
+				t.start_date ||
+				arg('Start_date') ||
+				arg('start_date') ||
+				new Date().toISOString().slice(0, 10)
+			).trim();
+
+			const endDate = String(
+				t.End_date ||
+				t.end_date ||
+				arg('End_date') ||
+				arg('end_date') ||
+				new Date().toISOString().slice(0, 10)
+			).trim();
+
+			const submitter = String(
+				t.Submitter ||
+				t.submitter ||
+				t.submitter_name ||
+				t.user_name ||
+				arg('Submitter') ||
+				arg('submitter') ||
+				'Submiter'
+			).trim();
+
+			const status = String(
+				t.Status ||
+				t.status ||
+				arg('Status') ||
+				arg('status') ||
+				'approved'
+			).trim();
+
+			const budget = Number(parseFloat(t.Budget ?? t.budget ?? t.budget_amount ?? arg('Budget') ?? 0)) || 0;
+
+			const insertedTrip = await tripTable.insertRow({
+				Trip_number: tripNumber,
+				Trip_name: tripName,
+				Departure: departure,
+				Destination: destination,
+				Start_date: startDate,
+				End_date: endDate,
+				Submitter: submitter,
+				Status: status,
+				Budget: budget
+			});
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				action: 'webhook_trip',
+				data: insertedTrip
+			});
+		} else if (action === 'delete_trip') {
+			if (!rowId) throw new Error('row_id is required to delete a trip.');
+			await tripTable.deleteRow(rowId);
+			writeOutput(basicIO, { status: 'Success' });
+		} else if (action === 'approve_trip') {
+			if (!rowId) throw new Error('row_id is required to approve a trip.');
+			const updated = await tripTable.updateRow({
+				ROWID: rowId,
+				Status: 'approved'
+			});
+			writeOutput(basicIO, { status: 'Success', data: updated });
 		} else if (action === 'sync_all_from_expense') {
 			const currentExpenses = await fetchAllRows(expenseTable);
+			const currentTrips = await fetchAllRows(tripTable);
 			writeOutput(basicIO, {
 				status: 'Success',
 				synced_expenses: currentExpenses.length,
-				synced_trips: 0,
-				message: `Synced ${currentExpenses.length} expense records from Datastore.`
+				synced_trips: currentTrips.length,
+				message: `Synced ${currentExpenses.length} expenses and ${currentTrips.length} trips from Datastore.`
 			});
 		} else {
 			// ZERO STATIC / MOCK DATA

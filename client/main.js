@@ -19,6 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeExpenseModalBtn = $('closeExpenseModalBtn');
     const cancelExpenseModalBtn = $('cancelExpenseModalBtn');
 
+    // Trip Modal & Table elements
+    const tripModal = $('tripModal');
+    const tripForm = $('tripForm');
+    const openTripModalBtn = $('openTripModalBtn');
+    const closeTripModalBtn = $('closeTripModalBtn');
+    const cancelTripModalBtn = $('cancelTripModalBtn');
+    const tripsTableBody = $('tripsTableBody');
+    const tripsCountBadge = $('tripsCountBadge');
+
     // Sidebar navigation tabs
     const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
     const viewPanels = document.querySelectorAll('.view-panel');
@@ -66,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fullAnalyticsBreakdown = $('fullAnalyticsBreakdown');
 
     let allExpenses = [];
+    let allTrips = [];
     let currentFilter = 'all';
     let searchQuery = '';
     let selectedRowIds = new Set();
@@ -129,8 +139,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (closeExpenseModalBtn) closeExpenseModalBtn.onclick = closeExpenseModal;
     if (cancelExpenseModalBtn) cancelExpenseModalBtn.onclick = closeExpenseModal;
+
+    // Trip Modal controls
+    function openTripModal() {
+        if (tripModal) tripModal.style.display = 'flex';
+    }
+    function closeTripModal() {
+        if (tripModal) tripModal.style.display = 'none';
+    }
+
+    if (openTripModalBtn) openTripModalBtn.onclick = openTripModal;
+    if (closeTripModalBtn) closeTripModalBtn.onclick = closeTripModal;
+    if (cancelTripModalBtn) cancelTripModalBtn.onclick = closeTripModal;
+
     window.onclick = (e) => {
         if (e.target === expenseModal) closeExpenseModal();
+        if (e.target === tripModal) closeTripModal();
     };
 
     $('refreshBtn').onclick = loadData;
@@ -318,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.status !== 'Success') throw new Error(data.message || 'Error');
 
             allExpenses = data.expenses || [];
+            allTrips = data.trips || [];
             const appUsers = data.appUsers || [];
 
             // 1. Calculate Executive KPIs
@@ -380,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 4. Render All Views
             renderAllViews();
+            renderTripsView(allTrips);
 
             // 5. Render Full Analytics View
             renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
@@ -794,6 +820,113 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Save Expense';
+            }
+        };
+    }
+
+    function renderTripsView(trips) {
+        if (!tripsTableBody) return;
+        if (tripsCountBadge) tripsCountBadge.textContent = `${trips.length} Trips`;
+
+        if (!trips.length) {
+            tripsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+                        No trips recorded in Catalyst Datastore.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tripsTableBody.innerHTML = '';
+        trips.forEach((item) => {
+            const t = item.Trip || item;
+            const rowId = t.ROWID || '';
+            const tripNum = t.Trip_number || 'TRIP-00000';
+            const tripName = t.Trip_name || 'Business Trip';
+            const departure = t.Departure || 'HQ';
+            const destination = t.Destination || 'Site';
+            const dates = `${t.Start_date || ''} - ${t.End_date || ''}`;
+            const submitter = t.Submitter || 'Submiter';
+            const status = String(t.Status || 'approved').toLowerCase();
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(tripNum)}</strong></td>
+                <td>${escapeHtml(tripName)}</td>
+                <td>${escapeHtml(departure)} ➔ ${escapeHtml(destination)}</td>
+                <td style="color: #64748b; font-size: 13px;">${escapeHtml(dates)}</td>
+                <td style="color: #475569;">${escapeHtml(submitter)}</td>
+                <td><span class="status-badge-chip chip-approved">${escapeHtml(status)}</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-row-delete btn-delete-trip-action" type="button" title="Delete trip" data-id="${escapeHtml(rowId)}" data-name="${escapeHtml(tripName)}">🗑️</button>
+                </td>
+            `;
+
+            const delBtn = tr.querySelector('.btn-delete-trip-action');
+            if (delBtn) {
+                delBtn.onclick = async () => {
+                    if (!confirm(`Delete trip "${tripName}"?`)) return;
+                    delBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'delete_trip', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to delete trip: ' + (err.message || 'Error'));
+                        delBtn.disabled = false;
+                    }
+                };
+            }
+
+            tripsTableBody.appendChild(tr);
+        });
+    }
+
+    // Trip Modal Form Submission
+    if (tripForm) {
+        tripForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const Trip_name = $('tripNameInput').value.trim();
+            const Departure = $('tripDepartureInput').value.trim();
+            const Destination = $('tripDestinationInput').value.trim();
+            const Start_date = $('tripStartDateInput').value;
+            const End_date = $('tripEndDateInput').value;
+            const Submitter = $('tripSubmitterSelect').value.trim();
+            const Budget = $('tripBudgetInput').value.trim();
+
+            if (!Trip_name || !Departure || !Destination) {
+                alert('Please enter trip name, departure, and destination.');
+                return;
+            }
+
+            const submitBtn = tripForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const res = await callFunction({
+                    action: 'add_trip',
+                    Trip_name,
+                    Departure,
+                    Destination,
+                    Start_date,
+                    End_date,
+                    Submitter,
+                    Budget: Budget || 0,
+                    Status: 'approved'
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to save');
+
+                closeTripModal();
+                tripForm.reset();
+                await loadData();
+            } catch (err) {
+                alert('Error adding trip: ' + (err.message || 'Error'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Trip';
             }
         };
     }
