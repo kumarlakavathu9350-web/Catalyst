@@ -63,22 +63,38 @@ body {
     z-index: 100;
 }
 
+/* Universal SVG constraint */
+svg {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 /* Dark Navy Header with Zoho Receipt Logo & "Expense" */
 .sidebar-header {
-    height: 60px;
+    height: 60px !important;
+    max-height: 60px !important;
+    min-height: 60px !important;
     background: var(--zoho-navy);
-    display: flex;
-    align-items: center;
+    display: flex !important;
+    align-items: center !important;
     gap: 12px;
     padding: 0 20px;
     color: #ffffff;
+    overflow: hidden !important;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .brand-icon-svg {
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    flex-shrink: 0 !important;
     color: #ffffff;
+    display: inline-block !important;
 }
 
 .brand-title {
@@ -86,6 +102,7 @@ body {
     font-weight: 600;
     color: #ffffff;
     letter-spacing: -0.3px;
+    white-space: nowrap;
 }
 
 /* Navigation List */

@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zoho Expense - KR Tech Solutions</title>
     <link rel="stylesheet" href="main.css">
+    <style>
+        /* Essential safeguards to prevent oversized SVG scaling */
+        svg { max-width: 100%; }
+        .sidebar-header { height: 60px !important; max-height: 60px !important; overflow: hidden !important; display: flex !important; align-items: center !important; }
+        .brand-icon-svg { width: 32px !important; height: 32px !important; min-width: 32px !important; max-width: 32px !important; min-height: 32px !important; max-height: 32px !important; flex-shrink: 0 !important; display: inline-block !important; }
+        .nav-icon { width: 20px !important; height: 20px !important; min-width: 20px !important; max-width: 20px !important; flex-shrink: 0 !important; }
+        .nav-icon svg { width: 100% !important; height: 100% !important; max-width: 20px !important; max-height: 20px !important; }
+    </style>
     <script src="https://static.zohocdn.com/catalyst/sdk/js/4.6.2/catalystWebSDK.js"></script>
     <script src="/__catalyst/sdk/init.js"></script>
 </head>
@@ -18,7 +26,7 @@
         <aside class="sidebar">
             <!-- Sidebar Header: Dark Navy with Zoho Receipt Logo & "Expense" -->
             <div class="sidebar-header">
-                <svg class="brand-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="brand-icon-svg" width="32" height="32" style="width: 32px !important; height: 32px !important; max-width: 32px !important; max-height: 32px !important; flex-shrink: 0 !important;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path>
                     <path d="M8 7h8"></path>
                     <path d="M8 11h8"></path>
@@ -31,14 +39,14 @@
             <nav class="sidebar-nav">
                 <a class="nav-link" data-tab="home" title="Home Overview">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     </span>
                     <span class="nav-label">Home</span>
                 </a>
 
                 <a class="nav-link" data-tab="trips" title="Business Trips">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
                     </span>
                     <span class="nav-label">Trips</span>
                 </a>
@@ -46,7 +54,7 @@
                 <!-- Active Expenses Tab with Vibrant Blue Pill and '+' Quick Button -->
                 <a class="nav-link active" data-tab="expenses" title="Expenses Stream">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path><path d="M16 8h-8"></path><path d="M16 12h-8"></path><path d="M11 16h-3"></path></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path><path d="M16 8h-8"></path><path d="M16 12h-8"></path><path d="M11 16h-3"></path></svg>
                     </span>
                     <span class="nav-label">Expenses</span>
                     <span class="nav-add-btn" id="quickAddExpenseNavBtn" title="Create New Expense">+</span>
@@ -54,28 +62,28 @@
 
                 <a class="nav-link" data-tab="reports" title="Expense Reports">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                     </span>
                     <span class="nav-label">Reports</span>
                 </a>
 
                 <a class="nav-link" data-tab="advances" title="Cash & Employee Advances">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M2 10h20"></path><circle cx="16" cy="15" r="1"></circle></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M2 10h20"></path><circle cx="16" cy="15" r="1"></circle></svg>
                     </span>
                     <span class="nav-label">Advances</span>
                 </a>
 
                 <a class="nav-link" data-tab="purchases" title="Purchase Requests">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
                     </span>
                     <span class="nav-label">Purchase Requests</span>
                 </a>
 
                 <a class="nav-link" data-tab="cards" title="Corporate Cards">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
                     </span>
                     <span class="nav-label">Cards</span>
                 </a>
@@ -84,14 +92,14 @@
 
                 <a class="nav-link" data-tab="analytics" title="Financial Analytics">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     </span>
                     <span class="nav-label">Analytics</span>
                 </a>
 
                 <a class="nav-link" data-tab="settings" title="Organization & Settings">
                     <span class="nav-icon">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     </span>
                     <span class="nav-label">My Settings</span>
                 </a>
@@ -380,9 +388,15 @@
                 <section id="view-reports" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>📁 Expense Reports Summary</h3>
-                            <span class="badge-pill" id="reportsCountBadge">7 Reports</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>📁 Expense Reports &amp; Multi-Level Approvals</h3>
+                                <span class="badge-pill" id="reportsCountBadge">0 Reports</span>
+                            </div>
+                            <button type="button" id="openReportModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Report</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Consolidated expense reports synced with Zoho Expense with multi-level approval pipeline (Level 1 Manager ➔ Level 2 Finance ➔ Level 3 Settled).
+                        </p>
                         <div class="zoho-table-wrapper">
                             <table class="zoho-table" id="reportsTable">
                                 <thead>
@@ -390,67 +404,18 @@
                                         <th>Report#</th>
                                         <th>Report Name</th>
                                         <th>Submitter</th>
-                                        <th>Submitted Date</th>
+                                        <th>Dates</th>
+                                        <th>Approval Stage</th>
                                         <th>Status</th>
                                         <th style="text-align: right;">Total Amount</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="reportsTableBody">
                                     <tr>
-                                        <td><strong>ER-00009</strong></td>
-                                        <td>Submiter - ER-00009 13/11/2026</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,000.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00008</strong></td>
-                                        <td>Submiter - ER-00008 27/11/2026</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹111.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00007</strong></td>
-                                        <td>Submiter - Q4 Cloud Operations &amp; Client Deployment</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-pending">Submitted</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹10,876.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00006</strong></td>
-                                        <td>Purchase Requests - Submiter</td>
-                                        <td>Submiter</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-reimbursed">Reimbursed</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹4,61,000.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00005</strong></td>
-                                        <td>Purchase Requests - kumar lakavthu</td>
-                                        <td>kumar lakavthu</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-reimbursed">Reimbursed</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹4,86,380.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00004</strong></td>
-                                        <td>Client Engagement &amp; Technical Summit 2026</td>
-                                        <td>kumar lakavthu</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,470.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ER-00002</strong></td>
-                                        <td>kumar lakavthu - ER-00002 25/11/2026</td>
-                                        <td>kumar lakavthu</td>
-                                        <td>13/11/2026</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,000.00</td>
+                                        <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading reports from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -464,29 +429,34 @@
                 <section id="view-advances" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>💼 Employee Advances</h3>
-                            <span class="badge-pill">Float Balance: ₹0.00</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>💼 Cash &amp; Travel Advances</h3>
+                                <span class="badge-pill" id="advancesCountBadge">0 Advances</span>
+                            </div>
+                            <button type="button" id="openAdvanceModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Advance</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Pre-trip and operational cash advances requested by employees with multi-level sign-off and disbursal tracking.
+                        </p>
                         <div class="zoho-table-wrapper">
-                            <table class="zoho-table">
+                            <table class="zoho-table" id="advancesTable">
                                 <thead>
                                     <tr>
                                         <th>Advance#</th>
                                         <th>Employee</th>
                                         <th>Date</th>
-                                        <th>Payment Mode</th>
+                                        <th>Reason</th>
+                                        <th>Approval Stage</th>
                                         <th>Status</th>
                                         <th style="text-align: right;">Amount</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="advancesTableBody">
                                     <tr>
-                                        <td><strong>ADV-0001</strong></td>
-                                        <td>kumar lakavthu</td>
-                                        <td>10/11/2026</td>
-                                        <td>Bank Transfer</td>
-                                        <td><span class="status-badge-chip chip-approved">Settled</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹5,000.00</td>
+                                        <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading employee advances from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -500,34 +470,34 @@
                 <section id="view-purchases" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>🛍️ Purchase Requests</h3>
-                            <span class="badge-pill">Procurement V2</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>🛍️ Purchase Requests &amp; Procurement</h3>
+                                <span class="badge-pill" id="purchasesCountBadge">0 Requests</span>
+                            </div>
+                            <button type="button" id="openPurchaseModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Purchase Request</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Enterprise procurement requisitions with budget verification, multi-level approvals, and vendor tracking.
+                        </p>
                         <div class="zoho-table-wrapper">
-                            <table class="zoho-table">
+                            <table class="zoho-table" id="purchasesTable">
                                 <thead>
                                     <tr>
                                         <th>Item Name</th>
                                         <th>Vendor</th>
-                                        <th>Requester</th>
+                                        <th>Requester &amp; Dept</th>
+                                        <th>Date</th>
+                                        <th>Approval Stage</th>
                                         <th>Status</th>
                                         <th style="text-align: right;">Amount</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="purchasesTableBody">
                                     <tr>
-                                        <td><strong>MacBook Pro 16-inch M3 Max</strong></td>
-                                        <td>Apple India Pvt Ltd</td>
-                                        <td>kumar lakavthu</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹2,49,900.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>AWS Cloud Reserved Instances</strong></td>
-                                        <td>Amazon Web Services</td>
-                                        <td>Submiter</td>
-                                        <td><span class="status-badge-chip chip-approved">Approved</span></td>
-                                        <td style="text-align: right; font-weight: 700;">₹1,85,000.00</td>
+                                        <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading purchase requests from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -541,9 +511,15 @@
                 <section id="view-cards" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>💳 Corporate Cards &amp; Automated Feeds</h3>
-                            <span class="badge-pill">Mastercard / Visa Sync</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>💳 Corporate Cards &amp; Automated Feeds</h3>
+                                <span class="badge-pill" id="cardsCountBadge">0 Cards</span>
+                            </div>
+                            <button type="button" id="openCardModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ Add Card</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Active corporate credit and debit cards linked to automatic transaction feeds and statement matching.
+                        </p>
                         <div class="zoho-table-wrapper">
                             <table class="zoho-table">
                                 <thead>
@@ -551,17 +527,17 @@
                                         <th>Cardholder</th>
                                         <th>Card Number</th>
                                         <th>Bank / Provider</th>
-                                        <th>Type</th>
+                                        <th>Card Type</th>
                                         <th>Status</th>
+                                        <th style="text-align: right;">Total Spend</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="cardsTableBody">
                                     <tr>
-                                        <td><strong>kumar lakavthu</strong></td>
-                                        <td>•••• •••• •••• 4589</td>
-                                        <td>HDFC Corporate Banking</td>
-                                        <td>Mastercard Corporate</td>
-                                        <td><span class="status-badge-chip chip-approved">Active Feed</span></td>
+                                        <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading cards from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -585,27 +561,68 @@
                 </section>
 
                 <!-- ============================================================
-                     9. VIEW: My Settings
+                     9. VIEW: My Settings & Team Management
                      ============================================================ -->
                 <section id="view-settings" class="view-panel">
+                    <!-- Team Members & Zoho Expense User Management -->
+                    <div class="white-card" style="margin-bottom: 20px;">
+                        <div class="card-header-bar">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>👥 Team Members &amp; Zoho Expense Access</h3>
+                                <span class="badge-pill" id="settingsUsersCountBadge">0 Members</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" id="syncUsersBtn" class="btn btn-sync" style="padding: 5px 12px; font-size: 12px;">🔄 Sync Zoho Users</button>
+                                <button type="button" id="openAddUserModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ Add Member</button>
+                            </div>
+                        </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Manage organization members in KR Tech Solutions. Adding a member here automatically registers them in <strong>Zoho Expense</strong> and grants access to the Catalyst portal.
+                        </p>
+                        <div class="zoho-table-wrapper">
+                            <table class="zoho-table">
+                                <thead>
+                                    <tr>
+                                        <th>Member Name</th>
+                                        <th>Email Address</th>
+                                        <th>Role</th>
+                                        <th>Zoho Expense Sync</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="settingsUsersTableBody">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading team members from Catalyst &amp; Zoho Expense...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Organization & Serverless Configuration -->
                     <div class="white-card">
                         <div class="card-header-bar">
                             <h3>⚙️ Organization &amp; Integration Settings</h3>
                             <span class="badge-pill">Catalyst Serverless</span>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; font-size: 13px;">
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Zoho Expense Organization:</strong> KR Tech Solutions (ID: <code>60095930892</code>)
+                                <strong style="color: #0f172a;">Zoho Expense Organization:</strong><br>
+                                KR Tech Solutions (<code>60095930892</code>)
                             </div>
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Catalyst Project ID:</strong> Management (<code>98838000000041077</code>)
+                                <strong style="color: #0f172a;">Catalyst Project ID:</strong><br>
+                                Management (<code>98838000000041077</code>)
                             </div>
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Active Webhook Endpoint:</strong><br>
-                                <code style="word-break: break-all; color: #2563eb;">https://management-60094939168.development.catalystserverless.in/server/management_function/execute</code>
+                                <strong style="color: #0f172a;">Datastore Tables:</strong><br>
+                                Expense, Trip, Report, Advance, Purchase_request, App_user, Card
                             </div>
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Datastore Tables:</strong> Expense (<code>98838000000034021</code>), App_user (<code>98838000000028029</code>)
+                                <strong style="color: #0f172a;">Mail Service:</strong><br>
+                                Sender: <code>kumarlakavathu9350@gmail.com</code> (Catalyst Mail)
                             </div>
                         </div>
                     </div>
@@ -732,6 +749,253 @@
             <div class="modal-actions">
                 <button type="button" id="cancelTripModalBtn" class="btn btn-light">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save Trip</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Report Modal (Popup)
+         ================================================================ -->
+    <div id="reportModal" class="modal-backdrop">
+        <form id="reportForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>📁 New Expense Report</h3>
+                <button type="button" id="closeReportModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="reportNameInput">Report Title / Name</label>
+                <input type="text" id="reportNameInput" placeholder="e.g. Q4 Client Workshop & Travel" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="reportStartDateInput">Start Date</label>
+                    <input type="date" id="reportStartDateInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="reportEndDateInput">End Date</label>
+                    <input type="date" id="reportEndDateInput" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reportSubmitterSelect">Submitter</label>
+                <select id="reportSubmitterSelect" required>
+                    <option value="kumar lakavthu">kumar lakavthu (kumarlakavthu@gmail.com)</option>
+                    <option value="Submiter">Submiter (kumar.r@rcidigital.com)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="reportTotalAmountInput">Total Amount (₹)</label>
+                <input type="number" id="reportTotalAmountInput" placeholder="e.g. 15000.00" step="0.01" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelReportModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Report</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Advance Modal (Popup)
+         ================================================================ -->
+    <div id="advanceModal" class="modal-backdrop">
+        <form id="advanceForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>💼 Request Cash Advance</h3>
+                <button type="button" id="closeAdvanceModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceEmployeeSelect">Employee</label>
+                <select id="advanceEmployeeSelect" required>
+                    <option value="kumar lakavthu">kumar lakavthu (kumarlakavthu@gmail.com)</option>
+                    <option value="Submiter">Submiter (kumar.r@rcidigital.com)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceAmountInput">Advance Amount (₹)</label>
+                <input type="number" id="advanceAmountInput" placeholder="e.g. 5000.00" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceDateInput">Request Date</label>
+                <input type="date" id="advanceDateInput" required>
+            </div>
+
+            <div class="form-group">
+                <label for="advanceReasonInput">Purpose / Reason</label>
+                <input type="text" id="advanceReasonInput" placeholder="e.g. Regional travel & onsite meal expenses" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelAdvanceModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Advance</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Purchase Request Modal (Popup)
+         ================================================================ -->
+    <div id="purchaseModal" class="modal-backdrop">
+        <form id="purchaseForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>🛍️ New Purchase Request</h3>
+                <button type="button" id="closePurchaseModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="purchaseItemInput">Item / Service Description</label>
+                <input type="text" id="purchaseItemInput" placeholder="e.g. Synology NAS 4-Bay Server" required>
+            </div>
+
+            <div class="form-group">
+                <label for="purchaseVendorInput">Vendor Name</label>
+                <input type="text" id="purchaseVendorInput" placeholder="e.g. Synology Enterprise Store" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="purchaseAmountInput">Amount (₹)</label>
+                    <input type="number" id="purchaseAmountInput" placeholder="e.g. 45000.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="purchaseDeptSelect">Department</label>
+                    <select id="purchaseDeptSelect" required>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Products">Products</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="purchaseRequesterSelect">Requester</label>
+                <select id="purchaseRequesterSelect" required>
+                    <option value="kumar lakavthu">kumar lakavthu</option>
+                    <option value="Submiter">Submiter</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelPurchaseModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Corporate Card Modal (Popup)
+         ================================================================ -->
+    <div id="cardModal" class="modal-backdrop">
+        <form id="cardForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>💳 Add Corporate Card</h3>
+                <button type="button" id="closeCardModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="cardHolderInput">Cardholder Name</label>
+                <input type="text" id="cardHolderInput" placeholder="e.g. kumar lakavthu" required>
+            </div>
+
+            <div class="form-group">
+                <label for="cardNumberInput">Card Number (Masked)</label>
+                <input type="text" id="cardNumberInput" placeholder="e.g. •••• •••• •••• 5678" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="cardBankSelect">Bank / Provider</label>
+                    <select id="cardBankSelect" required>
+                        <option value="HDFC Corporate Banking">HDFC Corporate Banking</option>
+                        <option value="ICICI Bank Commercial">ICICI Bank Commercial</option>
+                        <option value="Axis Bank Corporate">Axis Bank Corporate</option>
+                        <option value="State Bank of India">State Bank of India</option>
+                        <option value="American Express Corporate">American Express Corporate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="cardTypeSelect">Card Type</label>
+                    <select id="cardTypeSelect" required>
+                        <option value="Mastercard Corporate">Mastercard Corporate</option>
+                        <option value="Visa Business Prime">Visa Business Prime</option>
+                        <option value="Visa Commercial">Visa Commercial</option>
+                        <option value="Amex Corporate">Amex Corporate</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="cardInitialSpendInput">Initial Spend / Limit (₹)</label>
+                <input type="number" id="cardInitialSpendInput" placeholder="0.00" step="0.01">
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelCardModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Link Card Feed</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         Add Member & Zoho Expense User Modal (Popup)
+         ================================================================ -->
+    <div id="addUserModal" class="modal-backdrop">
+        <form id="addUserForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>👥 Add Team Member (Zoho Expense &amp; Catalyst)</h3>
+                <button type="button" id="closeAddUserModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="newUserNameInput">Full Name</label>
+                <input type="text" id="newUserNameInput" placeholder="e.g. Rajesh Sharma" required>
+            </div>
+
+            <div class="form-group">
+                <label for="newUserEmailInput">Corporate Email Address</label>
+                <input type="email" id="newUserEmailInput" placeholder="e.g. rajesh@rcidigital.com" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="newUserRoleSelect">Zoho Expense Role</label>
+                    <select id="newUserRoleSelect" required>
+                        <option value="submitter">Submitter (Employee)</option>
+                        <option value="approver">Approver (Manager)</option>
+                        <option value="admin">Admin (Full Access)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newUserDeptSelect">Department</label>
+                    <select id="newUserDeptSelect" required>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Products">Products</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="newUserPasswordInput">Temporary Portal Password</label>
+                <input type="password" id="newUserPasswordInput" placeholder="e.g. Welcome@2026" required>
+            </div>
+
+            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                ⚡ This will automatically create the user in <strong>Zoho Expense (KR Tech Solutions)</strong>, add them to Catalyst Datastore, and dispatch a welcome notification.
+            </p>
+
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button type="button" id="cancelAddUserModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create User in Zoho &amp; DB</button>
             </div>
         </form>
     </div>

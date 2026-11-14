@@ -28,6 +28,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const tripsTableBody = $('tripsTableBody');
     const tripsCountBadge = $('tripsCountBadge');
 
+    // Reports, Advances & Purchase Requests Elements
+    const reportsTableBody = $('reportsTableBody');
+    const reportsCountBadge = $('reportsCountBadge');
+    const reportModal = $('reportModal');
+    const reportForm = $('reportForm');
+    const openReportModalBtn = $('openReportModalBtn');
+    const closeReportModalBtn = $('closeReportModalBtn');
+    const cancelReportModalBtn = $('cancelReportModalBtn');
+
+    const advancesTableBody = $('advancesTableBody');
+    const advancesCountBadge = $('advancesCountBadge');
+    const advanceModal = $('advanceModal');
+    const advanceForm = $('advanceForm');
+    const openAdvanceModalBtn = $('openAdvanceModalBtn');
+    const closeAdvanceModalBtn = $('closeAdvanceModalBtn');
+    const cancelAdvanceModalBtn = $('cancelAdvanceModalBtn');
+
+    const purchasesTableBody = $('purchasesTableBody');
+    const purchasesCountBadge = $('purchasesCountBadge');
+    const purchaseModal = $('purchaseModal');
+    const purchaseForm = $('purchaseForm');
+    const openPurchaseModalBtn = $('openPurchaseModalBtn');
+    const closePurchaseModalBtn = $('closePurchaseModalBtn');
+    const cancelPurchaseModalBtn = $('cancelPurchaseModalBtn');
+
+    const cardsTableBody = $('cardsTableBody');
+    const cardsCountBadge = $('cardsCountBadge');
+    const cardModal = $('cardModal');
+    const cardForm = $('cardForm');
+    const openCardModalBtn = $('openCardModalBtn');
+    const closeCardModalBtn = $('closeCardModalBtn');
+    const cancelCardModalBtn = $('cancelCardModalBtn');
+
+    const settingsUsersTableBody = $('settingsUsersTableBody');
+    const settingsUsersCountBadge = $('settingsUsersCountBadge');
+    const addUserModal = $('addUserModal');
+    const addUserForm = $('addUserForm');
+    const openAddUserModalBtn = $('openAddUserModalBtn');
+    const closeAddUserModalBtn = $('closeAddUserModalBtn');
+    const cancelAddUserModalBtn = $('cancelAddUserModalBtn');
+    const syncUsersBtn = $('syncUsersBtn');
+
     // Sidebar navigation tabs
     const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
     const viewPanels = document.querySelectorAll('.view-panel');
@@ -152,9 +194,69 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeTripModalBtn) closeTripModalBtn.onclick = closeTripModal;
     if (cancelTripModalBtn) cancelTripModalBtn.onclick = closeTripModal;
 
+    // Report Modal controls
+    function openReportModal() {
+        if (reportModal) reportModal.style.display = 'flex';
+    }
+    function closeReportModal() {
+        if (reportModal) reportModal.style.display = 'none';
+    }
+    if (openReportModalBtn) openReportModalBtn.onclick = openReportModal;
+    if (closeReportModalBtn) closeReportModalBtn.onclick = closeReportModal;
+    if (cancelReportModalBtn) cancelReportModalBtn.onclick = closeReportModal;
+
+    // Advance Modal controls
+    function openAdvanceModal() {
+        if (advanceModal) advanceModal.style.display = 'flex';
+    }
+    function closeAdvanceModal() {
+        if (advanceModal) advanceModal.style.display = 'none';
+    }
+    if (openAdvanceModalBtn) openAdvanceModalBtn.onclick = openAdvanceModal;
+    if (closeAdvanceModalBtn) closeAdvanceModalBtn.onclick = closeAdvanceModal;
+    if (cancelAdvanceModalBtn) cancelAdvanceModalBtn.onclick = closeAdvanceModal;
+
+    // Purchase Request Modal controls
+    function openPurchaseModal() {
+        if (purchaseModal) purchaseModal.style.display = 'flex';
+    }
+    function closePurchaseModal() {
+        if (purchaseModal) purchaseModal.style.display = 'none';
+    }
+    if (openPurchaseModalBtn) openPurchaseModalBtn.onclick = openPurchaseModal;
+    if (closePurchaseModalBtn) closePurchaseModalBtn.onclick = closePurchaseModal;
+    if (cancelPurchaseModalBtn) cancelPurchaseModalBtn.onclick = closePurchaseModal;
+
+    // Card Modal controls
+    function openCardModal() {
+        if (cardModal) cardModal.style.display = 'flex';
+    }
+    function closeCardModal() {
+        if (cardModal) cardModal.style.display = 'none';
+    }
+    if (openCardModalBtn) openCardModalBtn.onclick = openCardModal;
+    if (closeCardModalBtn) closeCardModalBtn.onclick = closeCardModal;
+    if (cancelCardModalBtn) cancelCardModalBtn.onclick = closeCardModal;
+
+    // Add User Modal controls
+    function openAddUserModal() {
+        if (addUserModal) addUserModal.style.display = 'flex';
+    }
+    function closeAddUserModal() {
+        if (addUserModal) addUserModal.style.display = 'none';
+    }
+    if (openAddUserModalBtn) openAddUserModalBtn.onclick = openAddUserModal;
+    if (closeAddUserModalBtn) closeAddUserModalBtn.onclick = closeAddUserModal;
+    if (cancelAddUserModalBtn) cancelAddUserModalBtn.onclick = closeAddUserModal;
+
     window.onclick = (e) => {
         if (e.target === expenseModal) closeExpenseModal();
         if (e.target === tripModal) closeTripModal();
+        if (e.target === reportModal) closeReportModal();
+        if (e.target === advanceModal) closeAdvanceModal();
+        if (e.target === purchaseModal) closePurchaseModal();
+        if (e.target === cardModal) closeCardModal();
+        if (e.target === addUserModal) closeAddUserModal();
     };
 
     $('refreshBtn').onclick = loadData;
@@ -343,6 +445,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             allExpenses = data.expenses || [];
             allTrips = data.trips || [];
+            const allReports = data.reports || [];
+            const allAdvances = data.advances || [];
+            const allPurchases = data.purchaseRequests || [];
+            const allCards = data.cards || [];
             const appUsers = data.appUsers || [];
 
             // 1. Calculate Executive KPIs
@@ -406,6 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4. Render All Views
             renderAllViews();
             renderTripsView(allTrips);
+            renderReportsView(allReports);
+            renderAdvancesView(allAdvances);
+            renderPurchasesView(allPurchases);
+            renderCardsView(allCards);
+            renderSettingsView(appUsers);
 
             // 5. Render Full Analytics View
             renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
@@ -931,7 +1042,615 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Authentication session check
+    // =========================================================================
+    // Reports View & Multi-Level Approvals
+    // =========================================================================
+    function renderReportsView(reports) {
+        if (!reportsTableBody) return;
+        if (reportsCountBadge) reportsCountBadge.textContent = `${reports.length} Reports`;
+
+        if (!reports.length) {
+            reportsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                        No expense reports found in Catalyst Datastore.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        reportsTableBody.innerHTML = '';
+        reports.forEach((item) => {
+            const r = item.Report || item;
+            const rowId = r.ROWID || '';
+            const reportNum = r.Report_number || 'ER-00000';
+            const reportName = r.Report_name || 'Expense Report';
+            const submitter = r.Submitter_name || 'Submiter';
+            const dates = `${r.Start_date || ''} - ${r.End_date || ''}`;
+            const approvalLevel = r.Approval_level || 'Level 1 - Manager Review';
+            const rawStatus = String(r.Status || 'submitted').toLowerCase();
+            const total = Number(parseFloat(r.Total_amount)) || 0;
+
+            let stageColor = '#b45309';
+            let stageBg = '#fffbeb';
+            if (rawStatus === 'approved' || rawStatus === 'reimbursed') {
+                stageColor = '#15803d';
+                stageBg = '#f0fdf4';
+            } else if (rawStatus === 'rejected') {
+                stageColor = '#dc2626';
+                stageBg = '#fef2f2';
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(reportNum)}</strong></td>
+                <td>${escapeHtml(reportName)}</td>
+                <td style="color: #475569;">${escapeHtml(submitter)}</td>
+                <td style="color: #64748b; font-size: 13px;">${escapeHtml(dates)}</td>
+                <td><span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600; background: ${stageBg}; color: ${stageColor};">${escapeHtml(approvalLevel)}</span></td>
+                <td><span class="status-badge-chip ${rawStatus === 'approved' || rawStatus === 'reimbursed' ? 'chip-approved' : (rawStatus === 'rejected' ? 'chip-unreported' : 'chip-pending')}">${escapeHtml(rawStatus)}</span></td>
+                <td style="text-align: right; font-weight: 700;">${formatINR(total)}</td>
+                <td style="text-align: right; white-space: nowrap;">
+                    ${rawStatus !== 'approved' && rawStatus !== 'reimbursed' && rawStatus !== 'rejected' ? `
+                        <button type="button" class="btn btn-primary btn-approve-report" data-id="${escapeHtml(rowId)}" style="padding: 3px 8px; font-size: 11.5px; margin-right: 4px;">Approve</button>
+                        <button type="button" class="btn btn-danger btn-reject-report" data-id="${escapeHtml(rowId)}" style="padding: 3px 8px; font-size: 11.5px;">Reject</button>
+                    ` : `<span style="color: #16a34a; font-weight: 600; font-size: 12px;">✓ Settled</span>`}
+                </td>
+            `;
+
+            const approveBtn = tr.querySelector('.btn-approve-report');
+            if (approveBtn) {
+                approveBtn.onclick = async () => {
+                    approveBtn.disabled = true;
+                    approveBtn.textContent = '...';
+                    try {
+                        const res = await callFunction({ action: 'approve_level', module: 'report', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Approval error: ' + (err.message || 'Error'));
+                        approveBtn.disabled = false;
+                        approveBtn.textContent = 'Approve';
+                    }
+                };
+            }
+
+            const rejectBtn = tr.querySelector('.btn-reject-report');
+            if (rejectBtn) {
+                rejectBtn.onclick = async () => {
+                    const reason = prompt('Please enter rejection reason:');
+                    if (reason === null) return;
+                    rejectBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'reject_level', module: 'report', row_id: rowId, reason });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Rejection error: ' + (err.message || 'Error'));
+                        rejectBtn.disabled = false;
+                    }
+                };
+            }
+
+            reportsTableBody.appendChild(tr);
+        });
+    }
+
+    // =========================================================================
+    // Advances View & Multi-Level Approvals
+    // =========================================================================
+    function renderAdvancesView(advances) {
+        if (!advancesTableBody) return;
+        if (advancesCountBadge) advancesCountBadge.textContent = `${advances.length} Advances`;
+
+        if (!advances.length) {
+            advancesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                        No advances recorded in Catalyst Datastore.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        advancesTableBody.innerHTML = '';
+        advances.forEach((item) => {
+            const a = item.Advance || item;
+            const rowId = a.ROWID || '';
+            const advNum = a.Advance_number || 'ADV-000';
+            const empName = a.Employee_name || 'Employee';
+            const advDate = a.Advance_date || 'Today';
+            const reason = a.Reason || 'Advance';
+            const approvalLevel = a.Approval_level || 'Level 1 - Manager Review';
+            const rawStatus = String(a.Status || 'pending').toLowerCase();
+            const amount = Number(parseFloat(a.Amount)) || 0;
+
+            let stageColor = '#b45309';
+            let stageBg = '#fffbeb';
+            if (rawStatus === 'approved') {
+                stageColor = '#15803d';
+                stageBg = '#f0fdf4';
+            } else if (rawStatus === 'rejected') {
+                stageColor = '#dc2626';
+                stageBg = '#fef2f2';
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(advNum)}</strong></td>
+                <td>${escapeHtml(empName)}</td>
+                <td style="color: #64748b; font-size: 13px;">${escapeHtml(advDate)}</td>
+                <td style="color: #475569;">${escapeHtml(reason)}</td>
+                <td><span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600; background: ${stageBg}; color: ${stageColor};">${escapeHtml(approvalLevel)}</span></td>
+                <td><span class="status-badge-chip ${rawStatus === 'approved' ? 'chip-approved' : (rawStatus === 'rejected' ? 'chip-unreported' : 'chip-pending')}">${escapeHtml(rawStatus)}</span></td>
+                <td style="text-align: right; font-weight: 700; color: #0284c7;">${formatINR(amount)}</td>
+                <td style="text-align: right; white-space: nowrap;">
+                    ${rawStatus !== 'approved' && rawStatus !== 'rejected' ? `
+                        <button type="button" class="btn btn-primary btn-approve-advance" data-id="${escapeHtml(rowId)}" style="padding: 3px 8px; font-size: 11.5px; margin-right: 4px;">Approve</button>
+                        <button type="button" class="btn btn-danger btn-reject-advance" data-id="${escapeHtml(rowId)}" style="padding: 3px 8px; font-size: 11.5px;">Reject</button>
+                    ` : `<span style="color: #16a34a; font-weight: 600; font-size: 12px;">✓ Disbursed</span>`}
+                </td>
+            `;
+
+            const approveBtn = tr.querySelector('.btn-approve-advance');
+            if (approveBtn) {
+                approveBtn.onclick = async () => {
+                    approveBtn.disabled = true;
+                    approveBtn.textContent = '...';
+                    try {
+                        const res = await callFunction({ action: 'approve_level', module: 'advance', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Approval error: ' + (err.message || 'Error'));
+                        approveBtn.disabled = false;
+                        approveBtn.textContent = 'Approve';
+                    }
+                };
+            }
+
+            const rejectBtn = tr.querySelector('.btn-reject-advance');
+            if (rejectBtn) {
+                rejectBtn.onclick = async () => {
+                    const reason = prompt('Please enter rejection reason:');
+                    if (reason === null) return;
+                    rejectBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'reject_level', module: 'advance', row_id: rowId, reason });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Rejection error: ' + (err.message || 'Error'));
+                        rejectBtn.disabled = false;
+                    }
+                };
+            }
+
+            advancesTableBody.appendChild(tr);
+        });
+    }
+
+    // =========================================================================
+    // Purchase Requests View & Multi-Level Approvals
+    // =========================================================================
+    function renderPurchasesView(purchases) {
+        if (!purchasesTableBody) return;
+        if (purchasesCountBadge) purchasesCountBadge.textContent = `${purchases.length} Requests`;
+
+        if (!purchases.length) {
+            purchasesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                        No purchase requests found in Catalyst Datastore.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        purchasesTableBody.innerHTML = '';
+        purchases.forEach((item) => {
+            const p = item.Purchase_request || item;
+            const rowId = p.ROWID || '';
+            const itemName = p.Item_name || 'Procurement Item';
+            const vendor = p.Vendor || 'Vendor';
+            const reqInfo = `${p.Requester || 'Requester'} (${p.Department || 'General'})`;
+            const reqDate = p.Request_date || 'Today';
+            const approvalLevel = p.Approval_level || 'Level 1 - Manager Review';
+            const rawStatus = String(p.Status || 'pending').toLowerCase();
+            const amount = Number(parseFloat(p.Amount)) || 0;
+
+            let stageColor = '#b45309';
+            let stageBg = '#fffbeb';
+            if (rawStatus === 'approved') {
+                stageColor = '#15803d';
+                stageBg = '#f0fdf4';
+            } else if (rawStatus === 'rejected') {
+                stageColor = '#dc2626';
+                stageBg = '#fef2f2';
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(itemName)}</strong></td>
+                <td>${escapeHtml(vendor)}</td>
+                <td style="color: #475569;">${escapeHtml(reqInfo)}</td>
+                <td style="color: #64748b; font-size: 13px;">${escapeHtml(reqDate)}</td>
+                <td><span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600; background: ${stageBg}; color: ${stageColor};">${escapeHtml(approvalLevel)}</span></td>
+                <td><span class="status-badge-chip ${rawStatus === 'approved' ? 'chip-approved' : (rawStatus === 'rejected' ? 'chip-unreported' : 'chip-pending')}">${escapeHtml(rawStatus)}</span></td>
+                <td style="text-align: right; font-weight: 700; color: #6366f1;">${formatINR(amount)}</td>
+                <td style="text-align: right; white-space: nowrap;">
+                    ${rawStatus !== 'approved' && rawStatus !== 'rejected' ? `
+                        <button type="button" class="btn btn-primary btn-approve-pr" data-id="${escapeHtml(rowId)}" style="padding: 3px 8px; font-size: 11.5px; margin-right: 4px;">Approve</button>
+                        <button type="button" class="btn btn-danger btn-reject-pr" data-id="${escapeHtml(rowId)}" style="padding: 3px 8px; font-size: 11.5px;">Reject</button>
+                    ` : `<span style="color: #16a34a; font-weight: 600; font-size: 12px;">✓ Procured</span>`}
+                </td>
+            `;
+
+            const approveBtn = tr.querySelector('.btn-approve-pr');
+            if (approveBtn) {
+                approveBtn.onclick = async () => {
+                    approveBtn.disabled = true;
+                    approveBtn.textContent = '...';
+                    try {
+                        const res = await callFunction({ action: 'approve_level', module: 'pr', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Approval error: ' + (err.message || 'Error'));
+                        approveBtn.disabled = false;
+                        approveBtn.textContent = 'Approve';
+                    }
+                };
+            }
+
+            const rejectBtn = tr.querySelector('.btn-reject-pr');
+            if (rejectBtn) {
+                rejectBtn.onclick = async () => {
+                    const reason = prompt('Please enter rejection reason:');
+                    if (reason === null) return;
+                    rejectBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'reject_level', module: 'pr', row_id: rowId, reason });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Rejection error: ' + (err.message || 'Error'));
+                        rejectBtn.disabled = false;
+                    }
+                };
+            }
+
+            purchasesTableBody.appendChild(tr);
+        });
+    }
+
+    // Modal Form Submissions for Reports, Advances, Purchase Requests
+    if (reportForm) {
+        reportForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const Report_name = $('reportNameInput').value.trim();
+            const Start_date = $('reportStartDateInput').value;
+            const End_date = $('reportEndDateInput').value;
+            const Submitter_name = $('reportSubmitterSelect').value.trim();
+            const Total_amount = $('reportTotalAmountInput').value.trim();
+
+            const submitBtn = reportForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const res = await callFunction({
+                    action: 'add_report',
+                    Report_name,
+                    Start_date,
+                    End_date,
+                    Submitter_name,
+                    Total_amount: Total_amount || 0
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to submit report');
+                closeReportModal();
+                reportForm.reset();
+                await loadData();
+            } catch (err) {
+                alert('Error creating report: ' + (err.message || 'Error'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Report';
+            }
+        };
+    }
+
+    if (advanceForm) {
+        advanceForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const Employee_name = $('advanceEmployeeSelect').value.trim();
+            const Amount = $('advanceAmountInput').value.trim();
+            const Advance_date = $('advanceDateInput').value;
+            const Reason = $('advanceReasonInput').value.trim();
+
+            const submitBtn = advanceForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const res = await callFunction({
+                    action: 'add_advance',
+                    Employee_name,
+                    Amount: Amount || 0,
+                    Advance_date: Advance_date || new Date().toISOString().slice(0, 10),
+                    Reason
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to submit advance');
+                closeAdvanceModal();
+                advanceForm.reset();
+                await loadData();
+            } catch (err) {
+                alert('Error requesting advance: ' + (err.message || 'Error'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Advance';
+            }
+        };
+    }
+
+    if (purchaseForm) {
+        purchaseForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const Item_name = $('purchaseItemInput').value.trim();
+            const Vendor = $('purchaseVendorInput').value.trim();
+            const Amount = $('purchaseAmountInput').value.trim();
+            const Department = $('purchaseDeptSelect').value.trim();
+            const Requester = $('purchaseRequesterSelect').value.trim();
+
+            const submitBtn = purchaseForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const res = await callFunction({
+                    action: 'add_purchase_request',
+                    Item_name,
+                    Vendor,
+                    Amount: Amount || 0,
+                    Department,
+                    Requester
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to submit request');
+                closePurchaseModal();
+                purchaseForm.reset();
+                await loadData();
+            } catch (err) {
+                alert('Error submitting purchase request: ' + (err.message || 'Error'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Request';
+            }
+        };
+    }
+
+    // =========================================================================
+    // Corporate Cards View
+    // =========================================================================
+    function renderCardsView(cards) {
+        if (!cardsTableBody) return;
+        if (cardsCountBadge) cardsCountBadge.textContent = `${cards.length} Cards`;
+
+        if (!cards.length) {
+            cardsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+                        No corporate cards registered in Catalyst Datastore.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        cardsTableBody.innerHTML = '';
+        cards.forEach((item) => {
+            const c = item.Card || item;
+            const rowId = c.ROWID || '';
+            const cardholder = c.Cardholder_name || 'Cardholder';
+            const cardNum = c.Card_number || '•••• •••• •••• 0000';
+            const bankName = c.Bank_name || 'HDFC Corporate Banking';
+            const cardType = c.Card_type || 'Mastercard Corporate';
+            const status = c.Status || 'Active Feed';
+            const totalSpend = Number(parseFloat(c.Total_spend)) || 0;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(cardholder)}</strong></td>
+                <td><code style="font-size: 13px; font-weight: 600; color: #1e293b;">${escapeHtml(cardNum)}</code></td>
+                <td>${escapeHtml(bankName)}</td>
+                <td>${escapeHtml(cardType)}</td>
+                <td><span class="status-badge-chip chip-approved">${escapeHtml(status)}</span></td>
+                <td style="text-align: right; font-weight: 700; color: #2563eb;">${formatINR(totalSpend)}</td>
+                <td style="text-align: right;">
+                    <button class="btn-row-delete btn-delete-card-action" type="button" title="Delete card" data-id="${escapeHtml(rowId)}">🗑️</button>
+                </td>
+            `;
+
+            const delBtn = tr.querySelector('.btn-delete-card-action');
+            if (delBtn) {
+                delBtn.onclick = async () => {
+                    if (!confirm(`Delete card for "${cardholder}"?`)) return;
+                    delBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'delete_card', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to delete card: ' + (err.message || 'Error'));
+                        delBtn.disabled = false;
+                    }
+                };
+            }
+
+            cardsTableBody.appendChild(tr);
+        });
+    }
+
+    // =========================================================================
+    // Settings & User Management View
+    // =========================================================================
+    function renderSettingsView(users) {
+        if (!settingsUsersTableBody) return;
+        if (settingsUsersCountBadge) settingsUsersCountBadge.textContent = `${users.length} Members`;
+
+        if (!users.length) {
+            settingsUsersTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 24px; color: #64748b;">
+                        No team members registered yet.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        settingsUsersTableBody.innerHTML = '';
+        users.forEach((item) => {
+            const u = item.App_user || item;
+            const rowId = u.ROWID || '';
+            const name = u.Emp_name || 'Team Member';
+            const email = u.emp_mail || '';
+            const role = u.Role || 'submitter';
+            const initial = (name[0] || email[0] || 'U').toUpperCase();
+
+            let roleBadge = '<span class="status-badge-chip chip-unreported">Submitter</span>';
+            if (role === 'admin') {
+                roleBadge = '<span class="status-badge-chip chip-approved">Admin</span>';
+            } else if (role === 'approver') {
+                roleBadge = '<span class="status-badge-chip chip-pending">Approver</span>';
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #2563eb; color: #fff; font-weight: 700; font-size: 13px;">${initial}</span>
+                        <strong>${escapeHtml(name)}</strong>
+                    </div>
+                </td>
+                <td style="color: #475569;">${escapeHtml(email)}</td>
+                <td>${roleBadge}</td>
+                <td><span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; background: #f0fdf4; color: #16a34a;">✅ Synced with Zoho Expense</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-row-delete btn-delete-user-action" type="button" title="Delete member" data-id="${escapeHtml(rowId)}" data-name="${escapeHtml(name)}">🗑️</button>
+                </td>
+            `;
+
+            const delBtn = tr.querySelector('.btn-delete-user-action');
+            if (delBtn) {
+                delBtn.onclick = async () => {
+                    if (!confirm(`Delete member "${name}" (${email})?`)) return;
+                    delBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'delete_user', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to delete member: ' + (err.message || 'Error'));
+                        delBtn.disabled = false;
+                    }
+                };
+            }
+
+            settingsUsersTableBody.appendChild(tr);
+        });
+    }
+
+    // Modal Form Submissions for Cards & Users
+    if (cardForm) {
+        cardForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const Cardholder_name = $('cardHolderInput').value.trim();
+            const Card_number = $('cardNumberInput').value.trim();
+            const Bank_name = $('cardBankSelect').value.trim();
+            const Card_type = $('cardTypeSelect').value.trim();
+            const Total_spend = $('cardInitialSpendInput').value.trim();
+
+            const submitBtn = cardForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Linking...';
+
+            try {
+                const res = await callFunction({
+                    action: 'add_card',
+                    Cardholder_name,
+                    Card_number,
+                    Bank_name,
+                    Card_type,
+                    Total_spend: Total_spend || 0
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to add card');
+                closeCardModal();
+                cardForm.reset();
+                await loadData();
+            } catch (err) {
+                alert('Error adding card: ' + (err.message || 'Error'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Link Card Feed';
+            }
+        };
+    }
+
+    if (addUserForm) {
+        addUserForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const name = $('newUserNameInput').value.trim();
+            const email = $('newUserEmailInput').value.trim();
+            const role = $('newUserRoleSelect').value.trim();
+            const department = $('newUserDeptSelect').value.trim();
+            const password = $('newUserPasswordInput').value.trim();
+
+            const submitBtn = addUserForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating User in Zoho & DB...';
+
+            try {
+                const res = await callFunction({
+                    action: 'add_user',
+                    name,
+                    email,
+                    role,
+                    department,
+                    password
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to add user');
+                alert(`✅ User "${name}" (${email}) created in Zoho Expense & Catalyst DB!`);
+                closeAddUserModal();
+                addUserForm.reset();
+                await loadData();
+            } catch (err) {
+                alert('Error adding user: ' + (err.message || 'Error'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create User in Zoho & DB';
+            }
+        };
+    }
+
+    if (syncUsersBtn) {
+        syncUsersBtn.onclick = async () => {
+            syncUsersBtn.disabled = true;
+            syncUsersBtn.textContent = '🔄 Syncing...';
+            try {
+                const res = await callFunction({ action: 'sync_users' });
+                if (res.status !== 'Success') throw new Error(res.message || 'Sync failed');
+                await loadData();
+            } catch (err) {
+                alert('Failed to sync users: ' + (err.message || 'Error'));
+            } finally {
+                syncUsersBtn.disabled = false;
+                syncUsersBtn.textContent = '🔄 Sync Zoho Users';
+            }
+        };
+    }
     (async () => {
         try {
             let catalystEmail = '';
