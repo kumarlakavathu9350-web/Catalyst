@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const https = require('https');
+const querystring = require('querystring');
 const { zcAuth, UserManagement } = require('@zcatalyst/auth');
 const { Datastore } = require('@zcatalyst/datastore');
 
@@ -9,6 +11,185 @@ const VERIFIED_EXPENSE_EMAILS = new Set([
 	'kumarlakavthu@gmail.com',
 	'kumar.r@rcidigital.com'
 ]);
+
+// 2-Way Sync Integration: Zoho Expense OAuth & REST APIs
+const ZOHO_EXPENSE_CONFIG = {
+	accountsUrl: 'https://accounts.zoho.in/oauth/v2/token',
+	apiUrl: 'https://www.zohoapis.in/expense/v1',
+	clientId: '1000.S1KTSSPRXHMAYOY20SY3CP93G79ZPB',
+	clientSecret: '68b084222d8104a939b142dfe7f63e6d4667cda54b',
+	refreshToken: '1000.981eb6b8feac1da370d95fdd7de1b038.3ec083abb127c882b5767af8a23bef52',
+	organizationId: '60095930892'
+};
+
+let cachedAccessToken = null;
+let tokenExpiresAt = 0;
+
+async function getZohoExpenseAccessToken() {
+	const now = Date.now();
+	if (cachedAccessToken && tokenExpiresAt > now + 60000) {
+		return cachedAccessToken;
+	}
+
+	const postData = querystring.stringify({
+		refresh_token: ZOHO_EXPENSE_CONFIG.refreshToken,
+		client_id: ZOHO_EXPENSE_CONFIG.clientId,
+		client_secret: ZOHO_EXPENSE_CONFIG.clientSecret,
+		grant_type: 'refresh_token'
+	});
+
+	const tokenRes = await new Promise((resolve, reject) => {
+		const req = https.request(ZOHO_EXPENSE_CONFIG.accountsUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					resolve(JSON.parse(data));
+				} catch (e) {
+					reject(new Error(`Failed to parse token response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+
+	if (!tokenRes.access_token) {
+		throw new Error(tokenRes.error || tokenRes.message || 'Failed to refresh Zoho Expense token');
+	}
+
+	cachedAccessToken = tokenRes.access_token;
+	tokenExpiresAt = now + ((tokenRes.expires_in || 3600) * 1000);
+	return cachedAccessToken;
+}
+
+async function createZohoExpenseTrip(tripDetails) {
+	const accessToken = await getZohoExpenseAccessToken();
+
+	const zohoPayload = {
+		trip_name: tripDetails.tripName || 'Catalyst Trip',
+		travel_type: 'domestic',
+		departure: tripDetails.departure || '',
+		destination_city: tripDetails.destination || '',
+		start_date: tripDetails.startDate || new Date().toISOString().slice(0, 10),
+		end_date: tripDetails.endDate || new Date().toISOString().slice(0, 10)
+	};
+	if (tripDetails.budget) {
+		zohoPayload.budget = {
+			amount: Number(tripDetails.budget) || 0,
+			currency_id: '4208449000000000064',
+			exchange_rate: 1.0
+		};
+	}
+
+	const postData = querystring.stringify({
+		JSONString: JSON.stringify(zohoPayload)
+	});
+
+	const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/trips?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+
+	return new Promise((resolve, reject) => {
+		const req = https.request(url, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					const json = JSON.parse(data);
+					if (json.code === 0 && json.trip) {
+						resolve(json.trip);
+					} else {
+						reject(new Error(json.message || `Zoho API Error code ${json.code}`));
+					}
+				} catch (e) {
+					reject(new Error(`Failed to parse Zoho response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+}
+
+async function syncZohoExpenseTrips(tripTable) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/trips?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+		const tripsList = await new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'GET',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.trips || []);
+					} catch (e) {
+						resolve([]);
+					}
+				});
+			});
+			req.on('error', () => resolve([]));
+			req.end();
+		});
+
+		if (Array.isArray(tripsList) && tripsList.length > 0) {
+			const existingRows = await fetchAllRows(tripTable);
+			for (const t of tripsList) {
+				const tripNum = t.trip_number;
+				if (!tripNum) continue;
+				const matched = existingRows.find(item => {
+					const row = item.Trip || item;
+					return row.Trip_number && String(row.Trip_number).trim().toLowerCase() === tripNum.toLowerCase();
+				});
+
+				const rowData = {
+					Trip_number: tripNum,
+					Trip_name: t.trip_name || 'Business Trip',
+					Departure: t.departure || 'HQ',
+					Destination: t.destination_city || 'Client Site',
+					Start_date: t.start_date || new Date().toISOString().slice(0, 10),
+					End_date: t.end_date || new Date().toISOString().slice(0, 10),
+					Submitter: t.submitter_name || t.user_name || 'Submiter',
+					Status: t.status || 'draft',
+					Budget: Number(parseFloat(t.budget_amount || 0)) || 0
+				};
+
+				if (matched) {
+					const existingRow = matched.Trip || matched;
+					await tripTable.updateRow({
+						ROWID: existingRow.ROWID,
+						...rowData
+					});
+				} else {
+					await tripTable.insertRow(rowData);
+				}
+			}
+		}
+	} catch (e) {
+		console.error('syncZohoExpenseTrips error:', e.message);
+	}
+}
 
 function asciiStringify(obj) {
 	return JSON.stringify(obj).replace(/[\u007F-\uFFFF]/g, (ch) => {
@@ -284,14 +465,37 @@ module.exports = async (context, basicIO) => {
 				'unreported'
 			).trim().slice(0, 50);
 
-			const inserted = await expenseTable.insertRow({
-				Expense_name: expName,
-				Category: expCat,
-				Amount: expAmt,
-				Expense_date: expDate,
-				Paid_by: expPaidBy,
-				Status: expStatus
+			// Idempotent upsert: check if expense already exists with same name & date
+			const existingExpenses = await fetchAllRows(expenseTable);
+			const matchedExpense = existingExpenses.find((item) => {
+				const row = item.Expense || item;
+				const sameName = row.Expense_name && String(row.Expense_name).trim().toLowerCase() === expName.toLowerCase();
+				const sameDate = row.Expense_date && String(row.Expense_date).trim() === expDate.trim();
+				return sameName && (sameDate || expName.toLowerCase().includes('er-') || expCat === 'Expense Report');
 			});
+
+			let inserted;
+			if (matchedExpense) {
+				const existingRow = matchedExpense.Expense || matchedExpense;
+				inserted = await expenseTable.updateRow({
+					ROWID: existingRow.ROWID,
+					Expense_name: expName,
+					Category: expCat,
+					Amount: expAmt,
+					Expense_date: expDate,
+					Paid_by: expPaidBy,
+					Status: expStatus
+				});
+			} else {
+				inserted = await expenseTable.insertRow({
+					Expense_name: expName,
+					Category: expCat,
+					Amount: expAmt,
+					Expense_date: expDate,
+					Paid_by: expPaidBy,
+					Status: expStatus
+				});
+			}
 
 			writeOutput(basicIO, {
 				status: 'Success',
@@ -309,9 +513,81 @@ module.exports = async (context, basicIO) => {
 				Status: 'approved'
 			});
 			writeOutput(basicIO, { status: 'Success', data: updated });
+		} else if (action === 'add_trip') {
+			const tripName = arg('Trip_name') || arg('trip_name') || 'Corporate Business Trip';
+			const departure = arg('Departure') || arg('departure') || 'Headquarters';
+			const destination = arg('Destination') || arg('destination') || arg('destination_city') || 'Client Site';
+			const startDate = arg('Start_date') || arg('start_date') || new Date().toISOString().slice(0, 10);
+			const endDate = arg('End_date') || arg('end_date') || new Date().toISOString().slice(0, 10);
+			const submitter = arg('Submitter') || arg('submitter') || 'Submiter';
+			const budget = Number(parseFloat(arg('Budget') || arg('budget') || 0)) || 0;
+
+			let zohoTrip = null;
+			let tripNumber = `TRIP-${Date.now().toString().slice(-5)}`;
+			let status = 'draft';
+
+			try {
+				zohoTrip = await createZohoExpenseTrip({
+					tripName,
+					departure,
+					destination,
+					startDate,
+					endDate,
+					budget
+				});
+				if (zohoTrip) {
+					tripNumber = zohoTrip.trip_number || tripNumber;
+					status = zohoTrip.status || 'draft';
+				}
+			} catch (zohoErr) {
+				console.error('Zoho Expense API create trip error:', zohoErr.message);
+				throw new Error(`Failed to create trip in Zoho Expense: ${zohoErr.message}`);
+			}
+
+			// Idempotent upsert in Catalyst Datastore
+			const existingTrips = await fetchAllRows(tripTable);
+			const matchedTrip = existingTrips.find((item) => {
+				const row = item.Trip || item;
+				return row.Trip_number && String(row.Trip_number).trim().toLowerCase() === tripNumber.toLowerCase();
+			});
+
+			let insertedTrip;
+			if (matchedTrip) {
+				const existingRow = matchedTrip.Trip || matchedTrip;
+				insertedTrip = await tripTable.updateRow({
+					ROWID: existingRow.ROWID,
+					Trip_number: tripNumber,
+					Trip_name: tripName,
+					Departure: departure,
+					Destination: destination,
+					Start_date: startDate,
+					End_date: endDate,
+					Submitter: submitter,
+					Status: status,
+					Budget: budget
+				});
+			} else {
+				insertedTrip = await tripTable.insertRow({
+					Trip_number: tripNumber,
+					Trip_name: tripName,
+					Departure: departure,
+					Destination: destination,
+					Start_date: startDate,
+					End_date: endDate,
+					Submitter: submitter,
+					Status: status,
+					Budget: budget
+				});
+			}
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				action: 'add_trip',
+				data: insertedTrip,
+				zoho_trip: zohoTrip
+			});
 		} else if (
 			action === 'webhook_trip' ||
-			action === 'add_trip' ||
 			Boolean(allArgs?.trip || allArgs?.Trip)
 		) {
 			let payload = allArgs || {};
@@ -391,17 +667,41 @@ module.exports = async (context, basicIO) => {
 
 			const budget = Number(parseFloat(t.Budget ?? t.budget ?? t.budget_amount ?? arg('Budget') ?? 0)) || 0;
 
-			const insertedTrip = await tripTable.insertRow({
-				Trip_number: tripNumber,
-				Trip_name: tripName,
-				Departure: departure,
-				Destination: destination,
-				Start_date: startDate,
-				End_date: endDate,
-				Submitter: submitter,
-				Status: status,
-				Budget: budget
+			// Idempotent upsert: check if trip with this Trip_number already exists
+			const existingTrips = await fetchAllRows(tripTable);
+			const matchedTrip = existingTrips.find((item) => {
+				const row = item.Trip || item;
+				return row.Trip_number && String(row.Trip_number).trim().toLowerCase() === tripNumber.toLowerCase();
 			});
+
+			let insertedTrip;
+			if (matchedTrip) {
+				const existingRow = matchedTrip.Trip || matchedTrip;
+				insertedTrip = await tripTable.updateRow({
+					ROWID: existingRow.ROWID,
+					Trip_number: tripNumber,
+					Trip_name: tripName,
+					Departure: departure,
+					Destination: destination,
+					Start_date: startDate,
+					End_date: endDate,
+					Submitter: submitter,
+					Status: status,
+					Budget: budget
+				});
+			} else {
+				insertedTrip = await tripTable.insertRow({
+					Trip_number: tripNumber,
+					Trip_name: tripName,
+					Departure: departure,
+					Destination: destination,
+					Start_date: startDate,
+					End_date: endDate,
+					Submitter: submitter,
+					Status: status,
+					Budget: budget
+				});
+			}
 
 			writeOutput(basicIO, {
 				status: 'Success',
@@ -420,13 +720,14 @@ module.exports = async (context, basicIO) => {
 			});
 			writeOutput(basicIO, { status: 'Success', data: updated });
 		} else if (action === 'sync_all_from_expense') {
+			await syncZohoExpenseTrips(tripTable);
 			const currentExpenses = await fetchAllRows(expenseTable);
 			const currentTrips = await fetchAllRows(tripTable);
 			writeOutput(basicIO, {
 				status: 'Success',
 				synced_expenses: currentExpenses.length,
 				synced_trips: currentTrips.length,
-				message: `Synced ${currentExpenses.length} expenses and ${currentTrips.length} trips from Datastore.`
+				message: `Synced ${currentExpenses.length} expenses and ${currentTrips.length} trips with Zoho Expense.`
 			});
 		} else {
 			// ZERO STATIC / MOCK DATA
