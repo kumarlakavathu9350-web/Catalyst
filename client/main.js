@@ -10,72 +10,71 @@ document.addEventListener('DOMContentLoaded', () => {
         return path;
     }
 
-    const empModal = $('empModal');
-    const desigModal = $('desigModal');
-    const appUserModal = $('appUserModal');
-    const prModal = $('prModal');
+    // Modal elements
     const expenseModal = $('expenseModal');
-    const tripModal = $('tripModal');
-    const empForm = $('empForm');
-    const desigForm = $('desigForm');
-    const appUserForm = $('appUserForm');
-    const prForm = $('prForm');
     const expenseForm = $('expenseForm');
-    const tripForm = $('tripForm');
-    const empTableBody = $('empTableBody');
-    const desigTableBody = $('desigTableBody');
-    const appUserTableBody = $('appUserTableBody');
-    const prTableBody = $('prTableBody');
-    const expenseTableBody = $('expenseTableBody');
-    const reportTableBody = $('reportTableBody');
-    const tripTableBody = $('tripTableBody');
-    const advanceTableBody = $('advanceTableBody');
-    const cardTableBody = $('cardTableBody');
-    const empStatus = $('empStatus');
-    const desigStatus = $('desigStatus');
-    const appUserStatus = $('appUserStatus');
-    const prStatus = $('prStatus');
-    const expenseStatus = $('expenseStatus');
-    const reportStatus = $('reportStatus');
-    const tripStatus = $('tripStatus');
-    const advanceStatus = $('advanceStatus');
-    const cardStatus = $('cardStatus');
-    const empCount = $('empCount');
-    const desigCount = $('desigCount');
-    const appUserCount = $('appUserCount');
-    const prCount = $('prCount');
-    const expenseCount = $('expenseCount');
-    const reportCount = $('reportCount');
-    const tripCount = $('tripCount');
-    const advanceCount = $('advanceCount');
-    const cardCount = $('cardCount');
-    const desigEmpSelect = $('desigEmpSelect');
-    const prUserSelect = $('prUserSelect');
-    const expenseUserSelect = $('expenseUserSelect');
-    const tripUserSelect = $('tripUserSelect');
+    const openExpenseModalBtn = $('openExpenseModalBtn');
+    const closeExpenseModalBtn = $('closeExpenseModalBtn');
+    const cancelExpenseModalBtn = $('cancelExpenseModalBtn');
+
+    // Toolbar & filter elements
+    const searchInput = $('expenseSearchInput');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const streamContainer = $('expenseStreamContainer');
+    const streamCountBadge = $('streamCountBadge');
+
+    // KPI & Analytics elements
+    const kpiTotalSpend = $('kpiTotalSpend');
+    const kpiTotalCount = $('kpiTotalCount');
+    const kpiApprovedSpend = $('kpiApprovedSpend');
+    const kpiApprovedCount = $('kpiApprovedCount');
+    const kpiPendingSpend = $('kpiPendingSpend');
+    const kpiPendingCount = $('kpiPendingCount');
+    const kpiMembersCount = $('kpiMembersCount');
+    const categoryListContainer = $('categoryListContainer');
+    const categoryCountBadge = $('categoryCountBadge');
+    const healthApprovedCount = $('healthApprovedCount');
+    const healthApprovedAmt = $('healthApprovedAmt');
+    const healthPendingCount = $('healthPendingCount');
+    const healthPendingAmt = $('healthPendingAmt');
+    const healthReimbursedCount = $('healthReimbursedCount');
+    const healthReimbursedAmt = $('healthReimbursedAmt');
     const currentUserEl = $('currentUser');
+    const userInitialEl = $('userInitial');
+
+    let allExpenses = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
 
     // Modal controls
-    $('openEmpModalBtn').onclick = () => { empModal.style.display = 'flex'; };
-    $('closeEmpModalBtn').onclick = () => { empModal.style.display = 'none'; };
-    $('openDesigModalBtn').onclick = () => { desigModal.style.display = 'flex'; };
-    $('closeDesigModalBtn').onclick = () => { desigModal.style.display = 'none'; };
-    $('openAppUserModalBtn').onclick = () => { appUserModal.style.display = 'flex'; };
-    $('closeAppUserModalBtn').onclick = () => { appUserModal.style.display = 'none'; };
-    $('openPrModalBtn').onclick = () => { prModal.style.display = 'flex'; };
-    $('closePrModalBtn').onclick = () => { prModal.style.display = 'none'; };
-    $('openExpenseModalBtn').onclick = () => { expenseModal.style.display = 'flex'; };
-    $('closeExpenseModalBtn').onclick = () => { expenseModal.style.display = 'none'; };
-    $('openTripModalBtn').onclick = () => { tripModal.style.display = 'flex'; };
-    $('closeTripModalBtn').onclick = () => { tripModal.style.display = 'none'; };
+    if (openExpenseModalBtn) openExpenseModalBtn.onclick = () => { expenseModal.style.display = 'flex'; };
+    if (closeExpenseModalBtn) closeExpenseModalBtn.onclick = () => { expenseModal.style.display = 'none'; };
+    if (cancelExpenseModalBtn) cancelExpenseModalBtn.onclick = () => { expenseModal.style.display = 'none'; };
     window.onclick = (e) => {
-        if (e.target === empModal || e.target === desigModal || e.target === appUserModal || e.target === prModal || e.target === expenseModal || e.target === tripModal) {
-            e.target.style.display = 'none';
+        if (e.target === expenseModal) {
+            expenseModal.style.display = 'none';
         }
     };
 
     $('refreshBtn').onclick = loadData;
     $('signOutBtn').onclick = signOutToLogin;
+
+    // Search and Filter controls
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim().toLowerCase();
+            renderStream();
+        });
+    }
+
+    filterBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.getAttribute('data-filter') || 'all';
+            renderStream();
+        });
+    });
 
     const syncZohoBtn = $('syncZohoBtn');
     if (syncZohoBtn) {
@@ -85,10 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await callFunction({ action: 'sync_all_from_expense' });
                 if (res.status !== 'Success') throw new Error(res.message || 'Sync failed');
-                alert(`Zoho Expense sync complete!\nExpenses synced: ${res.synced_expenses ?? 0}\nTrips synced: ${res.synced_trips ?? 0}`);
                 await loadData();
             } catch (err) {
-                alert('Failed to sync from Zoho Expense: ' + (err.message || 'Error'));
+                alert('Failed to sync: ' + (err.message || 'Error'));
             } finally {
                 syncZohoBtn.disabled = false;
                 syncZohoBtn.textContent = '🔄 Sync Zoho Expense';
@@ -106,9 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         await window.catalyst.auth.signOut(LOGIN_URL);
                         return;
                     }
-                } catch {
-                    // Not signed in via Catalyst Hosted Auth
-                }
+                } catch {}
             }
             window.location.replace(LOGIN_URL);
         } catch (err) {
@@ -116,7 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const escapeHtml = (val) => String(val)
+    function formatINR(num) {
+        const val = Number(num) || 0;
+        return '₹' + val.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    const escapeHtml = (val) => String(val || '')
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
@@ -136,480 +140,319 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderRows(tbody, countEl, statusEl, emptyText, rows, buildRow) {
-        countEl.textContent = rows.length;
-        statusEl.style.display = rows.length ? 'none' : 'block';
-        statusEl.textContent = emptyText;
-        tbody.innerHTML = '';
-
-        rows.forEach((item, i) => {
-            const { cells, onDelete } = buildRow(item, i);
-            const tr = document.createElement('tr');
-            tr.innerHTML = cells.join('') + '<td><button class="btn-danger" type="button">Delete</button></td>';
-            tr.querySelector('button').onclick = onDelete;
-            tbody.appendChild(tr);
-        });
+    function getCategoryIcon(cat) {
+        const c = String(cat || '').toLowerCase();
+        if (c.includes('internet') || c.includes('it') || c.includes('software')) return { icon: '💻', bg: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' };
+        if (c.includes('travel') || c.includes('flight') || c.includes('trip')) return { icon: '✈️', bg: 'rgba(2, 132, 199, 0.2)', color: '#38bdf8' };
+        if (c.includes('food') || c.includes('meal') || c.includes('entertainment')) return { icon: '🍔', bg: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' };
+        if (c.includes('hotel') || c.includes('lodging')) return { icon: '🏨', bg: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' };
+        if (c.includes('fuel') || c.includes('auto') || c.includes('cab')) return { icon: '🚗', bg: 'rgba(239, 68, 68, 0.2)', color: '#f87171' };
+        if (c.includes('report')) return { icon: '📄', bg: 'rgba(16, 185, 129, 0.2)', color: '#34d399' };
+        return { icon: '🏢', bg: 'rgba(100, 116, 139, 0.2)', color: '#94a3b8' };
     }
 
     async function loadData() {
-        empStatus.style.display = desigStatus.style.display = appUserStatus.style.display = prStatus.style.display = expenseStatus.style.display = reportStatus.style.display = tripStatus.style.display = advanceStatus.style.display = cardStatus.style.display = 'block';
-        empStatus.textContent = 'Loading employees...';
-        desigStatus.textContent = 'Loading designations...';
-        appUserStatus.textContent = 'Loading app users...';
-        prStatus.textContent = 'Loading purchase requests...';
-        expenseStatus.textContent = 'Loading expenses...';
-        reportStatus.textContent = 'Loading expense reports...';
-        tripStatus.textContent = 'Loading trips...';
-        advanceStatus.textContent = 'Loading advances...';
-        cardStatus.textContent = 'Loading cards...';
+        streamContainer.innerHTML = `
+            <div class="empty-stream">
+                <div class="empty-stream-icon">⏳</div>
+                <p>Loading live expenses from Catalyst Datastore...</p>
+            </div>
+        `;
 
         try {
             const data = await callFunction({ action: 'getAll' });
             if (data.status !== 'Success') throw new Error(data.message || 'Error');
 
-            const employees = data.employees || [];
-            const designations = data.designations || [];
+            allExpenses = data.expenses || [];
             const appUsers = data.appUsers || [];
-            const purchaseRequests = data.purchaseRequests || [];
-            const expenses = data.expenses || [];
 
-            desigEmpSelect.innerHTML = '<option value="">-- Select Employee --</option>';
-            prUserSelect.innerHTML = '<option value="">-- Select Requester --</option>';
-            expenseUserSelect.innerHTML = '<option value="">-- Select Employee --</option>';
-            tripUserSelect.innerHTML = '<option value="">-- Select Traveler --</option>';
+            // 1. Calculate Executive KPIs
+            let totalSpend = 0;
+            let approvedSpend = 0;
+            let approvedCount = 0;
+            let pendingSpend = 0;
+            let pendingCount = 0;
+            let reimbursedSpend = 0;
+            let reimbursedCount = 0;
 
-            renderRows(empTableBody, empCount, empStatus, 'No employees found.', employees, (emp, i) => {
-                const r = emp.Emp || emp;
-                const rowId = r.ROWID || '-';
-                const name = r.emp_name || '-';
-                const email = r.emp_email || '-';
-                if (name !== '-') {
-                    desigEmpSelect.add(new Option(`${name} (${email})`, name));
-                    prUserSelect.add(new Option(`${name} (${email})`, name));
-                    expenseUserSelect.add(new Option(`${name} (${email})`, name));
-                    tripUserSelect.add(new Option(`${name} (${email})`, name));
-                }
-                return {
-                    cells: [
-                        `<td>${i + 1}</td>`,
-                        `<td><code>${escapeHtml(rowId)}</code></td>`,
-                        `<td><strong>${escapeHtml(name)}</strong></td>`,
-                        `<td>${escapeHtml(email)}</td>`,
-                        `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`
-                    ],
-                    onDelete: () => deleteRecord('delete_emp', rowId, name)
-                };
-            });
+            const categoryMap = {};
 
-            renderRows(desigTableBody, desigCount, desigStatus, 'No designations found.', designations, (desig, i) => {
-                const r = desig.Designation || desig;
-                const rowId = r.ROWID || '-';
-                const dName = r.D_name || r.d_name || '-';
-                return {
-                    cells: [
-                        `<td>${i + 1}</td>`,
-                        `<td><code>${escapeHtml(rowId)}</code></td>`,
-                        `<td><strong>${escapeHtml(dName)}</strong></td>`,
-                        `<td>${escapeHtml(r.Employeename || r.employeename || '-')}</td>`,
-                        `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`
-                    ],
-                    onDelete: () => deleteRecord('delete_desig', rowId, dName)
-                };
-            });
+            allExpenses.forEach((item) => {
+                const r = item.Expense || item;
+                const amt = Number(parseFloat(r.Amount)) || 0;
+                const status = String(r.Status || 'unreported').toLowerCase();
+                const cat = String(r.Category || 'Office Supplies').trim();
 
-            renderRows(appUserTableBody, appUserCount, appUserStatus, 'No app users found.', appUsers, (user, i) => {
-                const r = user.App_user || user;
-                const rowId = r.ROWID || '-';
-                const empName = r.Emp_name || '-';
-                const pwdMask = r.has_password ? '••••••' : '-';
-                return {
-                    cells: [
-                        `<td>${i + 1}</td>`,
-                        `<td><code>${escapeHtml(rowId)}</code></td>`,
-                        `<td><strong>${escapeHtml(empName)}</strong></td>`,
-                        `<td>${escapeHtml(r.emp_mail || '-')}</td>`,
-                        `<td><code>${pwdMask}</code></td>`,
-                        `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`
-                    ],
-                    onDelete: () => deleteRecord('delete_app_user', rowId, empName)
-                };
-            });
+                totalSpend += amt;
 
-            // Render Purchase Requests with Approve & Delete
-            prCount.textContent = purchaseRequests.length;
-            prStatus.style.display = purchaseRequests.length ? 'none' : 'block';
-            prStatus.textContent = 'No purchase requests found.';
-            prTableBody.innerHTML = '';
-            purchaseRequests.forEach((pr, i) => {
-                const r = pr.Purchase_request || pr;
-                const rowId = r.ROWID || '-';
-                const itemName = r.Item_name || '-';
-                const vendor = r.Preferred_vendor || '-';
-                const reqBy = r.Requested_by || '-';
-                const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const rawStatus = String(r.Status || r.approval_status || 'unreported').toLowerCase();
-                const isApproved = rawStatus === 'approved';
-                const statusBadge = isApproved
-                    ? `<span class="badge badge-approved">✓ Approved</span>`
-                    : `<span class="badge badge-draft">${escapeHtml(r.Status || 'unreported')}</span>`;
-                const approveBtn = !isApproved
-                    ? `<button class="btn-approve btn-approve-pr" type="button" data-id="${escapeHtml(rowId)}">Approve</button> `
-                    : '';
-                const tr = document.createElement('tr');
-                tr.innerHTML = [
-                    `<td>${i + 1}</td>`,
-                    `<td><code>${escapeHtml(rowId)}</code></td>`,
-                    `<td><strong>${escapeHtml(itemName)}</strong></td>`,
-                    `<td>${escapeHtml(vendor)}</td>`,
-                    `<td>${escapeHtml(reqBy)}</td>`,
-                    `<td>${escapeHtml(amt)}</td>`,
-                    `<td>${statusBadge}</td>`,
-                    `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`,
-                    `<td>${approveBtn}<button class="btn-danger btn-del" type="button">Delete</button></td>`
-                ].join('');
-                const appBtn = tr.querySelector('.btn-approve-pr');
-                if (appBtn) {
-                    appBtn.onclick = async () => {
-                        appBtn.disabled = true;
-                        appBtn.textContent = 'Approving...';
-                        try {
-                            const res = await callFunction({ action: 'approve_pr', row_id: rowId });
-                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                            await loadData();
-                        } catch (err) {
-                            alert('Failed to approve purchase request: ' + (err.message || 'Error'));
-                            appBtn.disabled = false;
-                            appBtn.textContent = 'Approve';
-                        }
-                    };
-                }
-                tr.querySelector('.btn-del').onclick = () => deleteRecord('delete_pr', rowId, itemName);
-                prTableBody.appendChild(tr);
-            });
-
-            // Render Expenses with Approve & Delete
-            expenseCount.textContent = expenses.length;
-            expenseStatus.style.display = expenses.length ? 'none' : 'block';
-            expenseStatus.textContent = 'No expenses found.';
-            expenseTableBody.innerHTML = '';
-            expenses.forEach((exp, i) => {
-                const r = exp.Expense || exp;
-                const rowId = r.ROWID || '-';
-                const name = r.Expense_name || '-';
-                const cat = r.Category || '-';
-                const paidBy = r.Paid_by || '-';
-                const date = r.Expense_date || '-';
-                const amt = r.Amount != null ? `₹${Number(r.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const rawStatus = String(r.Status || r.approval_status || 'unreported').toLowerCase();
-                const isApproved = rawStatus === 'approved';
-                const statusBadge = isApproved
-                    ? `<span class="badge badge-approved">✓ Approved</span>`
-                    : `<span class="badge badge-draft">${escapeHtml(r.Status || 'unreported')}</span>`;
-                const approveBtn = !isApproved
-                    ? `<button class="btn-approve btn-approve-exp" type="button" data-id="${escapeHtml(rowId)}">Approve</button> `
-                    : '';
-                const tr = document.createElement('tr');
-                tr.innerHTML = [
-                    `<td>${i + 1}</td>`,
-                    `<td><code>${escapeHtml(rowId)}</code></td>`,
-                    `<td><strong>${escapeHtml(name)}</strong></td>`,
-                    `<td>${escapeHtml(cat)}</td>`,
-                    `<td>${escapeHtml(amt)}</td>`,
-                    `<td>${escapeHtml(date)}</td>`,
-                    `<td>${escapeHtml(paidBy)}</td>`,
-                    `<td>${statusBadge}</td>`,
-                    `<td>${escapeHtml(r.CREATEDTIME || '-')}</td>`,
-                    `<td>${approveBtn}<button class="btn-danger btn-del" type="button">Delete</button></td>`
-                ].join('');
-                const appBtn = tr.querySelector('.btn-approve-exp');
-                if (appBtn) {
-                    appBtn.onclick = async () => {
-                        appBtn.disabled = true;
-                        appBtn.textContent = 'Approving...';
-                        try {
-                            const res = await callFunction({ action: 'approve_expense', row_id: rowId });
-                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                            await loadData();
-                        } catch (err) {
-                            alert('Failed to approve expense: ' + (err.message || 'Error'));
-                            appBtn.disabled = false;
-                            appBtn.textContent = 'Approve';
-                        }
-                    };
-                }
-                tr.querySelector('.btn-del').onclick = () => deleteRecord('delete_expense', rowId, name);
-                expenseTableBody.appendChild(tr);
-            });
-
-            // Render Reports with Approve Action
-            const reports = data.reports || [];
-            reportCount.textContent = reports.length;
-            reportStatus.style.display = reports.length ? 'none' : 'block';
-            reportTableBody.innerHTML = '';
-            reports.forEach((rep, i) => {
-                const tr = document.createElement('tr');
-                const amt = rep.total != null ? `₹${Number(rep.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const isApproved = rep.status === 'approved';
-                const badgeCls = `badge badge-${escapeHtml(rep.status || 'draft')}`;
-                const actionCell = isApproved
-                    ? `<span class="badge badge-approved">✓ Approved</span>`
-                    : `<button class="btn-approve" type="button" data-report="${escapeHtml(rep.report_number)}">Approve</button>`;
-
-                tr.innerHTML = [
-                    `<td>${i + 1}</td>`,
-                    `<td><code>${escapeHtml(rep.report_number || '-')}</code></td>`,
-                    `<td><strong>${escapeHtml(rep.report_name || '-')}</strong></td>`,
-                    `<td>${escapeHtml(rep.submitter_name || '-')}</td>`,
-                    `<td>${escapeHtml(rep.date_range || '-')}</td>`,
-                    `<td>${escapeHtml(amt)}</td>`,
-                    `<td><span class="${badgeCls}">${escapeHtml(rep.status || 'draft')}</span></td>`,
-                    `<td>${actionCell}</td>`
-                ].join('');
-
-                const btn = tr.querySelector('.btn-approve');
-                if (btn) {
-                    btn.onclick = async () => {
-                        btn.disabled = true;
-                        btn.textContent = 'Approving...';
-                        try {
-                            const res = await callFunction({ action: 'approve_report', report_number: rep.report_number });
-                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                            await loadData();
-                        } catch (err) {
-                            alert('Failed to approve report: ' + (err.message || 'Error'));
-                            btn.disabled = false;
-                            btn.textContent = 'Approve';
-                        }
-                    };
-                }
-                reportTableBody.appendChild(tr);
-            });
-
-            // Render Trips with Approve & Delete Actions (Catalyst Datastore)
-            const trips = data.trips || [];
-            tripCount.textContent = trips.length;
-            tripStatus.style.display = trips.length ? 'none' : 'block';
-            tripStatus.textContent = 'No trips found.';
-            tripTableBody.innerHTML = '';
-            trips.forEach((trItem, i) => {
-                const tr = document.createElement('tr');
-                const rowId = trItem.ROWID || '';
-                const bgt = trItem.budget_amount != null ? `₹${Number(trItem.budget_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const isApproved = trItem.status === 'approved';
-                const badgeCls = `badge badge-${escapeHtml(trItem.status || 'draft')}`;
-                const approveBtn = !isApproved
-                    ? `<button class="btn-approve btn-approve-trip" type="button" data-id="${escapeHtml(rowId || trItem.trip_number)}">Approve</button> `
-                    : '';
-                const deleteBtn = rowId
-                    ? `<button class="btn-danger btn-del-trip" type="button">Delete</button>`
-                    : '';
-
-                tr.innerHTML = [
-                    `<td>${i + 1}</td>`,
-                    `<td><code>${escapeHtml(rowId || '-')}</code></td>`,
-                    `<td><code>${escapeHtml(trItem.trip_number || '-')}</code></td>`,
-                    `<td><strong>${escapeHtml(trItem.trip_name || '-')}</strong></td>`,
-                    `<td>${escapeHtml(trItem.traveler_name || '-')}</td>`,
-                    `<td>${escapeHtml(trItem.purpose || '-')}</td>`,
-                    `<td>${escapeHtml(bgt)}</td>`,
-                    `<td><span class="${badgeCls}">${isApproved ? '✓ Approved' : escapeHtml(trItem.status || 'draft')}</span></td>`,
-                    `<td>${escapeHtml(trItem.CREATEDTIME || '-')}</td>`,
-                    `<td>${approveBtn}${deleteBtn}</td>`
-                ].join('');
-
-                const btn = tr.querySelector('.btn-approve-trip');
-                if (btn) {
-                    btn.onclick = async () => {
-                        btn.disabled = true;
-                        btn.textContent = 'Approving...';
-                        try {
-                            const res = await callFunction({
-                                action: 'approve_trip',
-                                row_id: rowId || undefined,
-                                trip_number: trItem.trip_number || undefined
-                            });
-                            if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                            await loadData();
-                        } catch (err) {
-                            alert('Failed to approve trip: ' + (err.message || 'Error'));
-                            btn.disabled = false;
-                            btn.textContent = 'Approve';
-                        }
-                    };
+                if (status === 'approved') {
+                    approvedSpend += amt;
+                    approvedCount++;
+                } else if (status === 'reimbursed') {
+                    reimbursedSpend += amt;
+                    reimbursedCount++;
+                } else {
+                    pendingSpend += amt;
+                    pendingCount++;
                 }
 
-                const delBtn = tr.querySelector('.btn-del-trip');
-                if (delBtn && rowId) {
-                    delBtn.onclick = () => deleteRecord('delete_trip', rowId, trItem.trip_name);
-                }
-
-                tripTableBody.appendChild(tr);
+                categoryMap[cat] = (categoryMap[cat] || 0) + amt;
             });
 
-            // Render Advances
-            const advances = data.advances || [];
-            advanceCount.textContent = advances.length;
-            advanceStatus.style.display = advances.length ? 'none' : 'block';
-            advanceTableBody.innerHTML = '';
-            advances.forEach((adv, i) => {
-                const tr = document.createElement('tr');
-                const amt = adv.amount != null ? `₹${Number(adv.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const badgeCls = `badge badge-${escapeHtml(adv.status || 'approved')}`;
-                tr.innerHTML = [
-                    `<td>${i + 1}</td>`,
-                    `<td><code>${escapeHtml(adv.advance_id || '-')}</code></td>`,
-                    `<td><strong>${escapeHtml(adv.user_name || '-')}</strong></td>`,
-                    `<td>${escapeHtml(amt)}</td>`,
-                    `<td>${escapeHtml(adv.account_name || 'Petty Cash')}</td>`,
-                    `<td>${escapeHtml(adv.notes || '-')}</td>`,
-                    `<td><span class="${badgeCls}">${escapeHtml(adv.status || 'approved')}</span></td>`
-                ].join('');
-                advanceTableBody.appendChild(tr);
-            });
+            // Update KPI cards
+            kpiTotalSpend.textContent = formatINR(totalSpend);
+            kpiTotalCount.textContent = `${allExpenses.length} Transactions`;
 
-            // Render Corporate & Personal Cards
-            const cards = data.cards || [];
-            cardCount.textContent = cards.length;
-            cardStatus.style.display = cards.length ? 'none' : 'block';
-            cardTableBody.innerHTML = '';
-            cards.forEach((c, i) => {
-                const tr = document.createElement('tr');
-                const limit = c.limit != null ? `₹${Number(c.limit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const avail = c.available_limit != null ? `₹${Number(c.available_limit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
-                const typeBadge = c.card_type === 'Corporate' ? 'badge badge-corporate' : 'badge badge-personal';
-                tr.innerHTML = [
-                    `<td>${i + 1}</td>`,
-                    `<td><code>${escapeHtml(c.card_id || '-')}</code></td>`,
-                    `<td><strong>${escapeHtml(c.card_name || '-')}</strong></td>`,
-                    `<td><code>${escapeHtml(c.card_number || '-')}</code></td>`,
-                    `<td><span class="${typeBadge}">${escapeHtml(c.card_type || 'Corporate')}</span></td>`,
-                    `<td>${escapeHtml(c.card_holder || '-')}</td>`,
-                    `<td>${escapeHtml(limit)}</td>`,
-                    `<td>${escapeHtml(avail)}</td>`,
-                    `<td><span class="badge badge-active">${escapeHtml(c.status || 'active')}</span></td>`
-                ].join('');
-                cardTableBody.appendChild(tr);
-            });
+            kpiApprovedSpend.textContent = formatINR(approvedSpend);
+            kpiApprovedCount.textContent = `${approvedCount} Approved Items`;
+
+            kpiPendingSpend.textContent = formatINR(pendingSpend + reimbursedSpend);
+            kpiPendingCount.textContent = `${pendingCount} In Review · ${reimbursedCount} Reimbursed`;
+
+            kpiMembersCount.textContent = `${appUsers.length || 2} Active Members`;
+
+            // 2. Render Spend by Category
+            renderCategoryBreakdown(categoryMap, totalSpend);
+
+            // 3. Render Workflow & Health Breakdown
+            healthApprovedCount.textContent = `${approvedCount} item(s) approved`;
+            healthApprovedAmt.textContent = formatINR(approvedSpend);
+
+            healthPendingCount.textContent = `${pendingCount} item(s) in review`;
+            healthPendingAmt.textContent = formatINR(pendingSpend);
+
+            healthReimbursedCount.textContent = `${reimbursedCount} item(s) settled`;
+            healthReimbursedAmt.textContent = formatINR(reimbursedSpend);
+
+            // 4. Render Expense Activity Stream
+            renderStream();
+
         } catch (err) {
-            empStatus.textContent = desigStatus.textContent = appUserStatus.textContent = prStatus.textContent = expenseStatus.textContent = reportStatus.textContent = tripStatus.textContent = advanceStatus.textContent = cardStatus.textContent =
-                'Error: ' + (err.message || 'Unable to load records');
+            streamContainer.innerHTML = `
+                <div class="empty-stream" style="color: #f87171;">
+                    <div class="empty-stream-icon">⚠️</div>
+                    <p>Failed to load expenses: ${escapeHtml(err.message || 'Error connecting to server')}</p>
+                </div>
+            `;
         }
     }
 
-    function bindSubmit(form, modal, getPayload, label) {
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            const payload = getPayload();
-            if (!payload) return;
+    function renderCategoryBreakdown(catMap, totalSpend) {
+        const categories = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+        categoryCountBadge.textContent = `${categories.length} Categories`;
 
-            const btn = form.querySelector('button[type="submit"]');
-            btn.disabled = true;
+        if (!categories.length) {
+            categoryListContainer.innerHTML = '<div class="empty-stream" style="padding: 16px;">No categories recorded yet.</div>';
+            return;
+        }
+
+        const colors = [
+            'linear-gradient(90deg, #6366f1, #818cf8)',
+            'linear-gradient(90deg, #10b981, #34d399)',
+            'linear-gradient(90deg, #0284c7, #38bdf8)',
+            'linear-gradient(90deg, #f59e0b, #fbbf24)',
+            'linear-gradient(90deg, #ec4899, #f472b6)',
+            'linear-gradient(90deg, #8b5cf6, #a78bfa)'
+        ];
+
+        categoryListContainer.innerHTML = categories.map(([name, amt], idx) => {
+            const pct = totalSpend > 0 ? ((amt / totalSpend) * 100).toFixed(1) : '0.0';
+            const iconObj = getCategoryIcon(name);
+            const grad = colors[idx % colors.length];
+
+            return `
+                <div class="category-item">
+                    <div class="category-meta">
+                        <div class="category-name-group">
+                            <span>${iconObj.icon}</span>
+                            <span>${escapeHtml(name)}</span>
+                            <span class="badge" style="background: rgba(255,255,255,0.06); font-size:11px;">${pct}%</span>
+                        </div>
+                        <div class="category-amount-group">
+                            <span class="category-amount">${formatINR(amt)}</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: ${Math.min(100, Math.max(3, pct))}%; background: ${grad};"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderStream() {
+        let filtered = allExpenses.filter((item) => {
+            const r = item.Expense || item;
+            const status = String(r.Status || 'unreported').toLowerCase();
+
+            // Status filter
+            if (currentFilter === 'approved' && status !== 'approved') return false;
+            if (currentFilter === 'pending' && status === 'approved') return false;
+            if (currentFilter === 'reimbursed' && status !== 'reimbursed') return false;
+
+            // Search filter
+            if (searchQuery) {
+                const name = String(r.Expense_name || '').toLowerCase();
+                const cat = String(r.Category || '').toLowerCase();
+                const paidBy = String(r.Paid_by || '').toLowerCase();
+                if (!name.includes(searchQuery) && !cat.includes(searchQuery) && !paidBy.includes(searchQuery)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        streamCountBadge.textContent = `${filtered.length} of ${allExpenses.length}`;
+
+        if (!filtered.length) {
+            streamContainer.innerHTML = `
+                <div class="empty-stream">
+                    <div class="empty-stream-icon">🔍</div>
+                    <p>No matching expenses found.</p>
+                </div>
+            `;
+            return;
+        }
+
+        streamContainer.innerHTML = '';
+
+        filtered.forEach((item) => {
+            const r = item.Expense || item;
+            const rowId = r.ROWID || '';
+            const name = r.Expense_name || 'General Expense';
+            const cat = r.Category || 'Office Supplies';
+            const paidBy = r.Paid_by || 'KR Tech Solutions';
+            const date = r.Expense_date || 'Today';
+            const amt = Number(parseFloat(r.Amount)) || 0;
+            const rawStatus = String(r.Status || 'unreported').toLowerCase();
+
+            const iconInfo = getCategoryIcon(cat);
+
+            let statusClass = 'badge-pending';
+            let statusLabel = '⏳ In Review';
+            if (rawStatus === 'approved') {
+                statusClass = 'badge-approved';
+                statusLabel = '✓ Approved';
+            } else if (rawStatus === 'reimbursed') {
+                statusClass = 'badge-reimbursed';
+                statusLabel = '💎 Reimbursed';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'stream-card';
+
+            const approveBtnHtml = rawStatus !== 'approved'
+                ? `<button class="btn-card-approve btn-approve-action" type="button" data-id="${escapeHtml(rowId)}">Approve</button>`
+                : '';
+
+            card.innerHTML = `
+                <div class="card-left">
+                    <div class="category-icon-box" style="background: ${iconInfo.bg}; color: ${iconInfo.color};">
+                        ${iconInfo.icon}
+                    </div>
+                    <div class="card-details">
+                        <div class="card-title" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+                        <div class="card-meta-row">
+                            <span class="meta-pill">📅 ${escapeHtml(date)}</span>
+                            <span class="meta-pill">👤 ${escapeHtml(paidBy)}</span>
+                            <span class="meta-pill">🏷️ ${escapeHtml(cat)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-right">
+                    <div class="card-amount-block">
+                        <div class="card-amount">${formatINR(amt)}</div>
+                        <span class="card-status-badge ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="card-actions">
+                        ${approveBtnHtml}
+                        <button class="btn-card-delete btn-delete-action" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-name="${escapeHtml(name)}">🗑️</button>
+                    </div>
+                </div>
+            `;
+
+            const approveBtn = card.querySelector('.btn-approve-action');
+            if (approveBtn) {
+                approveBtn.onclick = async () => {
+                    approveBtn.disabled = true;
+                    approveBtn.textContent = 'Approving...';
+                    try {
+                        const res = await callFunction({ action: 'approve_expense', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to approve: ' + (err.message || 'Error'));
+                        approveBtn.disabled = false;
+                        approveBtn.textContent = 'Approve';
+                    }
+                };
+            }
+
+            const delBtn = card.querySelector('.btn-delete-action');
+            if (delBtn) {
+                delBtn.onclick = async () => {
+                    if (!confirm(`Delete "${name}"?`)) return;
+                    delBtn.disabled = true;
+                    try {
+                        const res = await callFunction({ action: 'delete_expense', row_id: rowId });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        await loadData();
+                    } catch (err) {
+                        alert('Failed to delete: ' + (err.message || 'Error'));
+                        delBtn.disabled = false;
+                    }
+                };
+            }
+
+            streamContainer.appendChild(card);
+        });
+    }
+
+    // Modal Form Submission
+    if (expenseForm) {
+        expenseForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const Expense_name = $('expenseNameInput').value.trim();
+            const Category = $('expenseCategorySelect').value.trim();
+            const Amount = $('expenseAmountInput').value.trim();
+            const Expense_date = $('expenseDateInput').value;
+            const Paid_by = $('expenseUserSelect').value.trim();
+
+            if (!Expense_name || !Category || !Amount) {
+                alert('Please enter description, category, and amount.');
+                return;
+            }
+
+            const submitBtn = expenseForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
             try {
-                const res = await callFunction(payload);
-                if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                modal.style.display = 'none';
-                form.reset();
-                loadData();
+                const res = await callFunction({
+                    action: 'add_expense',
+                    Expense_name,
+                    Category,
+                    Amount,
+                    Expense_date: Expense_date || new Date().toISOString().slice(0, 10),
+                    Paid_by: Paid_by || 'KR Tech Solutions'
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to save');
+
+                expenseModal.style.display = 'none';
+                expenseForm.reset();
+                await loadData();
             } catch (err) {
-                alert(`Failed to ${label}: ${err.message || 'Unable to reach server'}`);
+                alert('Error adding expense: ' + (err.message || 'Error'));
             } finally {
-                btn.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Expense';
             }
         };
     }
 
-    bindSubmit(empForm, empModal, () => {
-        const emp_name = $('empName').value.trim();
-        const emp_email = $('empEmail').value.trim();
-        if (!emp_name || !emp_email) {
-            alert('Please enter both employee name and email.');
-            return null;
-        }
-        return { emp_name, emp_email };
-    }, 'add employee');
-
-    bindSubmit(desigForm, desigModal, () => {
-        const D_name = $('desigName').value.trim();
-        const Employeename = desigEmpSelect.value.trim();
-        if (!D_name || !Employeename) {
-            alert('Please enter a designation name and select an employee.');
-            return null;
-        }
-        return { action: 'add_desig', D_name, Employeename };
-    }, 'add designation');
-
-    bindSubmit(appUserForm, appUserModal, () => {
-        const Emp_name = $('appUserName').value.trim();
-        const emp_mail = $('appUserEmail').value.trim();
-        const emp_password = $('appUserPassword').value;
-        if (!Emp_name || !emp_mail || !emp_password) {
-            alert('Please enter Emp_name, emp_mail, and emp_password.');
-            return null;
-        }
-        return { action: 'add_app_user', Emp_name, emp_mail, emp_password };
-    }, 'add app user');
-
-    bindSubmit(prForm, prModal, () => {
-        const Item_name = $('prItemName').value.trim();
-        const Preferred_vendor = $('prVendor').value.trim();
-        const Requested_by = prUserSelect.value.trim();
-        const Amount = $('prAmount').value.trim();
-        if (!Item_name || !Preferred_vendor) {
-            alert('Please enter Item Name and Preferred Vendor.');
-            return null;
-        }
-        return { action: 'add_pr', Item_name, Preferred_vendor, Requested_by, Amount };
-    }, 'add purchase request');
-
-    bindSubmit(expenseForm, expenseModal, () => {
-        const Expense_name = $('expenseNameInput').value.trim();
-        const Category = $('expenseCategorySelect').value.trim();
-        const Amount = $('expenseAmountInput').value.trim();
-        const Expense_date = $('expenseDateInput').value;
-        const Paid_by = expenseUserSelect.value.trim();
-        if (!Expense_name || !Category || !Amount) {
-            alert('Please enter Expense Description, Category, and Amount.');
-            return null;
-        }
-        return {
-            action: 'add_expense',
-            Expense_name,
-            Category,
-            Amount,
-            Expense_date: Expense_date || new Date().toISOString().slice(0, 10),
-            Paid_by: Paid_by || 'General'
-        };
-    }, 'add expense');
-
-    bindSubmit(tripForm, tripModal, () => {
-        const Trip_name = $('tripNameInput').value.trim();
-        const Traveler_name = tripUserSelect.value.trim();
-        const Purpose = $('tripPurposeInput').value.trim();
-        const Budget_amount = $('tripBudgetInput').value.trim();
-        if (!Trip_name || !Traveler_name || !Budget_amount) {
-            alert('Please enter Trip Name, Traveler, and Budget Amount.');
-            return null;
-        }
-        return {
-            action: 'add_trip',
-            Trip_name,
-            Traveler_name,
-            Purpose,
-            Budget_amount
-        };
-    }, 'add trip');
-
-    async function deleteRecord(action, rowId, label) {
-        if (!confirm(`Delete "${label}" (ID: ${rowId})?`)) return;
-        try {
-            const res = await callFunction({ action, row_id: rowId });
-            if (res.status !== 'Success') throw new Error(res.message || 'Error');
-            loadData();
-        } catch (err) {
-            alert('Failed to delete: ' + (err.message || 'Unable to reach server'));
-        }
-    }
-
+    // Authentication session check
     (async () => {
         try {
             let catalystEmail = '';
@@ -648,19 +491,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!check || check.status !== 'Success' || !check.allowed) {
                 if (activeEmail) {
-                    alert(`Access denied: "${activeEmail}" is not an authorized Zoho Expense organization member.`);
+                    alert(`Access denied: "${activeEmail}" is not an authorized Zoho Expense member.`);
                 }
                 await signOutToLogin();
                 return;
             }
 
+            const displayName = check.user?.Emp_name || catalystName || activeEmail.split('@')[0];
+            const emailStr = (check.email || activeEmail).toLowerCase();
+
             if (currentUserEl) {
-                const displayName = check.user?.Emp_name || catalystName;
-                const emailStr = (check.email || activeEmail).toLowerCase();
-                currentUserEl.textContent = displayName
-                    ? `Logged in: ${displayName} (${emailStr})`
-                    : `Logged in: ${emailStr}`;
+                currentUserEl.textContent = `${displayName} (${emailStr})`;
             }
+            if (userInitialEl) {
+                userInitialEl.textContent = (displayName[0] || 'U').toUpperCase();
+            }
+
             loadData();
         } catch {
             window.location.replace(LOGIN_URL);
