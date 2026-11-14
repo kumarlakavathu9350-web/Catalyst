@@ -503,9 +503,15 @@
                 <section id="view-cards" class="view-panel">
                     <div class="white-card">
                         <div class="card-header-bar">
-                            <h3>💳 Corporate Cards &amp; Automated Feeds</h3>
-                            <span class="badge-pill">Mastercard / Visa Sync</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>💳 Corporate Cards &amp; Automated Feeds</h3>
+                                <span class="badge-pill" id="cardsCountBadge">0 Cards</span>
+                            </div>
+                            <button type="button" id="openCardModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ Add Card</button>
                         </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Active corporate credit and debit cards linked to automatic transaction feeds and statement matching.
+                        </p>
                         <div class="zoho-table-wrapper">
                             <table class="zoho-table">
                                 <thead>
@@ -513,17 +519,17 @@
                                         <th>Cardholder</th>
                                         <th>Card Number</th>
                                         <th>Bank / Provider</th>
-                                        <th>Type</th>
+                                        <th>Card Type</th>
                                         <th>Status</th>
+                                        <th style="text-align: right;">Total Spend</th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="cardsTableBody">
                                     <tr>
-                                        <td><strong>kumar lakavthu</strong></td>
-                                        <td>•••• •••• •••• 4589</td>
-                                        <td>HDFC Corporate Banking</td>
-                                        <td>Mastercard Corporate</td>
-                                        <td><span class="status-badge-chip chip-approved">Active Feed</span></td>
+                                        <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading cards from Catalyst Datastore...
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -547,27 +553,68 @@
                 </section>
 
                 <!-- ============================================================
-                     9. VIEW: My Settings
+                     9. VIEW: My Settings & Team Management
                      ============================================================ -->
                 <section id="view-settings" class="view-panel">
+                    <!-- Team Members & Zoho Expense User Management -->
+                    <div class="white-card" style="margin-bottom: 20px;">
+                        <div class="card-header-bar">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>👥 Team Members &amp; Zoho Expense Access</h3>
+                                <span class="badge-pill" id="settingsUsersCountBadge">0 Members</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" id="syncUsersBtn" class="btn btn-sync" style="padding: 5px 12px; font-size: 12px;">🔄 Sync Zoho Users</button>
+                                <button type="button" id="openAddUserModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ Add Member</button>
+                            </div>
+                        </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Manage organization members in KR Tech Solutions. Adding a member here automatically registers them in <strong>Zoho Expense</strong> and grants access to the Catalyst portal.
+                        </p>
+                        <div class="zoho-table-wrapper">
+                            <table class="zoho-table">
+                                <thead>
+                                    <tr>
+                                        <th>Member Name</th>
+                                        <th>Email Address</th>
+                                        <th>Role</th>
+                                        <th>Zoho Expense Sync</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="settingsUsersTableBody">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 24px; color: #64748b;">
+                                            Loading team members from Catalyst &amp; Zoho Expense...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Organization & Serverless Configuration -->
                     <div class="white-card">
                         <div class="card-header-bar">
                             <h3>⚙️ Organization &amp; Integration Settings</h3>
                             <span class="badge-pill">Catalyst Serverless</span>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; font-size: 13px;">
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Zoho Expense Organization:</strong> KR Tech Solutions (ID: <code>60095930892</code>)
+                                <strong style="color: #0f172a;">Zoho Expense Organization:</strong><br>
+                                KR Tech Solutions (<code>60095930892</code>)
                             </div>
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Catalyst Project ID:</strong> Management (<code>98838000000041077</code>)
+                                <strong style="color: #0f172a;">Catalyst Project ID:</strong><br>
+                                Management (<code>98838000000041077</code>)
                             </div>
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Active Webhook Endpoint:</strong><br>
-                                <code style="word-break: break-all; color: #2563eb;">https://management-60094939168.development.catalystserverless.in/server/management_function/execute</code>
+                                <strong style="color: #0f172a;">Datastore Tables:</strong><br>
+                                Expense, Trip, Report, Advance, Purchase_request, App_user, Card
                             </div>
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
-                                <strong>Datastore Tables:</strong> Expense (<code>98838000000034021</code>), App_user (<code>98838000000028029</code>)
+                                <strong style="color: #0f172a;">Mail Service:</strong><br>
+                                Sender: <code>kumarlakavathu9350@gmail.com</code> (Catalyst Mail)
                             </div>
                         </div>
                     </div>
@@ -831,6 +878,116 @@
             <div class="modal-actions">
                 <button type="button" id="cancelPurchaseModalBtn" class="btn btn-light">Cancel</button>
                 <button type="submit" class="btn btn-primary">Submit Request</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Corporate Card Modal (Popup)
+         ================================================================ -->
+    <div id="cardModal" class="modal-backdrop">
+        <form id="cardForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>💳 Add Corporate Card</h3>
+                <button type="button" id="closeCardModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="cardHolderInput">Cardholder Name</label>
+                <input type="text" id="cardHolderInput" placeholder="e.g. kumar lakavthu" required>
+            </div>
+
+            <div class="form-group">
+                <label for="cardNumberInput">Card Number (Masked)</label>
+                <input type="text" id="cardNumberInput" placeholder="e.g. •••• •••• •••• 5678" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="cardBankSelect">Bank / Provider</label>
+                    <select id="cardBankSelect" required>
+                        <option value="HDFC Corporate Banking">HDFC Corporate Banking</option>
+                        <option value="ICICI Bank Commercial">ICICI Bank Commercial</option>
+                        <option value="Axis Bank Corporate">Axis Bank Corporate</option>
+                        <option value="State Bank of India">State Bank of India</option>
+                        <option value="American Express Corporate">American Express Corporate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="cardTypeSelect">Card Type</label>
+                    <select id="cardTypeSelect" required>
+                        <option value="Mastercard Corporate">Mastercard Corporate</option>
+                        <option value="Visa Business Prime">Visa Business Prime</option>
+                        <option value="Visa Commercial">Visa Commercial</option>
+                        <option value="Amex Corporate">Amex Corporate</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="cardInitialSpendInput">Initial Spend / Limit (₹)</label>
+                <input type="number" id="cardInitialSpendInput" placeholder="0.00" step="0.01">
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelCardModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Link Card Feed</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         Add Member & Zoho Expense User Modal (Popup)
+         ================================================================ -->
+    <div id="addUserModal" class="modal-backdrop">
+        <form id="addUserForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>👥 Add Team Member (Zoho Expense &amp; Catalyst)</h3>
+                <button type="button" id="closeAddUserModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="newUserNameInput">Full Name</label>
+                <input type="text" id="newUserNameInput" placeholder="e.g. Rajesh Sharma" required>
+            </div>
+
+            <div class="form-group">
+                <label for="newUserEmailInput">Corporate Email Address</label>
+                <input type="email" id="newUserEmailInput" placeholder="e.g. rajesh@rcidigital.com" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label for="newUserRoleSelect">Zoho Expense Role</label>
+                    <select id="newUserRoleSelect" required>
+                        <option value="submitter">Submitter (Employee)</option>
+                        <option value="approver">Approver (Manager)</option>
+                        <option value="admin">Admin (Full Access)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newUserDeptSelect">Department</label>
+                    <select id="newUserDeptSelect" required>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Products">Products</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="newUserPasswordInput">Temporary Portal Password</label>
+                <input type="password" id="newUserPasswordInput" placeholder="e.g. Welcome@2026" required>
+            </div>
+
+            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                ⚡ This will automatically create the user in <strong>Zoho Expense (KR Tech Solutions)</strong>, add them to Catalyst Datastore, and dispatch a welcome notification.
+            </p>
+
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button type="button" id="cancelAddUserModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create User in Zoho &amp; DB</button>
             </div>
         </form>
     </div>

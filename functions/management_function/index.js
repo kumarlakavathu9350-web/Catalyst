@@ -364,7 +364,8 @@ async function syncZohoExpenseExpenses(expenseTable) {
 					Amount: expAmt,
 					Expense_date: expDate,
 					Paid_by: expPaidBy,
-					Status: expStatus
+					Status: expStatus,
+					Zoho_expense_id: exp.expense_id || ''
 				};
 
 				if (matched) {
@@ -577,6 +578,195 @@ async function initPurchaseRequests(prTable) {
 	}
 }
 
+async function deleteZohoExpense(zohoExpenseId) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/expenses/${zohoExpenseId}?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+		return new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'DELETE',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.code === 0);
+					} catch {
+						resolve(false);
+					}
+				});
+			});
+			req.on('error', () => resolve(false));
+			req.end();
+		});
+	} catch (e) {
+		console.error('deleteZohoExpense error:', e.message);
+		return false;
+	}
+}
+
+async function createZohoExpenseUser({ name, email, role, departmentName }) {
+	const accessToken = await getZohoExpenseAccessToken();
+	const zohoPayload = {
+		name: name || 'Team Member',
+		email: email,
+		user_role: role || 'submitter'
+	};
+	if (departmentName) {
+		zohoPayload.department_name = departmentName;
+	}
+
+	const postData = querystring.stringify({
+		JSONString: JSON.stringify(zohoPayload)
+	});
+
+	const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/users?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+
+	return new Promise((resolve, reject) => {
+		const req = https.request(url, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					const json = JSON.parse(data);
+					if (json.code === 0 && json.user) {
+						resolve(json.user);
+					} else {
+						reject(new Error(json.message || `Zoho User API Error code ${json.code}`));
+					}
+				} catch (e) {
+					reject(new Error(`Failed to parse Zoho response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+}
+
+async function syncZohoExpenseUsers(appUserTable) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/users?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}&per_page=200`;
+		const usersList = await new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'GET',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.users || []);
+					} catch (e) {
+						resolve([]);
+					}
+				});
+			});
+			req.on('error', () => resolve([]));
+			req.end();
+		});
+
+		if (Array.isArray(usersList) && usersList.length > 0) {
+			const existingRows = await fetchAllRows(appUserTable);
+			for (const u of usersList) {
+				const userEmail = String(u.email || '').trim().toLowerCase();
+				if (!userEmail) continue;
+
+				VERIFIED_EXPENSE_EMAILS.add(userEmail);
+
+				const matched = existingRows.find(item => {
+					const row = item.App_user || item;
+					return String(row.emp_mail || '').trim().toLowerCase() === userEmail;
+				});
+
+				const userName = u.name || u.display_name || userEmail.split('@')[0];
+				const userRole = u.user_role || (u.is_super_admin ? 'admin' : 'submitter');
+				const zohoUserId = u.user_id || '';
+
+				if (matched) {
+					const existingRow = matched.App_user || matched;
+					await appUserTable.updateRow({
+						ROWID: existingRow.ROWID,
+						Emp_name: userName,
+						Role: userRole,
+						Zoho_user_id: zohoUserId
+					});
+				} else {
+					const defaultPassword = 'User@' + Date.now().toString().slice(-4);
+					const hashedPassword = crypto.createHash('sha256').update(defaultPassword).digest('hex');
+					await appUserTable.insertRow({
+						Emp_name: userName,
+						emp_mail: userEmail,
+						emp_password: hashedPassword,
+						Role: userRole,
+						Zoho_user_id: zohoUserId
+					});
+				}
+			}
+		}
+	} catch (e) {
+		console.error('syncZohoExpenseUsers error:', e.message);
+	}
+}
+
+async function initCorporateCards(cardTable) {
+	try {
+		const existingRows = await fetchAllRows(cardTable);
+		if (existingRows.length === 0) {
+			const initialCards = [
+				{
+					Card_number: '•••• •••• •••• 4589',
+					Cardholder_name: 'kumar lakavthu',
+					Bank_name: 'HDFC Corporate Banking',
+					Card_type: 'Mastercard Corporate',
+					Status: 'Active Feed',
+					Total_spend: 124500.00
+				},
+				{
+					Card_number: '•••• •••• •••• 8821',
+					Cardholder_name: 'Submiter',
+					Bank_name: 'ICICI Bank Commercial',
+					Card_type: 'Visa Business Prime',
+					Status: 'Active Feed',
+					Total_spend: 68200.00
+				},
+				{
+					Card_number: '•••• •••• •••• 1092',
+					Cardholder_name: 'Engineering Float',
+					Bank_name: 'Axis Bank Corporate',
+					Card_type: 'Visa Commercial',
+					Status: 'Active Feed',
+					Total_spend: 42000.00
+				}
+			];
+			for (const c of initialCards) {
+				await cardTable.insertRow(c);
+			}
+		}
+	} catch (e) {
+		console.error('initCorporateCards error:', e.message);
+	}
+}
+
 async function sendNotificationEmail(adminApp, { to, subject, htmlContent, textContent }) {
 	try {
 		const mail = new Mail(adminApp);
@@ -672,6 +862,7 @@ module.exports = async (context, basicIO) => {
 		const tripTable = datastore.table('Trip');
 		const advanceTable = datastore.table('Advance');
 		const reportTable = datastore.table('Report');
+		const cardTable = datastore.table('Card');
 
 		const allArgs = typeof basicIO.getAllArguments === 'function' ? basicIO.getAllArguments() : {};
 
@@ -727,7 +918,7 @@ module.exports = async (context, basicIO) => {
 				try {
 					const userApp = await zcAuth.init(context, { appName: 'userCtx', scope: 'user' });
 					authUser = await new UserManagement(userApp).getCurrentUser();
-				} catch {}
+				} catch { }
 				const authEmail = String(authUser?.email_id || '').trim().toLowerCase();
 				targetEmail = authEmail || requestedEmail;
 			}
@@ -736,14 +927,19 @@ module.exports = async (context, basicIO) => {
 				writeOutput(basicIO, { status: 'Success', allowed: false, email: '', message: 'Email is required.' });
 			} else {
 				if (!VERIFIED_EXPENSE_EMAILS.has(targetEmail)) {
-					writeOutput(basicIO, {
-						status: 'Success',
-						allowed: false,
-						email: targetEmail,
-						message: `Access denied: "${targetEmail}" is not an employee in KR Tech Solutions (Zoho Expense). Only verified organization members can sign in.`
-					});
-					context.close();
-					return;
+					const existingUser = await findAppUserByEmail(appUserTable, targetEmail);
+					if (existingUser) {
+						VERIFIED_EXPENSE_EMAILS.add(targetEmail);
+					} else {
+						writeOutput(basicIO, {
+							status: 'Success',
+							allowed: false,
+							email: targetEmail,
+							message: `Access denied: "${targetEmail}" is not an employee in KR Tech Solutions (Zoho Expense). Only verified organization members can sign in.`
+						});
+						context.close();
+						return;
+					}
 				}
 
 				const matched = await findAppUserByEmail(appUserTable, targetEmail);
@@ -947,11 +1143,11 @@ module.exports = async (context, basicIO) => {
 		) {
 			let payload = allArgs || {};
 			if (typeof allArgs === 'string') {
-				try { payload = JSON.parse(allArgs); } catch {}
+				try { payload = JSON.parse(allArgs); } catch { }
 			} else if (typeof allArgs?.body === 'string') {
-				try { payload = JSON.parse(allArgs.body); } catch {}
+				try { payload = JSON.parse(allArgs.body); } catch { }
 			} else if (typeof allArgs?.data === 'string') {
-				try { payload = JSON.parse(allArgs.data); } catch {}
+				try { payload = JSON.parse(allArgs.data); } catch { }
 			}
 
 			const exp = payload.expense_report || payload.expense || payload.Expense || payload.report || payload.Report || payload.data || payload;
@@ -1057,8 +1253,58 @@ module.exports = async (context, basicIO) => {
 			});
 		} else if (action === 'delete_expense') {
 			if (!rowId) throw new Error('row_id is required to delete an expense.');
+			let zohoId = arg('zoho_expense_id');
+			let expenseRow = null;
+			try {
+				expenseRow = await expenseTable.getRow(rowId);
+			} catch (e) {
+				const all = await fetchAllRows(expenseTable);
+				expenseRow = all.find(r => {
+					const row = r.Expense || r;
+					return String(row.ROWID) === String(rowId);
+				});
+			}
+			const expData = expenseRow?.Expense || expenseRow || {};
+			if (!zohoId && expData.Zoho_expense_id) {
+				zohoId = expData.Zoho_expense_id;
+			}
+
+			if (zohoId) {
+				await deleteZohoExpense(zohoId);
+			} else {
+				try {
+					const accessToken = await getZohoExpenseAccessToken();
+					const url = `${ZOHO_EXPENSE_CONFIG.apiUrl}/expenses?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}&per_page=200`;
+					const expensesList = await new Promise((resolve) => {
+						const req = https.request(url, {
+							method: 'GET',
+							headers: {
+								'Authorization': `Zoho-oauthtoken ${accessToken}`,
+								'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+							}
+						}, (res) => {
+							let data = '';
+							res.on('data', chunk => data += chunk);
+							res.on('end', () => {
+								try { resolve(JSON.parse(data).expenses || []); } catch { resolve([]); }
+							});
+						});
+						req.on('error', () => resolve([]));
+						req.end();
+					});
+					const matched = expensesList.find(x => {
+						const sameAmt = Math.abs(parseFloat(x.amount || x.total || 0) - parseFloat(expData.Amount || 0)) < 0.01;
+						const sameDesc = (x.description || '').toLowerCase() === (expData.Expense_name || '').toLowerCase();
+						return sameAmt && sameDesc;
+					});
+					if (matched?.expense_id) {
+						await deleteZohoExpense(matched.expense_id);
+					}
+				} catch (e) {}
+			}
+
 			await expenseTable.deleteRow(rowId);
-			writeOutput(basicIO, { status: 'Success' });
+			writeOutput(basicIO, { status: 'Success', message: 'Expense deleted successfully from Catalyst Datastore and Zoho Expense.' });
 		} else if (action === 'approve_expense') {
 			if (!rowId) throw new Error('row_id is required to approve an expense.');
 			const updated = await expenseTable.updateRow({
@@ -1086,6 +1332,113 @@ module.exports = async (context, basicIO) => {
 			});
 
 			writeOutput(basicIO, { status: 'Success', data: updated });
+		} else if (action === 'add_user') {
+			const name = arg('name') || arg('Emp_name') || 'Team Member';
+			const email = String(arg('email') || arg('emp_mail') || '').trim().toLowerCase();
+			const role = arg('role') || 'submitter';
+			const departmentName = arg('department') || arg('department_name') || 'Engineering';
+			const password = rawArg('password') || rawArg('emp_password') || 'User@123';
+
+			if (!email) throw new Error('Email is required to add a user.');
+
+			let zohoUser = null;
+			try {
+				zohoUser = await createZohoExpenseUser({
+					name,
+					email,
+					role,
+					departmentName
+				});
+			} catch (zErr) {
+				console.error('Zoho Expense user creation:', zErr.message);
+			}
+
+			const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+			const existingRows = await fetchAllRows(appUserTable);
+			const matched = existingRows.find(item => {
+				const row = item.App_user || item;
+				return String(row.emp_mail || '').trim().toLowerCase() === email;
+			});
+
+			let savedUser;
+			const zohoUserId = zohoUser?.user_id || '';
+			if (matched) {
+				const existingRow = matched.App_user || matched;
+				savedUser = await appUserTable.updateRow({
+					ROWID: existingRow.ROWID,
+					Emp_name: name,
+					emp_password: hashedPassword,
+					Role: role,
+					Zoho_user_id: zohoUserId
+				});
+			} else {
+				savedUser = await appUserTable.insertRow({
+					Emp_name: name,
+					emp_mail: email,
+					emp_password: hashedPassword,
+					Role: role,
+					Zoho_user_id: zohoUserId
+				});
+			}
+
+			VERIFIED_EXPENSE_EMAILS.add(email);
+
+			await sendNotificationEmail(adminApp, {
+				to: [email, 'kumarlakavthu@gmail.com'],
+				subject: '🎉 Welcome to KR Tech Solutions - Zoho Expense Access',
+				htmlContent: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+						<div style="background: #2563eb; color: #ffffff; padding: 20px; text-align: center;">
+							<h2 style="margin: 0;">Welcome to KR Tech Solutions</h2>
+						</div>
+						<div style="padding: 24px; color: #334155;">
+							<p>Hello <strong>${name}</strong>,</p>
+							<p>You have been added to KR Tech Solutions with access to both <strong>Zoho Expense</strong> and the <strong>Catalyst Management Portal</strong>.</p>
+							<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Email:</td><td style="font-weight: bold; text-align: right;">${email}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Role:</td><td style="text-align: right; text-transform: capitalize;">${role}</td></tr>
+								<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Department:</td><td style="text-align: right;">${departmentName}</td></tr>
+							</table>
+						</div>
+					</div>
+				`
+			});
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				message: `User ${name} (${email}) created in Zoho Expense and Catalyst Datastore.`,
+				data: savedUser,
+				zoho_user: zohoUser
+			});
+		} else if (action === 'delete_user') {
+			if (!rowId) throw new Error('row_id is required to delete a user.');
+			await appUserTable.deleteRow(rowId);
+			writeOutput(basicIO, { status: 'Success', message: 'User removed from Catalyst Datastore.' });
+		} else if (action === 'sync_users') {
+			await syncZohoExpenseUsers(appUserTable);
+			const currentUsers = (await fetchAllRows(appUserTable)).map(sanitizeAppUser);
+			writeOutput(basicIO, { status: 'Success', users: currentUsers, message: `Synced ${currentUsers.length} users with Zoho Expense.` });
+		} else if (action === 'add_card') {
+			const cardNumber = arg('Card_number') || arg('card_number') || '•••• •••• •••• 9999';
+			const cardholderName = arg('Cardholder_name') || arg('cardholder_name') || 'Team Member';
+			const bankName = arg('Bank_name') || arg('bank_name') || 'HDFC Corporate Banking';
+			const cardType = arg('Card_type') || arg('card_type') || 'Mastercard Corporate';
+			const status = arg('Status') || arg('status') || 'Active Feed';
+			const totalSpend = Number(parseFloat(arg('Total_spend') || arg('total_spend') || 0)) || 0;
+
+			const inserted = await cardTable.insertRow({
+				Card_number: cardNumber,
+				Cardholder_name: cardholderName,
+				Bank_name: bankName,
+				Card_type: cardType,
+				Status: status,
+				Total_spend: totalSpend
+			});
+			writeOutput(basicIO, { status: 'Success', data: inserted });
+		} else if (action === 'delete_card') {
+			if (!rowId) throw new Error('row_id is required to delete a card.');
+			await cardTable.deleteRow(rowId);
+			writeOutput(basicIO, { status: 'Success' });
 		} else if (action === 'add_trip') {
 			const tripName = arg('Trip_name') || arg('trip_name') || 'Corporate Business Trip';
 			const departure = arg('Departure') || arg('departure') || 'Headquarters';
@@ -1221,9 +1574,9 @@ module.exports = async (context, basicIO) => {
 		) {
 			let payload = allArgs || {};
 			if (typeof allArgs === 'string') {
-				try { payload = JSON.parse(allArgs); } catch {}
+				try { payload = JSON.parse(allArgs); } catch { }
 			} else if (typeof allArgs?.body === 'string') {
-				try { payload = JSON.parse(allArgs.body); } catch {}
+				try { payload = JSON.parse(allArgs.body); } catch { }
 			}
 			const t = payload.trip || payload.Trip || payload.data || payload;
 
@@ -1626,11 +1979,17 @@ module.exports = async (context, basicIO) => {
 			await syncZohoExpenseReports(reportTable);
 			await initZohoExpenseAdvances(advanceTable);
 			await initPurchaseRequests(prTable);
+			await syncZohoExpenseUsers(appUserTable);
+			await initCorporateCards(cardTable);
+
 			const currentExpenses = await fetchAllRows(expenseTable);
 			const currentTrips = await fetchAllRows(tripTable);
 			const currentReports = await fetchAllRows(reportTable);
 			const currentAdvances = await fetchAllRows(advanceTable);
 			const currentPRs = await fetchAllRows(prTable);
+			const currentCards = await fetchAllRows(cardTable);
+			const currentUsers = (await fetchAllRows(appUserTable)).map(sanitizeAppUser);
+
 			writeOutput(basicIO, {
 				status: 'Success',
 				synced_expenses: currentExpenses.length,
@@ -1638,7 +1997,9 @@ module.exports = async (context, basicIO) => {
 				synced_reports: currentReports.length,
 				synced_advances: currentAdvances.length,
 				synced_purchases: currentPRs.length,
-				message: `Synced with Zoho Expense: ${currentReports.length} reports, ${currentExpenses.length} expenses, ${currentTrips.length} trips, ${currentAdvances.length} advances, ${currentPRs.length} purchase requests.`
+				synced_cards: currentCards.length,
+				synced_users: currentUsers.length,
+				message: `Synced with Zoho Expense: ${currentReports.length} reports, ${currentExpenses.length} expenses, ${currentTrips.length} trips, ${currentAdvances.length} advances, ${currentPRs.length} purchase requests, ${currentCards.length} cards, ${currentUsers.length} users.`
 			});
 		} else {
 			// Pull real expenses and trips if expense table is currently empty
@@ -1666,13 +2027,22 @@ module.exports = async (context, basicIO) => {
 				purchaseRequests = await fetchAllRows(prTable);
 			}
 
-			const rawAppUsers = await fetchAllRows(appUserTable);
+			let cards = await fetchAllRows(cardTable);
+			if (cards.length === 0) {
+				await initCorporateCards(cardTable);
+				cards = await fetchAllRows(cardTable);
+			}
+
+			let rawAppUsers = await fetchAllRows(appUserTable);
+			if (rawAppUsers.length <= 1) {
+				await syncZohoExpenseUsers(appUserTable);
+				rawAppUsers = await fetchAllRows(appUserTable);
+			}
 			const appUsers = rawAppUsers.map(sanitizeAppUser);
 
 			const employees = await fetchAllRows(empTable);
 			const designations = await fetchAllRows(desigTable);
 			const trips = await fetchAllRows(tripTable);
-			const cards = [];
 
 			writeOutput(basicIO, {
 				status: 'Success',
