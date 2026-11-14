@@ -4,183 +4,422 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KR Tech Solutions - Executive Zoho Expense Operations Dashboard</title>
+    <title>Zoho Expense - KR Tech Solutions</title>
     <link rel="stylesheet" href="main.css">
     <script src="https://static.zohocdn.com/catalyst/sdk/js/4.6.2/catalystWebSDK.js"></script>
     <script src="/__catalyst/sdk/init.js"></script>
 </head>
 
 <body>
-    <div class="dashboard-container">
-        <!-- 1. Top Executive Navigation Bar -->
-        <header class="exec-header">
-            <div class="brand-section">
-                <div class="brand-logo">KR</div>
-                <div class="brand-info">
-                    <h1>KR Tech Solutions</h1>
-                    <div class="brand-subline">
-                        <span>Zoho Expense Enterprise Operations (Org: 60095930892)</span>
-                        <span class="live-indicator"><span class="live-dot"></span> Live Datastore</span>
+    <div class="app-layout">
+        <!-- ================================================================
+             Authentic Zoho Expense Sidebar (Matches Screenshot 1:1)
+             ================================================================ -->
+        <aside class="sidebar">
+            <!-- Sidebar Header: Dark Navy with Zoho Receipt Logo & "Expense" -->
+            <div class="sidebar-header">
+                <svg class="brand-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path>
+                    <path d="M8 7h8"></path>
+                    <path d="M8 11h8"></path>
+                    <path d="M8 15h4"></path>
+                </svg>
+                <span class="brand-title">Expense</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="sidebar-nav">
+                <a class="nav-link" data-tab="home" title="Home Overview">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </span>
+                    <span class="nav-label">Home</span>
+                </a>
+
+                <a class="nav-link" data-tab="trips" title="Business Trips">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                    </span>
+                    <span class="nav-label">Trips</span>
+                </a>
+
+                <!-- Active Expenses Tab with Vibrant Blue Pill and '+' Quick Button -->
+                <a class="nav-link active" data-tab="expenses" title="Expenses Stream">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path><path d="M16 8h-8"></path><path d="M16 12h-8"></path><path d="M11 16h-3"></path></svg>
+                    </span>
+                    <span class="nav-label">Expenses</span>
+                    <span class="nav-add-btn" id="quickAddExpenseNavBtn" title="Create New Expense">+</span>
+                </a>
+
+                <a class="nav-link" data-tab="reports" title="Expense Reports">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    </span>
+                    <span class="nav-label">Reports</span>
+                </a>
+
+                <a class="nav-link" data-tab="advances" title="Cash & Employee Advances">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M2 10h20"></path><circle cx="16" cy="15" r="1"></circle></svg>
+                    </span>
+                    <span class="nav-label">Advances</span>
+                </a>
+
+                <a class="nav-link" data-tab="purchases" title="Purchase Requests">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    </span>
+                    <span class="nav-label">Purchase Requests</span>
+                </a>
+
+                <a class="nav-link" data-tab="cards" title="Corporate Cards">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    </span>
+                    <span class="nav-label">Cards</span>
+                </a>
+
+                <div class="nav-divider"></div>
+
+                <a class="nav-link" data-tab="analytics" title="Financial Analytics">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    </span>
+                    <span class="nav-label">Analytics</span>
+                </a>
+
+                <a class="nav-link" data-tab="settings" title="Organization & Settings">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </span>
+                    <span class="nav-label">My Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- ================================================================
+             Main Executive Workspace
+             ================================================================ -->
+        <main class="main-wrapper">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="nav-org-info">
+                    <span class="nav-org-title">KR Tech Solutions</span>
+                    <span class="nav-org-badge"><span class="live-dot"></span> Org: 60095930892 · Live Datastore</span>
+                </div>
+
+                <div class="navbar-right">
+                    <div id="currentUserPill" class="user-chip">
+                        <span class="user-avatar-circle" id="userInitial">U</span>
+                        <span id="currentUser">Loading session...</span>
                     </div>
+                    <button id="openExpenseModalBtn" class="btn btn-primary" type="button">+ Add Expense</button>
+                    <button id="syncZohoBtn" class="btn btn-sync" type="button">🔄 Sync Zoho</button>
+                    <button id="refreshBtn" class="btn btn-light" type="button">Refresh</button>
+                    <button id="signOutBtn" class="btn btn-danger" type="button">Sign Out</button>
                 </div>
-            </div>
+            </header>
 
-            <div class="header-controls">
-                <div id="currentUserPill" class="user-pill">
-                    <span class="user-avatar" id="userInitial">U</span>
-                    <span id="currentUser">Loading session...</span>
-                </div>
-                <button id="openExpenseModalBtn" class="btn btn-primary" type="button">+ Quick Expense</button>
-                <button id="syncZohoBtn" class="btn btn-sync" type="button">🔄 Sync Zoho Expense</button>
-                <button id="refreshBtn" class="btn btn-secondary" type="button">Refresh</button>
-                <button id="signOutBtn" class="btn btn-signout" type="button">Sign Out</button>
-            </div>
-        </header>
+            <!-- Content Body Area (Tab Views) -->
+            <div class="content-body">
+                <!-- ============================================================
+                     1. VIEW: Expenses (Default Active Tab)
+                     ============================================================ -->
+                <section id="view-expenses" class="view-panel active">
+                    <!-- Top Metric KPI Cards -->
+                    <div class="metrics-row">
+                        <div class="metric-box">
+                            <div class="metric-head">
+                                <span class="metric-title">Total Spend</span>
+                                <div class="metric-icon-wrap" style="background: #eef2ff; color: #4f46e5;">💳</div>
+                            </div>
+                            <div class="metric-val" id="kpiTotalSpend">₹0.00</div>
+                            <div class="metric-sub" id="kpiTotalCount">0 Transactions</div>
+                        </div>
 
-        <!-- 2. High-Level Executive KPI Metric Cards -->
-        <section class="metrics-grid">
-            <!-- Metric 1: Total Spend -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-title">Total Spend</span>
-                    <div class="kpi-icon-wrap icon-purple">💳</div>
-                </div>
-                <div class="kpi-value" id="kpiTotalSpend">₹0.00</div>
-                <div class="kpi-bottom">
-                    <span id="kpiTotalCount">0 Transactions</span>
-                    <span class="kpi-pill pill-purple">Live Datastore</span>
-                </div>
-            </div>
+                        <div class="metric-box">
+                            <div class="metric-head">
+                                <span class="metric-title">Approved Spend</span>
+                                <div class="metric-icon-wrap" style="background: #ecfdf5; color: #059669;">🛡️</div>
+                            </div>
+                            <div class="metric-val" id="kpiApprovedSpend">₹0.00</div>
+                            <div class="metric-sub" id="kpiApprovedCount">0 Approved Items</div>
+                        </div>
 
-            <!-- Metric 2: Approved Spend -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-title">Approved Spend</span>
-                    <div class="kpi-icon-wrap icon-emerald">🛡️</div>
-                </div>
-                <div class="kpi-value" id="kpiApprovedSpend">₹0.00</div>
-                <div class="kpi-bottom">
-                    <span id="kpiApprovedCount">0 Approved</span>
-                    <span class="kpi-pill pill-emerald">Verified</span>
-                </div>
-            </div>
+                        <div class="metric-box">
+                            <div class="metric-head">
+                                <span class="metric-title">In Review &amp; Processing</span>
+                                <div class="metric-icon-wrap" style="background: #fffbeb; color: #d97706;">⏳</div>
+                            </div>
+                            <div class="metric-val" id="kpiPendingSpend">₹0.00</div>
+                            <div class="metric-sub" id="kpiPendingCount">0 In Review</div>
+                        </div>
 
-            <!-- Metric 3: Pending & In Review -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-title">In Review &amp; Processing</span>
-                    <div class="kpi-icon-wrap icon-amber">⏳</div>
-                </div>
-                <div class="kpi-value" id="kpiPendingSpend">₹0.00</div>
-                <div class="kpi-bottom">
-                    <span id="kpiPendingCount">0 In Review</span>
-                    <span class="kpi-pill pill-amber">Workflow Action</span>
-                </div>
-            </div>
+                        <div class="metric-box">
+                            <div class="metric-head">
+                                <span class="metric-title">Organization Members</span>
+                                <div class="metric-icon-wrap" style="background: #eff6ff; color: #2563eb;">👥</div>
+                            </div>
+                            <div class="metric-val" id="kpiMembersCount">2</div>
+                            <div class="metric-sub">Active in Org 60095930892</div>
+                        </div>
+                    </div>
 
-            <!-- Metric 4: Verified Members -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-title">Organization Members</span>
-                    <div class="kpi-icon-wrap icon-blue">👥</div>
-                </div>
-                <div class="kpi-value" id="kpiMembersCount">2</div>
-                <div class="kpi-bottom">
-                    <span>kumar lakavthu · Submiter</span>
-                    <span class="kpi-pill pill-blue">Active Members</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. High-Level Visual Analytics Overview -->
-        <section class="analytics-grid">
-            <!-- Category Spend Breakdown -->
-            <div class="panel-card">
-                <div class="panel-header">
-                    <h2>📊 Spend by Category</h2>
-                    <span class="badge" id="categoryCountBadge">0 Categories</span>
-                </div>
-                <div class="category-list" id="categoryListContainer">
-                    <div class="empty-stream" style="padding: 20px;">Loading categories...</div>
-                </div>
-            </div>
-
-            <!-- Status & Operational Health -->
-            <div class="panel-card">
-                <div class="panel-header">
-                    <h2>📈 Workflow &amp; Approval Health</h2>
-                    <span class="badge">Zoho Expense V3</span>
-                </div>
-                <div class="status-health-list">
-                    <div class="health-item">
-                        <div class="health-left">
-                            <span class="health-dot" style="background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
-                            <div>
-                                <div class="health-label">Approved &amp; Verified</div>
-                                <div class="health-count" id="healthApprovedCount">0 items verified</div>
+                    <!-- Analytics Row: Spend by Category & Workflow Health -->
+                    <div class="analytics-row">
+                        <div class="white-card">
+                            <div class="card-header-bar">
+                                <h3>📊 Spend by Category</h3>
+                                <span class="badge-pill" id="categoryCountBadge">0 Categories</span>
+                            </div>
+                            <div class="category-bars-list" id="categoryListContainer">
+                                <div class="empty-placeholder">Loading categories...</div>
                             </div>
                         </div>
-                        <div class="health-amount" id="healthApprovedAmt">₹0.00</div>
-                    </div>
 
-                    <div class="health-item">
-                        <div class="health-left">
-                            <span class="health-dot" style="background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
-                            <div>
-                                <div class="health-label">In Review / Unreported</div>
-                                <div class="health-count" id="healthPendingCount">0 items pending</div>
+                        <div class="white-card">
+                            <div class="card-header-bar">
+                                <h3>📈 Workflow &amp; Approval Health</h3>
+                                <span class="badge-pill">Zoho Expense V3</span>
+                            </div>
+                            <div class="status-pill-list">
+                                <div class="status-row-item">
+                                    <div class="status-left">
+                                        <span class="status-dot-indicator" style="background: #10b981;"></span>
+                                        <div>
+                                            <div class="status-title-text">Approved &amp; Verified</div>
+                                            <div class="status-count-sub" id="healthApprovedCount">0 items approved</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-amount-bold" id="healthApprovedAmt">₹0.00</div>
+                                </div>
+
+                                <div class="status-row-item">
+                                    <div class="status-left">
+                                        <span class="status-dot-indicator" style="background: #f59e0b;"></span>
+                                        <div>
+                                            <div class="status-title-text">In Review / Unreported</div>
+                                            <div class="status-count-sub" id="healthPendingCount">0 items in review</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-amount-bold" id="healthPendingAmt">₹0.00</div>
+                                </div>
+
+                                <div class="status-row-item">
+                                    <div class="status-left">
+                                        <span class="status-dot-indicator" style="background: #0284c7;"></span>
+                                        <div>
+                                            <div class="status-title-text">Reimbursed &amp; Settled</div>
+                                            <div class="status-count-sub" id="healthReimbursedCount">0 items settled</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-amount-bold" id="healthReimbursedAmt">₹0.00</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="health-amount" id="healthPendingAmt">₹0.00</div>
                     </div>
 
-                    <div class="health-item">
-                        <div class="health-left">
-                            <span class="health-dot" style="background: #0284c7; box-shadow: 0 0 8px #0284c7;"></span>
-                            <div>
-                                <div class="health-label">Reimbursed &amp; Settled</div>
-                                <div class="health-count" id="healthReimbursedCount">0 items settled</div>
+                    <!-- High-Level Live Expense Stream (Clean Card-Based Feed) -->
+                    <div class="stream-card-box">
+                        <div class="stream-top-tools">
+                            <div class="stream-heading-group">
+                                <h3>Expenses Stream</h3>
+                                <span class="stream-badge-count" id="streamCountBadge">0 Total</span>
+                            </div>
+
+                            <div class="stream-filter-tools">
+                                <div class="search-box-wrap">
+                                    <span class="search-ico">🔍</span>
+                                    <input type="text" id="expenseSearchInput" class="search-field" placeholder="Search expense, submitter, category...">
+                                </div>
+                                <div class="filter-button-group">
+                                    <button type="button" class="filter-tab-btn active" data-filter="all">All</button>
+                                    <button type="button" class="filter-tab-btn" data-filter="approved">Approved</button>
+                                    <button type="button" class="filter-tab-btn" data-filter="pending">In Review</button>
+                                    <button type="button" class="filter-tab-btn" data-filter="reimbursed">Reimbursed</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="health-amount" id="healthReimbursedAmt">₹0.00</div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- 4. Executive Expense Activity Stream (Modern Card-Based Feed) -->
-        <section class="stream-section">
-            <div class="stream-toolbar">
-                <div class="stream-title-group">
-                    <h2>Live Expense Stream</h2>
-                    <span class="count-pill" id="streamCountBadge">0 Total</span>
-                </div>
-
-                <div class="toolbar-filters">
-                    <div class="search-wrap">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="expenseSearchInput" class="search-input" placeholder="Search by description, submitter, category...">
+                        <!-- Card Stream List -->
+                        <div class="stream-cards-list" id="expenseStreamContainer">
+                            <div class="empty-placeholder">
+                                <div class="empty-icon">📂</div>
+                                <p>Loading live expenses from Catalyst Datastore...</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="filter-pills">
-                        <button type="button" class="filter-btn active" data-filter="all">All</button>
-                        <button type="button" class="filter-btn" data-filter="approved">Approved</button>
-                        <button type="button" class="filter-btn" data-filter="pending">In Review</button>
-                        <button type="button" class="filter-btn" data-filter="reimbursed">Reimbursed</button>
-                    </div>
-                </div>
-            </div>
+                </section>
 
-            <!-- Card Stream Container -->
-            <div class="stream-list" id="expenseStreamContainer">
-                <div class="empty-stream">
-                    <div class="empty-stream-icon">📂</div>
-                    <p>Loading live expenses from Catalyst Datastore...</p>
-                </div>
+                <!-- ============================================================
+                     2. VIEW: Home (Overview & Quick Actions)
+                     ============================================================ -->
+                <section id="view-home" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>👋 Welcome to Zoho Expense Hub</h3>
+                            <span class="badge-pill">KR Tech Solutions</span>
+                        </div>
+                        <p style="color: #64748b; font-size: 14.5px; margin-bottom: 20px;">
+                            Manage enterprise expenditures, automate expense report approvals, and monitor financial compliance seamlessly connected with Zoho Catalyst Serverless backend.
+                        </p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; cursor: pointer;" onclick="document.querySelector('[data-tab=expenses]').click()">
+                                <div style="font-size: 26px; margin-bottom: 8px;">💳</div>
+                                <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Record New Expense</h4>
+                                <p style="font-size: 12.5px; color: #64748b;">Add individual receipts, fuel, meals, or operational expenses.</p>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; cursor: pointer;" onclick="document.querySelector('[data-tab=reports]').click()">
+                                <div style="font-size: 26px; margin-bottom: 8px;">📁</div>
+                                <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">View Expense Reports</h4>
+                                <p style="font-size: 12.5px; color: #64748b;">Review submitted employee expense bundles and approval stages.</p>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; cursor: pointer;" onclick="document.querySelector('[data-tab=analytics]').click()">
+                                <div style="font-size: 26px; margin-bottom: 8px;">📊</div>
+                                <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Financial Analytics</h4>
+                                <p style="font-size: 12.5px; color: #64748b;">Inspect department budgets, categories, and reimbursement cycle times.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     3. VIEW: Trips
+                     ============================================================ -->
+                <section id="view-trips" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>✈️ Business Trips &amp; Travel</h3>
+                            <span class="badge-pill">Travel Policy Active</span>
+                        </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Pre-approved corporate trips and itineraries linked to automated per-diem and expense reporting.
+                        </p>
+                        <div class="empty-placeholder">
+                            <div class="empty-icon">🧳</div>
+                            <p>No active trips scheduled at this moment.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     4. VIEW: Reports
+                     ============================================================ -->
+                <section id="view-reports" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>📁 Expense Reports Summary</h3>
+                            <span class="badge-pill" id="reportsCountBadge">0 Reports</span>
+                        </div>
+                        <div id="reportsListContainer">
+                            <div class="empty-placeholder">
+                                <div class="empty-icon">📄</div>
+                                <p>Loading expense reports from Catalyst Datastore...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     5. VIEW: Advances
+                     ============================================================ -->
+                <section id="view-advances" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>💼 Employee Advances</h3>
+                            <span class="badge-pill">Float Balance: ₹0.00</span>
+                        </div>
+                        <div class="empty-placeholder">
+                            <div class="empty-icon">👛</div>
+                            <p>No pending advance payment requests.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     6. VIEW: Purchase Requests
+                     ============================================================ -->
+                <section id="view-purchases" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>🛍️ Purchase Requests</h3>
+                            <span class="badge-pill">Procurement V2</span>
+                        </div>
+                        <div class="empty-placeholder">
+                            <div class="empty-icon">🛍️</div>
+                            <p>No active purchase requests pending procurement approval.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     7. VIEW: Cards
+                     ============================================================ -->
+                <section id="view-cards" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>💳 Corporate Cards &amp; Automated Feeds</h3>
+                            <span class="badge-pill">Mastercard / Visa Sync</span>
+                        </div>
+                        <div class="empty-placeholder">
+                            <div class="empty-icon">💳</div>
+                            <p>Corporate credit card direct bank feed is connected.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     8. VIEW: Analytics
+                     ============================================================ -->
+                <section id="view-analytics" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>📈 Executive Financial &amp; Policy Analytics</h3>
+                            <span class="badge-pill">Real-time Datastore</span>
+                        </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 20px;">
+                            Detailed departmental spending analysis, policy violation audits, and approval velocity benchmarks.
+                        </p>
+                        <div id="fullAnalyticsBreakdown">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     9. VIEW: My Settings
+                     ============================================================ -->
+                <section id="view-settings" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <h3>⚙️ Organization &amp; Integration Settings</h3>
+                            <span class="badge-pill">Catalyst Serverless</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+                                <strong>Zoho Expense Organization:</strong> KR Tech Solutions (ID: <code>60095930892</code>)
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+                                <strong>Catalyst Project ID:</strong> Management (<code>98838000000041077</code>)
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+                                <strong>Active Webhook Endpoint:</strong><br>
+                                <code style="word-break: break-all; color: #2563eb;">https://management-60094939168.development.catalystserverless.in/server/management_function/execute</code>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+                                <strong>Datastore Tables:</strong> Expense (<code>98838000000034021</code>), App_user (<code>98838000000028029</code>)
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
-        </section>
+        </main>
     </div>
 
-    <!-- Quick Add Expense Modal -->
+    <!-- ================================================================
+         Quick Add Expense Modal (Popup)
+         ================================================================ -->
     <div id="expenseModal" class="modal-backdrop">
         <form id="expenseForm" class="modal-box">
             <div class="modal-header-row">
@@ -228,7 +467,7 @@
             </div>
 
             <div class="modal-actions">
-                <button type="button" id="cancelExpenseModalBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="cancelExpenseModalBtn" class="btn btn-light">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save Expense</button>
             </div>
         </form>

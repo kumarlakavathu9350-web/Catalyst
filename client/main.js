@@ -14,12 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const expenseModal = $('expenseModal');
     const expenseForm = $('expenseForm');
     const openExpenseModalBtn = $('openExpenseModalBtn');
+    const quickAddExpenseNavBtn = $('quickAddExpenseNavBtn');
     const closeExpenseModalBtn = $('closeExpenseModalBtn');
     const cancelExpenseModalBtn = $('cancelExpenseModalBtn');
 
+    // Sidebar navigation tabs
+    const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+    const viewPanels = document.querySelectorAll('.view-panel');
+
     // Toolbar & filter elements
     const searchInput = $('expenseSearchInput');
-    const filterBtns = document.querySelectorAll('.filter-btn');
+    const filterBtns = document.querySelectorAll('.filter-tab-btn');
     const streamContainer = $('expenseStreamContainer');
     const streamCountBadge = $('streamCountBadge');
 
@@ -41,18 +46,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const healthReimbursedAmt = $('healthReimbursedAmt');
     const currentUserEl = $('currentUser');
     const userInitialEl = $('userInitial');
+    const reportsListContainer = $('reportsListContainer');
+    const reportsCountBadge = $('reportsCountBadge');
+    const fullAnalyticsBreakdown = $('fullAnalyticsBreakdown');
 
     let allExpenses = [];
     let currentFilter = 'all';
     let searchQuery = '';
 
+    // =========================================================================
+    // Sidebar Tab Switching
+    // =========================================================================
+    navLinks.forEach((link) => {
+        link.addEventListener('click', (e) => {
+            // If user clicked the '+' inside the Expenses tab, don't re-switch tab
+            if (e.target.closest('#quickAddExpenseNavBtn')) {
+                return;
+            }
+
+            const targetTab = link.getAttribute('data-tab');
+            if (!targetTab) return;
+
+            navLinks.forEach((l) => l.classList.remove('active'));
+            link.classList.add('active');
+
+            viewPanels.forEach((panel) => {
+                panel.classList.remove('active');
+                if (panel.id === `view-${targetTab}`) {
+                    panel.classList.add('active');
+                }
+            });
+        });
+    });
+
+    // Quick Add Expense button inside the Expenses tab pill
+    if (quickAddExpenseNavBtn) {
+        quickAddExpenseNavBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openExpenseModal();
+        });
+    }
+
     // Modal controls
-    if (openExpenseModalBtn) openExpenseModalBtn.onclick = () => { expenseModal.style.display = 'flex'; };
-    if (closeExpenseModalBtn) closeExpenseModalBtn.onclick = () => { expenseModal.style.display = 'none'; };
-    if (cancelExpenseModalBtn) cancelExpenseModalBtn.onclick = () => { expenseModal.style.display = 'none'; };
+    function openExpenseModal() {
+        if (expenseModal) expenseModal.style.display = 'flex';
+    }
+    function closeExpenseModal() {
+        if (expenseModal) expenseModal.style.display = 'none';
+    }
+
+    if (openExpenseModalBtn) openExpenseModalBtn.onclick = openExpenseModal;
+    if (closeExpenseModalBtn) closeExpenseModalBtn.onclick = closeExpenseModal;
+    if (cancelExpenseModalBtn) cancelExpenseModalBtn.onclick = closeExpenseModal;
     window.onclick = (e) => {
         if (e.target === expenseModal) {
-            expenseModal.style.display = 'none';
+            closeExpenseModal();
         }
     };
 
@@ -80,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (syncZohoBtn) {
         syncZohoBtn.onclick = async () => {
             syncZohoBtn.disabled = true;
-            syncZohoBtn.textContent = '🔄 Syncing with Zoho Expense...';
+            syncZohoBtn.textContent = '🔄 Syncing...';
             try {
                 const res = await callFunction({ action: 'sync_all_from_expense' });
                 if (res.status !== 'Success') throw new Error(res.message || 'Sync failed');
@@ -89,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Failed to sync: ' + (err.message || 'Error'));
             } finally {
                 syncZohoBtn.disabled = false;
-                syncZohoBtn.textContent = '🔄 Sync Zoho Expense';
+                syncZohoBtn.textContent = '🔄 Sync Zoho';
             }
         };
     }
@@ -142,22 +190,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getCategoryIcon(cat) {
         const c = String(cat || '').toLowerCase();
-        if (c.includes('internet') || c.includes('it') || c.includes('software')) return { icon: '💻', bg: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' };
-        if (c.includes('travel') || c.includes('flight') || c.includes('trip')) return { icon: '✈️', bg: 'rgba(2, 132, 199, 0.2)', color: '#38bdf8' };
-        if (c.includes('food') || c.includes('meal') || c.includes('entertainment')) return { icon: '🍔', bg: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' };
-        if (c.includes('hotel') || c.includes('lodging')) return { icon: '🏨', bg: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' };
-        if (c.includes('fuel') || c.includes('auto') || c.includes('cab')) return { icon: '🚗', bg: 'rgba(239, 68, 68, 0.2)', color: '#f87171' };
-        if (c.includes('report')) return { icon: '📄', bg: 'rgba(16, 185, 129, 0.2)', color: '#34d399' };
-        return { icon: '🏢', bg: 'rgba(100, 116, 139, 0.2)', color: '#94a3b8' };
+        if (c.includes('internet') || c.includes('it') || c.includes('software')) return { icon: '💻', bg: '#eff6ff', color: '#2563eb' };
+        if (c.includes('travel') || c.includes('flight') || c.includes('trip')) return { icon: '✈️', bg: '#f0fdf4', color: '#16a34a' };
+        if (c.includes('food') || c.includes('meal') || c.includes('entertainment')) return { icon: '🍔', bg: '#fffbeb', color: '#d97706' };
+        if (c.includes('hotel') || c.includes('lodging')) return { icon: '🏨', bg: '#faf5ff', color: '#9333ea' };
+        if (c.includes('fuel') || c.includes('auto') || c.includes('cab')) return { icon: '🚗', bg: '#fef2f2', color: '#dc2626' };
+        if (c.includes('report')) return { icon: '📄', bg: '#ecfdf5', color: '#059669' };
+        return { icon: '🏢', bg: '#f1f5f9', color: '#475569' };
     }
 
     async function loadData() {
-        streamContainer.innerHTML = `
-            <div class="empty-stream">
-                <div class="empty-stream-icon">⏳</div>
-                <p>Loading live expenses from Catalyst Datastore...</p>
-            </div>
-        `;
+        if (streamContainer) {
+            streamContainer.innerHTML = `
+                <div class="empty-placeholder">
+                    <div class="empty-icon">⏳</div>
+                    <p>Loading live expenses from Catalyst Datastore...</p>
+                </div>
+            `;
+        }
 
         try {
             const data = await callFunction({ action: 'getAll' });
@@ -200,80 +250,80 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Update KPI cards
-            kpiTotalSpend.textContent = formatINR(totalSpend);
-            kpiTotalCount.textContent = `${allExpenses.length} Transactions`;
+            if (kpiTotalSpend) kpiTotalSpend.textContent = formatINR(totalSpend);
+            if (kpiTotalCount) kpiTotalCount.textContent = `${allExpenses.length} Transactions`;
 
-            kpiApprovedSpend.textContent = formatINR(approvedSpend);
-            kpiApprovedCount.textContent = `${approvedCount} Approved Items`;
+            if (kpiApprovedSpend) kpiApprovedSpend.textContent = formatINR(approvedSpend);
+            if (kpiApprovedCount) kpiApprovedCount.textContent = `${approvedCount} Approved Items`;
 
-            kpiPendingSpend.textContent = formatINR(pendingSpend + reimbursedSpend);
-            kpiPendingCount.textContent = `${pendingCount} In Review · ${reimbursedCount} Reimbursed`;
+            if (kpiPendingSpend) kpiPendingSpend.textContent = formatINR(pendingSpend + reimbursedSpend);
+            if (kpiPendingCount) kpiPendingCount.textContent = `${pendingCount} In Review · ${reimbursedCount} Reimbursed`;
 
-            kpiMembersCount.textContent = `${appUsers.length || 2} Active Members`;
+            if (kpiMembersCount) kpiMembersCount.textContent = `${appUsers.length || 2} Active Members`;
 
             // 2. Render Spend by Category
             renderCategoryBreakdown(categoryMap, totalSpend);
 
             // 3. Render Workflow & Health Breakdown
-            healthApprovedCount.textContent = `${approvedCount} item(s) approved`;
-            healthApprovedAmt.textContent = formatINR(approvedSpend);
+            if (healthApprovedCount) healthApprovedCount.textContent = `${approvedCount} item(s) approved`;
+            if (healthApprovedAmt) healthApprovedAmt.textContent = formatINR(approvedSpend);
 
-            healthPendingCount.textContent = `${pendingCount} item(s) in review`;
-            healthPendingAmt.textContent = formatINR(pendingSpend);
+            if (healthPendingCount) healthPendingCount.textContent = `${pendingCount} item(s) in review`;
+            if (healthPendingAmt) healthPendingAmt.textContent = formatINR(pendingSpend);
 
-            healthReimbursedCount.textContent = `${reimbursedCount} item(s) settled`;
-            healthReimbursedAmt.textContent = formatINR(reimbursedSpend);
+            if (healthReimbursedCount) healthReimbursedCount.textContent = `${reimbursedCount} item(s) settled`;
+            if (healthReimbursedAmt) healthReimbursedAmt.textContent = formatINR(reimbursedSpend);
 
             // 4. Render Expense Activity Stream
             renderStream();
 
+            // 5. Render Reports & Full Analytics Views
+            renderReportsView();
+            renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
+
         } catch (err) {
-            streamContainer.innerHTML = `
-                <div class="empty-stream" style="color: #f87171;">
-                    <div class="empty-stream-icon">⚠️</div>
-                    <p>Failed to load expenses: ${escapeHtml(err.message || 'Error connecting to server')}</p>
-                </div>
-            `;
+            if (streamContainer) {
+                streamContainer.innerHTML = `
+                    <div class="empty-placeholder" style="color: #dc2626;">
+                        <div class="empty-icon">⚠️</div>
+                        <p>Failed to load expenses: ${escapeHtml(err.message || 'Error connecting to server')}</p>
+                    </div>
+                `;
+            }
         }
     }
 
     function renderCategoryBreakdown(catMap, totalSpend) {
+        if (!categoryListContainer) return;
         const categories = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
-        categoryCountBadge.textContent = `${categories.length} Categories`;
+        if (categoryCountBadge) categoryCountBadge.textContent = `${categories.length} Categories`;
 
         if (!categories.length) {
-            categoryListContainer.innerHTML = '<div class="empty-stream" style="padding: 16px;">No categories recorded yet.</div>';
+            categoryListContainer.innerHTML = '<div class="empty-placeholder">No categories recorded yet.</div>';
             return;
         }
 
-        const colors = [
-            'linear-gradient(90deg, #6366f1, #818cf8)',
-            'linear-gradient(90deg, #10b981, #34d399)',
-            'linear-gradient(90deg, #0284c7, #38bdf8)',
-            'linear-gradient(90deg, #f59e0b, #fbbf24)',
-            'linear-gradient(90deg, #ec4899, #f472b6)',
-            'linear-gradient(90deg, #8b5cf6, #a78bfa)'
-        ];
+        const barColors = ['#2563eb', '#10b981', '#0284c7', '#f59e0b', '#ec4899', '#8b5cf6'];
 
         categoryListContainer.innerHTML = categories.map(([name, amt], idx) => {
             const pct = totalSpend > 0 ? ((amt / totalSpend) * 100).toFixed(1) : '0.0';
             const iconObj = getCategoryIcon(name);
-            const grad = colors[idx % colors.length];
+            const color = barColors[idx % barColors.length];
 
             return `
-                <div class="category-item">
-                    <div class="category-meta">
-                        <div class="category-name-group">
+                <div class="cat-bar-item">
+                    <div class="cat-bar-meta">
+                        <div class="cat-name-box">
                             <span>${iconObj.icon}</span>
                             <span>${escapeHtml(name)}</span>
-                            <span class="badge" style="background: rgba(255,255,255,0.06); font-size:11px;">${pct}%</span>
+                            <span class="badge-pill">${pct}%</span>
                         </div>
-                        <div class="category-amount-group">
-                            <span class="category-amount">${formatINR(amt)}</span>
+                        <div class="cat-amount-box">
+                            <span>${formatINR(amt)}</span>
                         </div>
                     </div>
-                    <div class="progress-track">
-                        <div class="progress-fill" style="width: ${Math.min(100, Math.max(3, pct))}%; background: ${grad};"></div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: ${Math.min(100, Math.max(3, pct))}%; background: ${color};"></div>
                     </div>
                 </div>
             `;
@@ -281,6 +331,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderStream() {
+        if (!streamContainer) return;
+
         let filtered = allExpenses.filter((item) => {
             const r = item.Expense || item;
             const status = String(r.Status || 'unreported').toLowerCase();
@@ -303,12 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         });
 
-        streamCountBadge.textContent = `${filtered.length} of ${allExpenses.length}`;
+        if (streamCountBadge) streamCountBadge.textContent = `${filtered.length} of ${allExpenses.length}`;
 
         if (!filtered.length) {
             streamContainer.innerHTML = `
-                <div class="empty-stream">
-                    <div class="empty-stream-icon">🔍</div>
+                <div class="empty-placeholder">
+                    <div class="empty-icon">🔍</div>
                     <p>No matching expenses found.</p>
                 </div>
             `;
@@ -329,44 +381,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const iconInfo = getCategoryIcon(cat);
 
-            let statusClass = 'badge-pending';
+            let statusClass = 'chip-pending';
             let statusLabel = '⏳ In Review';
             if (rawStatus === 'approved') {
-                statusClass = 'badge-approved';
+                statusClass = 'chip-approved';
                 statusLabel = '✓ Approved';
             } else if (rawStatus === 'reimbursed') {
-                statusClass = 'badge-reimbursed';
+                statusClass = 'chip-reimbursed';
                 statusLabel = '💎 Reimbursed';
             }
 
             const card = document.createElement('div');
-            card.className = 'stream-card';
+            card.className = 'expense-row-card';
 
             const approveBtnHtml = rawStatus !== 'approved'
                 ? `<button class="btn-card-approve btn-approve-action" type="button" data-id="${escapeHtml(rowId)}">Approve</button>`
                 : '';
 
             card.innerHTML = `
-                <div class="card-left">
-                    <div class="category-icon-box" style="background: ${iconInfo.bg}; color: ${iconInfo.color};">
+                <div class="exp-left-cluster">
+                    <div class="cat-icon-container" style="background: ${iconInfo.bg}; color: ${iconInfo.color};">
                         ${iconInfo.icon}
                     </div>
-                    <div class="card-details">
-                        <div class="card-title" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
-                        <div class="card-meta-row">
-                            <span class="meta-pill">📅 ${escapeHtml(date)}</span>
-                            <span class="meta-pill">👤 ${escapeHtml(paidBy)}</span>
-                            <span class="meta-pill">🏷️ ${escapeHtml(cat)}</span>
+                    <div class="exp-info-col">
+                        <div class="exp-title-text" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+                        <div class="exp-meta-pills">
+                            <span class="tag-pill">📅 ${escapeHtml(date)}</span>
+                            <span class="tag-pill">👤 ${escapeHtml(paidBy)}</span>
+                            <span class="tag-pill">🏷️ ${escapeHtml(cat)}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="card-right">
-                    <div class="card-amount-block">
-                        <div class="card-amount">${formatINR(amt)}</div>
-                        <span class="card-status-badge ${statusClass}">${statusLabel}</span>
+                <div class="exp-right-cluster">
+                    <div class="exp-amount-block">
+                        <div class="exp-amount-text">${formatINR(amt)}</div>
+                        <span class="status-badge-chip ${statusClass}">${statusLabel}</span>
                     </div>
-                    <div class="card-actions">
+                    <div class="action-btn-group">
                         ${approveBtnHtml}
                         <button class="btn-card-delete btn-delete-action" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-name="${escapeHtml(name)}">🗑️</button>
                     </div>
@@ -410,6 +462,108 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function renderReportsView() {
+        if (!reportsListContainer) return;
+        const reports = allExpenses.filter((item) => {
+            const r = item.Expense || item;
+            const cat = String(r.Category || '').toLowerCase();
+            const name = String(r.Expense_name || '').toLowerCase();
+            return cat.includes('report') || name.startsWith('er-') || name.includes('report');
+        });
+
+        if (reportsCountBadge) reportsCountBadge.textContent = `${reports.length} Reports`;
+
+        if (!reports.length) {
+            reportsListContainer.innerHTML = `
+                <div class="empty-placeholder">
+                    <div class="empty-icon">📄</div>
+                    <p>No submitted expense reports found in Datastore.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let tableHtml = `
+            <div style="overflow-x: auto;">
+                <table class="clean-table">
+                    <thead>
+                        <tr>
+                            <th>Report Name</th>
+                            <th>Submitter</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        reports.forEach((item) => {
+            const r = item.Expense || item;
+            const name = r.Expense_name || 'Report';
+            const paidBy = r.Paid_by || 'KR Tech Solutions';
+            const date = r.Expense_date || 'Today';
+            const amt = Number(parseFloat(r.Amount)) || 0;
+            const status = String(r.Status || 'unreported');
+
+            tableHtml += `
+                <tr>
+                    <td><strong>${escapeHtml(name)}</strong></td>
+                    <td>${escapeHtml(paidBy)}</td>
+                    <td>${escapeHtml(date)}</td>
+                    <td><span class="status-badge-chip chip-approved">${escapeHtml(status)}</span></td>
+                    <td style="text-align: right; font-weight: 700;">${formatINR(amt)}</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += '</tbody></table></div>';
+        reportsListContainer.innerHTML = tableHtml;
+    }
+
+    function renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap) {
+        if (!fullAnalyticsBreakdown) return;
+        const catEntries = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
+
+        fullAnalyticsBreakdown.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px;">
+                    <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #0f172a;">Executive Spend Summary</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Gross Spend:</span>
+                            <span style="font-weight: 700;">${formatINR(totalSpend)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Approved &amp; Cleared:</span>
+                            <span style="font-weight: 700; color: #15803d;">${formatINR(approvedSpend)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">In Review Pipeline:</span>
+                            <span style="font-weight: 700; color: #b45309;">${formatINR(pendingSpend)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Reimbursed to Date:</span>
+                            <span style="font-weight: 700; color: #0284c7;">${formatINR(reimbursedSpend)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px;">
+                    <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #0f172a;">Top 3 Expenditure Categories</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px;">
+                        ${catEntries.slice(0, 3).map(([cat, amt]) => `
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>${escapeHtml(cat)}</span>
+                                <span style="font-weight: 700;">${formatINR(amt)}</span>
+                            </div>
+                        `).join('') || '<div style="color: #64748b;">No categories recorded yet.</div>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     // Modal Form Submission
     if (expenseForm) {
         expenseForm.onsubmit = async (e) => {
@@ -440,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if (res.status !== 'Success') throw new Error(res.message || 'Failed to save');
 
-                expenseModal.style.display = 'none';
+                closeExpenseModal();
                 expenseForm.reset();
                 await loadData();
             } catch (err) {
