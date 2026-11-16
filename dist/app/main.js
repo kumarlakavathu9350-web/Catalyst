@@ -1723,7 +1723,110 @@ document.addEventListener('DOMContentLoaded', () => {
         return escaped.split('\n\n').map(p => p.startsWith('<ul>') ? p : `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
     }
 
-    function appendZiaChatMessage(role, content, followUps = []) {
+    function getStatusTagClass(status) {
+        const s = String(status || '').toLowerCase();
+        if (s.includes('init') || s.includes('draft') || s.includes('start')) return 'tag-initiated';
+        if (s.includes('active') || s.includes('progress') || s.includes('pend')) return 'tag-active';
+        if (s.includes('review') || s.includes('audit')) return 'tag-review';
+        if (s.includes('approv') || s.includes('done') || s.includes('reimburs')) return 'tag-approved';
+        return 'tag-active';
+    }
+
+    function renderInlineFlowChartHtml(flowData) {
+        if (!flowData || !Array.isArray(flowData.steps)) return '';
+        const stepsHtml = flowData.steps.map((step, idx) => {
+            const isLast = idx === flowData.steps.length - 1;
+            const tagClass = getStatusTagClass(step.status);
+            return `
+              <div class="timeline-step-node">
+                <div class="timeline-rail">
+                  <div class="timeline-number-badge">${step.step || idx + 1}</div>
+                  ${isLast ? '' : '<div class="timeline-connector-line"></div>'}
+                </div>
+                <div class="timeline-step-card">
+                  <div class="timeline-step-header">
+                    <span class="timeline-step-name">${escapeHtml(step.name || '')}</span>
+                    <span class="timeline-step-tag ${tagClass}">${escapeHtml(step.status || 'Active')}</span>
+                  </div>
+                  <div class="timeline-step-desc">${escapeHtml(step.desc || '')}</div>
+                  ${step.role ? `<div class="timeline-step-role"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${escapeHtml(step.role)}</div>` : ''}
+                </div>
+              </div>
+            `;
+        }).join('');
+
+        return `
+          <div class="chat-flowchart-card">
+            <div class="chat-flowchart-header">
+              <div class="chat-flowchart-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="6" height="6" rx="1.5"></rect>
+                  <rect x="15" y="3" width="6" height="6" rx="1.5"></rect>
+                  <rect x="9" y="15" width="6" height="6" rx="1.5"></rect>
+                  <path d="M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V9"></path>
+                  <path d="M12 15v-3"></path>
+                </svg>
+              </div>
+              <div class="chat-flowchart-info">
+                <div class="chat-flowchart-title">${escapeHtml(flowData.title || 'Workflow Timeline')}</div>
+                <div class="chat-flowchart-summary">${escapeHtml(flowData.summary || '')}</div>
+              </div>
+              <span class="chat-flowchart-count-badge">${flowData.steps.length} Stages</span>
+            </div>
+            <div class="chat-flowchart-timeline">
+              ${stepsHtml}
+            </div>
+          </div>
+        `;
+    }
+
+    function renderInlineChart(chartData, container) {
+        if (!chartData || !chartData.labels || !chartData.data) return;
+        const card = document.createElement('div');
+        card.className = 'chat-chart-card';
+        const canvasId = `ziaChart_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        card.innerHTML = `
+          <div class="chat-chart-header">
+            <span>📊</span>
+            <span>${escapeHtml(chartData.title || 'Spending Distribution')}</span>
+          </div>
+          <div class="chat-chart-canvas-wrap">
+            <canvas id="${canvasId}"></canvas>
+          </div>
+        `;
+        container.appendChild(card);
+
+        setTimeout(() => {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !window.Chart) return;
+            const colors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316'];
+            new window.Chart(canvas, {
+                type: chartData.type || 'doughnut',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Amount (₹)',
+                        data: chartData.data,
+                        backgroundColor: colors.slice(0, chartData.labels.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { boxWidth: 12, font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }, 60);
+    }
+
+    function appendZiaChatMessage(role, content, followUps = [], extra = {}) {
         const chatWindow = $('ziaChatWindow');
         if (!chatWindow) return;
 
@@ -1738,6 +1841,18 @@ document.addEventListener('DOMContentLoaded', () => {
         body.className = 'bubble-content';
         body.innerHTML = role === 'user' ? `<p>${escapeHtml(content)}</p>` : formatZiaMarkdown(content);
 
+        // Inject Interactive Dynamic Flowchart if provided by Zia
+        if (extra && extra.flowchart) {
+            const flowWrapper = document.createElement('div');
+            flowWrapper.innerHTML = renderInlineFlowChartHtml(extra.flowchart);
+            body.appendChild(flowWrapper);
+        }
+
+        // Inject Interactive Dynamic Chart.js if provided by Zia
+        if (extra && extra.chart) {
+            renderInlineChart(extra.chart, body);
+        }
+
         if (Array.isArray(followUps) && followUps.length > 0) {
             const followUpWrap = document.createElement('div');
             followUpWrap.className = 'bubble-followups';
@@ -1746,7 +1861,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 chip.type = 'button';
                 chip.className = 'bubble-followup-chip';
                 chip.textContent = q;
-                chip.onclick = () => sendZiaQuery(q);
+                chip.onclick = () => {
+                    if (q.includes('Approve safe') || q.includes('Auto-Approve')) {
+                        const autoBtn = $('ziaAutoApproveSafeBtn');
+                        if (autoBtn) autoBtn.click();
+                        else sendZiaQuery(q);
+                    } else {
+                        sendZiaQuery(q);
+                    }
+                };
                 followUpWrap.appendChild(chip);
             });
             body.appendChild(followUpWrap);
@@ -1782,7 +1905,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await callZia({ action: 'zia_chat', query: text });
             if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
             if (res?.status !== 'Success') throw new Error(res?.message || 'Error querying Zia');
-            appendZiaChatMessage('zia', res.answer, res.suggestedFollowUps || []);
+            appendZiaChatMessage('zia', res.answer, res.suggestedFollowUps || [], { flowchart: res.flowchart, chart: res.chart });
         } catch (err) {
             if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
             appendZiaChatMessage('zia', `⚠️ **Zia Assistant Error:** ${err.message || 'Unable to retrieve insights.'}`);

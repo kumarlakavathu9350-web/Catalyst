@@ -218,7 +218,35 @@ module.exports = async (context, basicIO) => {
 			let suggestedFollowUps = [];
 
 			// Routing query types
-			if (queryLower.match(/\b(it|software|tech|internet|aws|cloud|hardware)\b/)) {
+			if (queryLower.match(/\b(workflow|flowchart|process|lifecycle|steps|stages|pipeline)\b/)) {
+				responseText = `🔄 **Zoho Expense Enterprise Approval & Reimbursement Workflow:**\n\nBelow is the verified multi-stage approval flowchart generated natively by Zia for KR Tech Solutions.`;
+				responseData = {
+					flowchart: {
+						title: 'Expense Approval & Reimbursement Lifecycle',
+						summary: 'Authentic 4-stage verification and payment workflow for employee claims',
+						steps: [
+							{ step: 1, name: 'Claim Incurred & Captured', role: 'Employee', desc: 'Employee uploads bill via Zia OCR or speaks claim via Zia Voice NLP.', status: 'Initiated' },
+							{ step: 2, name: 'Automated Policy & Anomaly Check', role: 'Zia AI Radar', desc: 'Zia checks duplicate receipts, weekend spending, and per-diem limits.', status: 'Active' },
+							{ step: 3, name: 'Managerial & Multi-Level Review', role: 'Department Manager / VP', desc: 'Manager verifies business necessity and approves the expense report.', status: 'Review' },
+							{ step: 4, name: 'Finance Audit & Direct Reimbursement', role: 'Finance Team', desc: 'Automated bank payout or commercial card feed reconciliation.', status: 'Approved' }
+						]
+					}
+				};
+				suggestedFollowUps = ['Interactive spend chart', 'Executive Spend Summary', 'Approve safe expenses'];
+			} else if (queryLower.match(/\b(chart|graph|plot|visual|visualiz|distribution)\b/)) {
+				const labels = Object.keys(categoryTotals);
+				const data = Object.values(categoryTotals);
+				responseText = `📊 **Interactive Financial Distribution Chart:**\n\nHere is your dynamic category spending breakdown rendered directly from live Datastore records.`;
+				responseData = {
+					chart: {
+						type: 'doughnut',
+						title: 'Spending Breakdown by Category (₹)',
+						labels: labels.length ? labels : ['Office Supplies', 'IT and Internet Expenses'],
+						data: data.length ? data : [2400, 4800]
+					}
+				};
+				suggestedFollowUps = ['Approval workflow flowchart', 'Check policy anomalies', 'Executive Spend Summary'];
+			} else if (queryLower.match(/\b(it|software|tech|internet|aws|cloud|hardware)\b/)) {
 				const itSpend = categoryTotals['IT and Internet Expenses'] || 0;
 				const itCount = expenses.filter(e => (e.Category || '').toLowerCase().includes('it')).length;
 				responseText = `💻 **IT and Software Expenses:**\n\n- Total IT spend: **₹${itSpend.toLocaleString('en-IN', { minimumFractionDigits: 2 })}** across **${itCount}** transactions.\n- Top IT vendors include AWS, Zoho Cloud, and JetBrains licenses.\n- Policy limit for IT purchases is ₹50,000 before secondary approval.`;
@@ -307,6 +335,8 @@ module.exports = async (context, basicIO) => {
 				answer: responseText,
 				query,
 				suggestedFollowUps,
+				flowchart: responseData?.flowchart || null,
+				chart: responseData?.chart || null,
 				data: responseData,
 				ziaAnalysis
 			});

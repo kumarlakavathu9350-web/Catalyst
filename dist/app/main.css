@@ -1653,3 +1653,180 @@ svg {
     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
+/* ==========================================================================
+   Flowchart & Interactive Visualizations (Inspired by ApexQ_AI)
+   ========================================================================== */
+.chat-flowchart-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e0e7ff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.08);
+    margin: 10px 0 6px 0;
+}
+
+.chat-flowchart-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.chat-flowchart-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-flowchart-info {
+    flex: 1;
+}
+
+.chat-flowchart-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.chat-flowchart-summary {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.chat-flowchart-count-badge {
+    background: #e0e7ff;
+    color: #4338ca;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.chat-flowchart-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-left: 4px;
+}
+
+.timeline-step-node {
+    display: flex;
+    gap: 12px;
+    position: relative;
+}
+
+.timeline-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 24px;
+    flex-shrink: 0;
+}
+
+.timeline-number-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.timeline-connector-line {
+    width: 2px;
+    flex: 1;
+    background: #e2e8f0;
+    margin: 2px 0;
+    min-height: 28px;
+}
+
+.timeline-step-card {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+
+.timeline-step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.timeline-step-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.timeline-step-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+
+.tag-initiated { background: #fef3c7; color: #b45309; }
+.tag-active { background: #dbeafe; color: #1d4ed8; }
+.tag-review { background: #f3e8ff; color: #7e22ce; }
+.tag-approved { background: #dcfce7; color: #15803d; }
+
+.timeline-step-desc {
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.4;
+}
+
+.timeline-step-role {
+    font-size: 11px;
+    color: #6366f1;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Dynamic Inline Chart Card */
+.chat-chart-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+    margin: 10px 0 6px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.chat-chart-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-chart-canvas-wrap {
+    position: relative;
+    height: 220px;
+    width: 100%;
+}
+
