@@ -259,7 +259,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === addUserModal) closeAddUserModal();
     };
 
-    $('refreshBtn').onclick = loadData;
+    if ($('refreshBtn')) {
+        $('refreshBtn').onclick = () => {
+            showSyncToast('🔄 Refreshing and syncing with Zoho Expense...', 'info');
+            loadData(true);
+        };
+    }
     $('signOutBtn').onclick = signOutToLogin;
 
     // Filters and Search
@@ -353,17 +358,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function showSyncToast(msg, type = 'info') {
+        let toast = $('syncToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'syncToast';
+            toast.className = 'sync-toast';
+            document.body.appendChild(toast);
+        }
+        toast.className = `sync-toast sync-toast-${type} visible`;
+        toast.textContent = msg;
+        clearTimeout(toast._timer);
+        if (type !== 'info') {
+            toast._timer = setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 4000);
+        }
+    }
+
     const syncZohoBtn = $('syncZohoBtn');
     if (syncZohoBtn) {
         syncZohoBtn.onclick = async () => {
             syncZohoBtn.disabled = true;
             syncZohoBtn.textContent = '🔄 Syncing...';
+            showSyncToast('🔄 Syncing all records with Zoho Expense in real-time...', 'info');
             try {
                 const res = await callFunction({ action: 'sync_all_from_expense' });
                 if (res.status !== 'Success') throw new Error(res.message || 'Sync failed');
-                await loadData();
+                if (res.expenses) {
+                    applyLoadedData(res);
+                } else {
+                    await loadData(false);
+                }
+                showSyncToast(res.message || '✅ Successfully synchronized with Zoho Expense!', 'success');
             } catch (err) {
-                alert('Failed to sync: ' + (err.message || 'Error'));
+                showSyncToast('❌ Failed to sync: ' + (err.message || 'Error'), 'error');
             } finally {
                 syncZohoBtn.disabled = false;
                 syncZohoBtn.textContent = '🔄 Sync Zoho';
@@ -428,8 +457,90 @@ document.addEventListener('DOMContentLoaded', () => {
         return { icon: '🏢', bg: '#f1f5f9', color: '#475569' };
     }
 
-    async function loadData() {
-        if (expenseTableBody) {
+    function applyLoadedData(data) {
+        if (!data || typeof data !== 'object') return;
+
+        allExpenses = data.expenses || [];
+        allTrips = data.trips || [];
+        const allReports = data.reports || [];
+        const allAdvances = data.advances || [];
+        const allPurchases = data.purchaseRequests || [];
+        const allCards = data.cards || [];
+        const appUsers = data.appUsers || [];
+
+        // 1. Calculate Executive KPIs
+        let totalSpend = 0;
+        let approvedSpend = 0;
+        let approvedCount = 0;
+        let pendingSpend = 0;
+        let pendingCount = 0;
+        let reimbursedSpend = 0;
+        let reimbursedCount = 0;
+
+        const categoryMap = {};
+
+        allExpenses.forEach((item) => {
+            const r = item.Expense || item;
+            const amt = Number(parseFloat(r.Amount)) || 0;
+            const status = String(r.Status || 'unreported').toLowerCase();
+            const cat = String(r.Category || 'Office Supplies').trim();
+
+            totalSpend += amt;
+
+            if (status === 'approved') {
+                approvedSpend += amt;
+                approvedCount++;
+            } else if (status === 'reimbursed') {
+                reimbursedSpend += amt;
+                reimbursedCount++;
+            } else {
+                pendingSpend += amt;
+                pendingCount++;
+            }
+
+            categoryMap[cat] = (categoryMap[cat] || 0) + amt;
+        });
+
+        // Update KPI cards
+        if (kpiTotalSpend) kpiTotalSpend.textContent = formatINR(totalSpend);
+        if (kpiTotalCount) kpiTotalCount.textContent = `${allExpenses.length} Transactions`;
+
+        if (kpiApprovedSpend) kpiApprovedSpend.textContent = formatINR(approvedSpend);
+        if (kpiApprovedCount) kpiApprovedCount.textContent = `${approvedCount} Approved Items`;
+
+        if (kpiPendingSpend) kpiPendingSpend.textContent = formatINR(pendingSpend + reimbursedSpend);
+        if (kpiPendingCount) kpiPendingCount.textContent = `${pendingCount} In Review · ${reimbursedCount} Reimbursed`;
+
+        if (kpiMembersCount) kpiMembersCount.textContent = `${appUsers.length || 2} Active Members`;
+
+        // 2. Render Spend by Category
+        renderCategoryBreakdown(categoryMap, totalSpend);
+
+        // 3. Render Workflow & Health Breakdown
+        if (healthApprovedCount) healthApprovedCount.textContent = `${approvedCount} item(s) approved`;
+        if (healthApprovedAmt) healthApprovedAmt.textContent = formatINR(approvedSpend);
+
+        if (healthPendingCount) healthPendingCount.textContent = `${pendingCount} item(s) in review`;
+        if (healthPendingAmt) healthPendingAmt.textContent = formatINR(pendingSpend);
+
+        if (healthReimbursedCount) healthReimbursedCount.textContent = `${reimbursedCount} item(s) settled`;
+        if (healthReimbursedAmt) healthReimbursedAmt.textContent = formatINR(reimbursedSpend);
+
+        // 4. Render All Views
+        renderAllViews();
+        renderTripsView(allTrips);
+        renderReportsView(allReports);
+        renderAdvancesView(allAdvances);
+        renderPurchasesView(allPurchases);
+        renderCardsView(allCards);
+        renderSettingsView(appUsers);
+
+        // 5. Render Full Analytics View
+        renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
+    }
+
+    async function loadData(sync = false) {
+        if (expenseTableBody && !allExpenses.length) {
             expenseTableBody.innerHTML = `
                 <tr>
                     <td colspan="8" style="text-align: center; padding: 36px; color: #64748b;">
@@ -440,87 +551,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const data = await callFunction({ action: 'getAll' });
+            const data = await callFunction({ action: 'getAll', sync: sync ? 'true' : 'false' });
             if (data.status !== 'Success') throw new Error(data.message || 'Error');
-
-            allExpenses = data.expenses || [];
-            allTrips = data.trips || [];
-            const allReports = data.reports || [];
-            const allAdvances = data.advances || [];
-            const allPurchases = data.purchaseRequests || [];
-            const allCards = data.cards || [];
-            const appUsers = data.appUsers || [];
-
-            // 1. Calculate Executive KPIs
-            let totalSpend = 0;
-            let approvedSpend = 0;
-            let approvedCount = 0;
-            let pendingSpend = 0;
-            let pendingCount = 0;
-            let reimbursedSpend = 0;
-            let reimbursedCount = 0;
-
-            const categoryMap = {};
-
-            allExpenses.forEach((item) => {
-                const r = item.Expense || item;
-                const amt = Number(parseFloat(r.Amount)) || 0;
-                const status = String(r.Status || 'unreported').toLowerCase();
-                const cat = String(r.Category || 'Office Supplies').trim();
-
-                totalSpend += amt;
-
-                if (status === 'approved') {
-                    approvedSpend += amt;
-                    approvedCount++;
-                } else if (status === 'reimbursed') {
-                    reimbursedSpend += amt;
-                    reimbursedCount++;
-                } else {
-                    pendingSpend += amt;
-                    pendingCount++;
-                }
-
-                categoryMap[cat] = (categoryMap[cat] || 0) + amt;
-            });
-
-            // Update KPI cards
-            if (kpiTotalSpend) kpiTotalSpend.textContent = formatINR(totalSpend);
-            if (kpiTotalCount) kpiTotalCount.textContent = `${allExpenses.length} Transactions`;
-
-            if (kpiApprovedSpend) kpiApprovedSpend.textContent = formatINR(approvedSpend);
-            if (kpiApprovedCount) kpiApprovedCount.textContent = `${approvedCount} Approved Items`;
-
-            if (kpiPendingSpend) kpiPendingSpend.textContent = formatINR(pendingSpend + reimbursedSpend);
-            if (kpiPendingCount) kpiPendingCount.textContent = `${pendingCount} In Review · ${reimbursedCount} Reimbursed`;
-
-            if (kpiMembersCount) kpiMembersCount.textContent = `${appUsers.length || 2} Active Members`;
-
-            // 2. Render Spend by Category
-            renderCategoryBreakdown(categoryMap, totalSpend);
-
-            // 3. Render Workflow & Health Breakdown
-            if (healthApprovedCount) healthApprovedCount.textContent = `${approvedCount} item(s) approved`;
-            if (healthApprovedAmt) healthApprovedAmt.textContent = formatINR(approvedSpend);
-
-            if (healthPendingCount) healthPendingCount.textContent = `${pendingCount} item(s) in review`;
-            if (healthPendingAmt) healthPendingAmt.textContent = formatINR(pendingSpend);
-
-            if (healthReimbursedCount) healthReimbursedCount.textContent = `${reimbursedCount} item(s) settled`;
-            if (healthReimbursedAmt) healthReimbursedAmt.textContent = formatINR(reimbursedSpend);
-
-            // 4. Render All Views
-            renderAllViews();
-            renderTripsView(allTrips);
-            renderReportsView(allReports);
-            renderAdvancesView(allAdvances);
-            renderPurchasesView(allPurchases);
-            renderCardsView(allCards);
-            renderSettingsView(appUsers);
-
-            // 5. Render Full Analytics View
-            renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
-
+            applyLoadedData(data);
         } catch (err) {
             if (expenseTableBody) {
                 expenseTableBody.innerHTML = `
@@ -1705,7 +1738,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 userInitialEl.textContent = (displayName[0] || 'U').toUpperCase();
             }
 
-            loadData();
+            await loadData(false);
+            // Silently run live sync with Zoho Expense in the background
+            loadData(true).catch(() => {});
         } catch {
             window.location.replace(LOGIN_URL);
         }
