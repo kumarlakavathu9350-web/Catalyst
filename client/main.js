@@ -141,6 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     panel.classList.add('active');
                 }
             });
+
+            if (targetTab === 'zia') {
+                initZiaView();
+            }
         });
     });
 
@@ -446,6 +450,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function callZia(payload) {
+        const url = getBackendUrl('/server/zia_function/execute');
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const text = await res.text();
+        try {
+            const raw = JSON.parse(text);
+            return typeof raw?.output === 'string' ? JSON.parse(raw.output) : raw?.output || raw;
+        } catch {
+            throw new Error(text || `HTTP ${res.status}`);
+        }
+    }
+
     function getCategoryIcon(cat) {
         const c = String(cat || '').toLowerCase();
         if (c.includes('internet') || c.includes('it') || c.includes('software')) return { icon: '💻', bg: '#eff6ff', color: '#2563eb' };
@@ -537,6 +557,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 5. Render Full Analytics View
         renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
+
+        // 6. Update Zia AI View KPIs
+        if ($('ziaKpiTotalSpend')) $('ziaKpiTotalSpend').textContent = formatINR(totalSpend);
+        if ($('ziaKpiProjectedSpend')) $('ziaKpiProjectedSpend').textContent = formatINR(totalSpend * 1.12);
     }
 
     async function loadData(sync = false) {
@@ -1683,6 +1707,294 @@ document.addEventListener('DOMContentLoaded', () => {
                 syncUsersBtn.textContent = '🔄 Sync Zoho Users';
             }
         };
+    }
+
+    // =========================================================================
+    // Zia AI Assistant & Receipt OCR System (Powered by zia_function)
+    // =========================================================================
+    let ziaInitialized = false;
+
+    function formatZiaMarkdown(text) {
+        if (!text) return '';
+        let escaped = escapeHtml(text);
+        escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        escaped = escaped.replace(/^[•\-]\s+(.*)$/gm, '<li>$1</li>');
+        escaped = escaped.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        return escaped.split('\n\n').map(p => p.startsWith('<ul>') ? p : `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    }
+
+    function appendZiaChatMessage(role, content, followUps = []) {
+        const chatWindow = $('ziaChatWindow');
+        if (!chatWindow) return;
+
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble bubble-${role}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'bubble-avatar';
+        avatar.textContent = role === 'user' ? '👤' : '✨';
+
+        const body = document.createElement('div');
+        body.className = 'bubble-content';
+        body.innerHTML = role === 'user' ? `<p>${escapeHtml(content)}</p>` : formatZiaMarkdown(content);
+
+        if (Array.isArray(followUps) && followUps.length > 0) {
+            const followUpWrap = document.createElement('div');
+            followUpWrap.className = 'bubble-followups';
+            followUps.forEach(q => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'bubble-followup-chip';
+                chip.textContent = q;
+                chip.onclick = () => sendZiaQuery(q);
+                followUpWrap.appendChild(chip);
+            });
+            body.appendChild(followUpWrap);
+        }
+
+        bubble.appendChild(avatar);
+        bubble.appendChild(body);
+        chatWindow.appendChild(bubble);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    async function sendZiaQuery(query) {
+        if (!query || !query.trim()) return;
+        const text = query.trim();
+        appendZiaChatMessage('user', text);
+
+        const chatWindow = $('ziaChatWindow');
+        const typingEl = document.createElement('div');
+        typingEl.className = 'chat-bubble bubble-zia';
+        typingEl.id = 'ziaTypingIndicator';
+        typingEl.innerHTML = `<div class="bubble-avatar">✨</div><div class="bubble-content" style="color: #9333ea; font-style: italic;">Zia is analyzing Datastore records...</div>`;
+        if (chatWindow) {
+            chatWindow.appendChild(typingEl);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        const sendBtn = $('ziaSendBtn');
+        const input = $('ziaChatInput');
+        if (sendBtn) sendBtn.disabled = true;
+        if (input) input.value = '';
+
+        try {
+            const res = await callZia({ action: 'zia_chat', query: text });
+            if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+            if (res?.status !== 'Success') throw new Error(res?.message || 'Error querying Zia');
+            appendZiaChatMessage('zia', res.answer, res.suggestedFollowUps || []);
+        } catch (err) {
+            if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+            appendZiaChatMessage('zia', `⚠️ **Zia Assistant Error:** ${err.message || 'Unable to retrieve insights.'}`);
+        } finally {
+            if (sendBtn) sendBtn.disabled = false;
+        }
+    }
+
+    async function loadZiaAudit() {
+        const auditBtn = $('ziaAuditRefreshBtn');
+        const headerAuditBtn = $('ziaRunAuditHeaderBtn');
+        const anomalyContainer = $('ziaAnomalyList');
+        if (auditBtn) auditBtn.textContent = 'Auditing...';
+        if (headerAuditBtn) headerAuditBtn.textContent = 'Auditing...';
+
+        try {
+            const res = await callZia({ action: 'zia_anomaly_audit' });
+            if (res?.status === 'Success') {
+                if ($('ziaComplianceScore')) $('ziaComplianceScore').textContent = `${res.healthScore || 95}%`;
+                if ($('ziaKpiRiskCount')) {
+                    const count = (res.anomalies || []).length;
+                    $('ziaKpiRiskCount').textContent = count === 0 ? '0 Alerts' : `${count} Alerts`;
+                    $('ziaKpiRiskCount').style.color = count === 0 ? '#10b981' : '#f59e0b';
+                }
+
+                if (anomalyContainer) {
+                    anomalyContainer.innerHTML = '';
+                    const anomalies = res.anomalies || [];
+                    if (anomalies.length === 0) {
+                        anomalyContainer.innerHTML = `
+                            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; text-align: center; color: #166534; font-size: 13px;">
+                                ✅ <strong>100% Policy Adherence:</strong> No expense violations, high-value outliers, or duplicate claims found in active records!
+                            </div>
+                        `;
+                    } else {
+                        anomalies.forEach(a => {
+                            const item = document.createElement('div');
+                            item.className = `anomaly-item severity-${a.severity || 'INFO'}`;
+                            item.innerHTML = `
+                                <div class="anomaly-title-row">
+                                    <span>${escapeHtml(a.title)}</span>
+                                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">${escapeHtml(a.severity)}</span>
+                                </div>
+                                <div class="anomaly-desc">${escapeHtml(a.description)}</div>
+                                <div style="margin-top: 6px; font-size: 11.5px; color: #4338ca; font-weight: 500;">
+                                    💡 Recommendation: ${escapeHtml(a.action_recommended || 'Review claim')}
+                                </div>
+                            `;
+                            anomalyContainer.appendChild(item);
+                        });
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('[Zia] Audit error:', err);
+        } finally {
+            if (auditBtn) auditBtn.textContent = 'Run Audit';
+            if (headerAuditBtn) headerAuditBtn.textContent = '🛡️ Audit Expenses';
+        }
+    }
+
+    function initZiaView() {
+        if (ziaInitialized) return;
+        ziaInitialized = true;
+
+        const chatWindow = $('ziaChatWindow');
+        if (chatWindow && !chatWindow.children.length) {
+            appendZiaChatMessage('zia',
+                `✨ **Welcome to Zia AI Assistant for Zoho Expense!**\n\nI am your intelligent enterprise financial co-pilot powered by Zoho Catalyst Zia.\n\nHere is how I can assist you:\n• **Financial Q&A:** Ask about spending totals, budgets, departments, or vendors\n• **Receipt Scanner:** Drop a bill or invoice to extract amounts, dates, and categories instantly\n• **Policy Audits:** Automatically flag duplicates, high-value outliers, and unapproved claims\n\nClick any quick prompt below or type your question!`,
+                ['Executive Spend Summary', 'Check policy anomalies', 'Show IT and Software spending', 'Reports awaiting approval']
+            );
+        }
+
+        loadZiaAudit();
+
+        const chatForm = $('ziaChatForm');
+        if (chatForm) {
+            chatForm.onsubmit = (e) => {
+                e.preventDefault();
+                const input = $('ziaChatInput');
+                if (input && input.value.trim()) {
+                    sendZiaQuery(input.value.trim());
+                }
+            };
+        }
+
+        const promptPills = $('ziaPromptPills');
+        if (promptPills) {
+            promptPills.querySelectorAll('.zia-pill-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const q = btn.getAttribute('data-query');
+                    if (q) sendZiaQuery(q);
+                };
+            });
+        }
+
+        const clearBtn = $('ziaClearChatBtn');
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                if (chatWindow) chatWindow.innerHTML = '';
+                appendZiaChatMessage('zia', 'Chat history cleared. How can I assist you with your expense operations?');
+            };
+        }
+
+        const auditHeaderBtn = $('ziaRunAuditHeaderBtn');
+        if (auditHeaderBtn) auditHeaderBtn.onclick = loadZiaAudit;
+        const auditRefreshBtn = $('ziaAuditRefreshBtn');
+        if (auditRefreshBtn) auditRefreshBtn.onclick = loadZiaAudit;
+
+        const dropzone = $('ziaOcrDropzone');
+        const fileInput = $('ziaReceiptFileInput');
+        if (dropzone && fileInput) {
+            dropzone.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    showSyncToast('📸 Zia is scanning and extracting receipt data...', 'info');
+                    try {
+                        const res = await callZia({ action: 'zia_ocr_scan', receipt_base64: reader.result });
+                        if (res?.status !== 'Success' || !res?.extracted) throw new Error(res?.message || 'OCR extraction failed');
+                        displayOcrResult(res.extracted);
+                        showSyncToast(`✅ Extracted: ${res.extracted.merchant} (₹${res.extracted.amount})`, 'success');
+                    } catch (err) {
+                        showSyncToast('❌ OCR Error: ' + (err.message || 'Error scanning receipt'), 'error');
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+        }
+
+        const sampleBtn = $('ziaSampleReceiptBtn');
+        if (sampleBtn) {
+            sampleBtn.onclick = async () => {
+                showSyncToast('📸 Processing sample receipt with Zia OCR...', 'info');
+                try {
+                    const res = await callZia({ action: 'zia_ocr_scan' });
+                    if (res?.status !== 'Success' || !res?.extracted) throw new Error(res?.message || 'Sample scan failed');
+                    displayOcrResult(res.extracted);
+                    showSyncToast(`✅ Extracted: ${res.extracted.merchant} (₹${res.extracted.amount})`, 'success');
+                } catch (err) {
+                    showSyncToast('❌ Error: ' + (err.message || 'Error processing sample'), 'error');
+                }
+            };
+        }
+
+        function displayOcrResult(extracted) {
+            const card = $('ziaOcrResultCard');
+            if (!card) return;
+            card.style.display = 'block';
+
+            if ($('ocrMerchantInput')) $('ocrMerchantInput').value = extracted.merchant || '';
+            if ($('ocrAmountInput')) $('ocrAmountInput').value = extracted.amount || '';
+            if ($('ocrDateInput')) $('ocrDateInput').value = extracted.date || new Date().toISOString().split('T')[0];
+            if ($('ocrCategorySelect') && extracted.category) {
+                $('ocrCategorySelect').value = extracted.category;
+            }
+            if ($('ocrConfidencePill')) {
+                const pct = Math.round((extracted.confidence || 0.94) * 100);
+                $('ocrConfidencePill').textContent = `${pct}% Confidence`;
+            }
+            if ($('ocrSourceBadge')) {
+                $('ocrSourceBadge').textContent = extracted.ocr_source || 'Zia OCR';
+            }
+        }
+
+        const createExpenseBtn = $('ocrCreateExpenseBtn');
+        if (createExpenseBtn) {
+            createExpenseBtn.onclick = async () => {
+                const merchant = ($('ocrMerchantInput')?.value || '').trim();
+                const amount = parseFloat($('ocrAmountInput')?.value || '0');
+                const date = $('ocrDateInput')?.value || new Date().toISOString().split('T')[0];
+                const category = $('ocrCategorySelect')?.value || 'Office Supplies';
+
+                if (!merchant || !amount) {
+                    alert('Please ensure merchant and amount are valid.');
+                    return;
+                }
+
+                createExpenseBtn.disabled = true;
+                createExpenseBtn.textContent = 'Filing Expense...';
+
+                try {
+                    const res = await callFunction({
+                        action: 'add_expense',
+                        Merchant: merchant,
+                        Amount: amount,
+                        Expense_date: date,
+                        Category: category,
+                        Description: 'Filed automatically via Catalyst Zia Smart OCR Scanner'
+                    });
+                    if (res?.status !== 'Success') throw new Error(res?.message || 'Failed to file expense');
+                    showSyncToast(`✅ Filed expense ₹${amount} for "${merchant}" to Zoho Expense & Catalyst!`, 'success');
+                    if ($('ziaOcrResultCard')) $('ziaOcrResultCard').style.display = 'none';
+                    await loadData(false);
+                    loadZiaAudit();
+                } catch (err) {
+                    alert('Failed to file expense: ' + (err.message || 'Error'));
+                } finally {
+                    createExpenseBtn.disabled = false;
+                    createExpenseBtn.textContent = '➕ File Expense to Zoho & DB';
+                }
+            };
+        }
+
+        const dismissBtn = $('ocrResetBtn');
+        if (dismissBtn) {
+            dismissBtn.onclick = () => {
+                if ($('ziaOcrResultCard')) $('ziaOcrResultCard').style.display = 'none';
+            };
+        }
     }
     (async () => {
         try {

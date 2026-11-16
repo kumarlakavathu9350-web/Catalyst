@@ -1155,3 +1155,474 @@ svg {
     color: #ffffff;
     border: 1px solid #ef4444;
 }
+
+/* ==========================================================================
+   Zia AI Assistant & Receipt OCR Studio Styles
+   ========================================================================== */
+.zia-pill-badge {
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-left: auto;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(168, 85, 247, 0.4);
+}
+
+.zia-hero-card {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    box-shadow: 0 8px 24px rgba(49, 46, 129, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.zia-hero-content {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.zia-avatar-glow {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #c084fc, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 0 24px rgba(192, 132, 252, 0.6);
+    flex-shrink: 0;
+}
+
+.zia-hero-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+    color: #ffffff;
+}
+
+.zia-hero-desc {
+    font-size: 13px;
+    color: #c7d2fe;
+    max-width: 580px;
+    line-height: 1.45;
+}
+
+.zia-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.zia-health-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    color: #e0e7ff;
+}
+
+.zia-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+}
+
+.btn-zia-outline {
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-zia-outline:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #ffffff;
+}
+
+.btn-zia-primary {
+    background: linear-gradient(135deg, #7e22ce, #4f46e5);
+    color: #ffffff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-zia-primary:hover {
+    opacity: 0.92;
+}
+
+/* Zia KPI Row */
+.zia-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.zia-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.zia-kpi-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.zia-kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+
+.zia-kpi-sub {
+    font-size: 11.5px;
+    color: #94a3b8;
+}
+
+/* Dual Studio Layout */
+.zia-studio-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 960px) {
+    .zia-studio-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Zia Chat Window */
+.zia-chat-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 520px;
+}
+
+.zia-prompt-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.zia-pill-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.zia-pill-btn:hover {
+    background: #f3e8ff;
+    border-color: #d8b4fe;
+    color: #6b21a8;
+}
+
+.zia-chat-window {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+    padding-right: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.chat-bubble {
+    display: flex;
+    gap: 10px;
+    max-width: 88%;
+}
+
+.chat-bubble.bubble-user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.chat-bubble.bubble-zia {
+    align-self: flex-start;
+}
+
+.bubble-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.bubble-user .bubble-avatar {
+    background: #1e293b;
+}
+
+.bubble-content {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #1e293b;
+}
+
+.bubble-user .bubble-content {
+    background: #1e293b;
+    border-color: #1e293b;
+    color: #ffffff;
+    border-top-right-radius: 2px;
+}
+
+.bubble-zia .bubble-content {
+    background: #ffffff;
+    border-color: #e9d5ff;
+    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.08);
+    border-top-left-radius: 2px;
+}
+
+.bubble-content p {
+    margin: 0 0 6px 0;
+}
+.bubble-content p:last-child {
+    margin-bottom: 0;
+}
+.bubble-content ul {
+    margin: 6px 0 6px 18px;
+    padding: 0;
+}
+.bubble-content li {
+    margin-bottom: 4px;
+}
+
+.bubble-followups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.bubble-followup-chip {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.bubble-followup-chip:hover {
+    background: #7e22ce;
+    color: #ffffff;
+}
+
+.zia-input-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.zia-input-bar input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.zia-input-bar input:focus {
+    border-color: #9333ea;
+    box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.12);
+}
+
+/* OCR Dropzone */
+.zia-ocr-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 24px 16px;
+    text-align: center;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.zia-ocr-dropzone:hover {
+    border-color: #9333ea;
+    background: #faf5ff;
+}
+
+.ocr-icon {
+    font-size: 32px;
+    margin-bottom: 6px;
+}
+
+.ocr-text {
+    font-size: 13px;
+    color: #334155;
+    margin-bottom: 4px;
+}
+
+.ocr-hint {
+    font-size: 11.5px;
+    color: #94a3b8;
+}
+
+/* OCR Result Card */
+.zia-ocr-result {
+    background: #ffffff;
+    border: 1px solid #d8b4fe;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 14px;
+    box-shadow: 0 4px 14px rgba(168, 85, 247, 0.1);
+}
+
+.ocr-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.ocr-result-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.ocr-confidence-pill {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.ocr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.ocr-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.ocr-field input, .ocr-field select {
+    width: 100%;
+    padding: 6px 9px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12.5px;
+}
+
+/* Anomaly Radar */
+.zia-anomaly-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.anomaly-item {
+    background: #f8fafc;
+    border-left: 4px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+}
+
+.anomaly-item.severity-HIGH {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+}
+
+.anomaly-item.severity-MEDIUM {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.anomaly-item.severity-INFO {
+    border-left-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.anomaly-title-row {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.anomaly-desc {
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.4;
+}
+

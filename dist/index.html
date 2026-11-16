@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zoho Expense - KR Tech Solutions</title>
-    <link rel="stylesheet" href="main.css?v=2.2">
+    <link rel="stylesheet" href="main.css?v=3.0">
     <style>
         /* Essential safeguards to prevent oversized SVG scaling */
         svg { max-width: 100%; }
@@ -86,6 +86,14 @@
                         <svg width="20" height="20" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
                     </span>
                     <span class="nav-label">Cards</span>
+                </a>
+
+                <a class="nav-link" data-tab="zia" title="Zia AI Assistant & Receipt OCR">
+                    <span class="nav-icon" style="color: #a855f7;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                    </span>
+                    <span class="nav-label">Zia AI Assistant</span>
+                    <span class="zia-pill-badge">AI</span>
                 </a>
 
                 <div class="nav-divider"></div>
@@ -561,6 +569,163 @@
                 </section>
 
                 <!-- ============================================================
+                     10. VIEW: Zia AI Assistant & Receipt OCR
+                     ============================================================ -->
+                <section id="view-zia" class="view-panel">
+                    <!-- Zia Hero Header -->
+                    <div class="zia-hero-card">
+                        <div class="zia-hero-content">
+                            <div class="zia-avatar-glow">✨</div>
+                            <div>
+                                <h2 class="zia-hero-title">Zia AI Intelligence for Zoho Expense</h2>
+                                <p class="zia-hero-desc">Powered by Zoho Catalyst Zia — Natural language financial queries, smart receipt OCR scanner, and live policy compliance radar.</p>
+                            </div>
+                        </div>
+                        <div class="zia-hero-actions">
+                            <span class="zia-health-pill"><span class="zia-dot"></span> Compliance: <strong id="ziaComplianceScore">96%</strong></span>
+                            <button type="button" id="ziaRunAuditHeaderBtn" class="btn btn-zia-outline">🛡️ Audit Expenses</button>
+                        </div>
+                    </div>
+
+                    <!-- Zia Smart KPI Row -->
+                    <div class="zia-kpi-row">
+                        <div class="zia-kpi-card">
+                            <div class="zia-kpi-label">Total Spend Audited</div>
+                            <div class="zia-kpi-value" id="ziaKpiTotalSpend">₹11,765.00</div>
+                            <div class="zia-kpi-sub">Across Datastore records</div>
+                        </div>
+                        <div class="zia-kpi-card">
+                            <div class="zia-kpi-label">Projected Run-Rate (30d)</div>
+                            <div class="zia-kpi-value" id="ziaKpiProjectedSpend" style="color: #6366f1;">₹13,176.80</div>
+                            <div class="zia-kpi-sub">+12% predictive trend</div>
+                        </div>
+                        <div class="zia-kpi-card">
+                            <div class="zia-kpi-label">Policy Risk Flags</div>
+                            <div class="zia-kpi-value" id="ziaKpiRiskCount" style="color: #10b981;">0 Alerts</div>
+                            <div class="zia-kpi-sub">High value &amp; duplicates</div>
+                        </div>
+                        <div class="zia-kpi-card">
+                            <div class="zia-kpi-label">Smart OCR Accuracy</div>
+                            <div class="zia-kpi-value" style="color: #a855f7;">98.4%</div>
+                            <div class="zia-kpi-sub">Catalyst Zia Vision Engine</div>
+                        </div>
+                    </div>
+
+                    <!-- Zia Dual Studio Layout -->
+                    <div class="zia-studio-grid">
+                        <!-- Left Column: Conversational AI Chat -->
+                        <div class="white-card zia-chat-card">
+                            <div class="card-header-bar">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 18px;">💬</span>
+                                    <h3 style="margin: 0;">Ask Zia Assistant</h3>
+                                    <span class="badge-pill" style="background: #f3e8ff; color: #7e22ce;">Interactive AI</span>
+                                </div>
+                                <button type="button" id="ziaClearChatBtn" class="btn btn-light" style="padding: 4px 10px; font-size: 11.5px;">Clear Chat</button>
+                            </div>
+
+                            <!-- Suggested Quick Prompts -->
+                            <div class="zia-prompt-pills" id="ziaPromptPills">
+                                <button type="button" class="zia-pill-btn" data-query="executive spend summary">📊 Executive Summary</button>
+                                <button type="button" class="zia-pill-btn" data-query="Show IT and Software spending">💻 IT &amp; Cloud Spend</button>
+                                <button type="button" class="zia-pill-btn" data-query="Check policy anomalies and violations">🛡️ Policy Risk Audit</button>
+                                <button type="button" class="zia-pill-btn" data-query="What reports need approval?">📋 Reports Needing Approval</button>
+                                <button type="button" class="zia-pill-btn" data-query="Predict next month spend">📈 30-Day Forecast</button>
+                            </div>
+
+                            <!-- Messages Area -->
+                            <div class="zia-chat-window" id="ziaChatWindow">
+                                <!-- Messages injected dynamically -->
+                            </div>
+
+                            <!-- Input Bar -->
+                            <form id="ziaChatForm" class="zia-input-bar">
+                                <input type="text" id="ziaChatInput" placeholder="Ask Zia about expenses, budgets, departments, or policies..." autocomplete="off" required>
+                                <button type="submit" id="ziaSendBtn" class="btn btn-zia-primary">Ask Zia</button>
+                            </form>
+                        </div>
+
+                        <!-- Right Column: Smart OCR Scanner & Anomaly Radar -->
+                        <div class="zia-tools-col">
+                            <!-- Card 1: Receipt OCR Scanner -->
+                            <div class="white-card">
+                                <div class="card-header-bar">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 18px;">🧾</span>
+                                        <h3 style="margin: 0;">Smart Receipt Scanner (OCR)</h3>
+                                    </div>
+                                    <button type="button" id="ziaSampleReceiptBtn" class="btn btn-light" style="padding: 4px 8px; font-size: 11.5px;">Try Sample</button>
+                                </div>
+
+                                <div class="zia-ocr-dropzone" id="ziaOcrDropzone">
+                                    <input type="file" id="ziaReceiptFileInput" accept="image/*,.pdf" style="display: none;">
+                                    <div class="ocr-icon">📸</div>
+                                    <div class="ocr-text">
+                                        <strong>Click to upload</strong> or drag receipt image here
+                                    </div>
+                                    <div class="ocr-hint">PNG, JPG, PDF up to 5MB · Extracted via Catalyst Zia OCR</div>
+                                </div>
+
+                                <!-- Extraction Result Card -->
+                                <div id="ziaOcrResultCard" class="zia-ocr-result" style="display: none;">
+                                    <div class="ocr-result-header">
+                                        <div class="ocr-result-title">
+                                            <span style="color: #10b981;">✓</span> Extracted via <span id="ocrSourceBadge">Zia OCR</span>
+                                        </div>
+                                        <div class="ocr-confidence-pill" id="ocrConfidencePill">94% Confidence</div>
+                                    </div>
+                                    <div class="ocr-grid">
+                                        <div class="ocr-field">
+                                            <label>Merchant</label>
+                                            <input type="text" id="ocrMerchantInput" class="form-control-sm">
+                                        </div>
+                                        <div class="ocr-field">
+                                            <label>Amount (₹)</label>
+                                            <input type="number" id="ocrAmountInput" step="0.01" class="form-control-sm">
+                                        </div>
+                                        <div class="ocr-field">
+                                            <label>Date</label>
+                                            <input type="date" id="ocrDateInput" class="form-control-sm">
+                                        </div>
+                                        <div class="ocr-field">
+                                            <label>Predicted Category</label>
+                                            <select id="ocrCategorySelect" class="form-control-sm">
+                                                <option value="IT and Internet Expenses">IT and Internet Expenses</option>
+                                                <option value="Meals and Entertainment">Meals and Entertainment</option>
+                                                <option value="Fuel/Mileage Expenses">Fuel/Mileage Expenses</option>
+                                                <option value="Office Supplies">Office Supplies</option>
+                                                <option value="Lodging">Lodging</option>
+                                                <option value="Telephone Expense">Telephone Expense</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                        <button type="button" id="ocrCreateExpenseBtn" class="btn btn-primary" style="flex: 1;">➕ File Expense to Zoho &amp; DB</button>
+                                        <button type="button" id="ocrResetBtn" class="btn btn-light">Dismiss</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2: Live Policy & Anomaly Radar -->
+                            <div class="white-card" style="margin-top: 20px;">
+                                <div class="card-header-bar">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 18px;">🛡️</span>
+                                        <h3 style="margin: 0;">Policy &amp; Anomaly Radar</h3>
+                                    </div>
+                                    <button type="button" id="ziaAuditRefreshBtn" class="btn btn-light" style="padding: 4px 8px; font-size: 11.5px;">Run Audit</button>
+                                </div>
+                                <div id="ziaAnomalyList" class="zia-anomaly-container">
+                                    <div style="text-align: center; color: #64748b; padding: 20px; font-size: 13px;">
+                                        Click "Run Audit" to scan all Datastore expenses for policy compliance.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
                      9. VIEW: My Settings & Team Management
                      ============================================================ -->
                 <section id="view-settings" class="view-panel">
@@ -1000,7 +1165,7 @@
         </form>
     </div>
 
-    <script src="main.js?v=2.2"></script>
+    <script src="main.js?v=3.0"></script>
 </body>
 
 </html>

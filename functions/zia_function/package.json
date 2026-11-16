@@ -1,0 +1,12 @@
+{
+	"name": "zia_function",
+	"version": "1.0.0",
+	"description": "Zoho Catalyst Zia AI Assistant & Receipt OCR Service for Zoho Expense",
+	"main": "index.js",
+	"author": "kumar.r@rcidigital.com",
+	"dependencies": {
+		"@zcatalyst/auth": "latest",
+		"@zcatalyst/datastore": "^1.0.0",
+		"@zcatalyst/zia": "^1.0.0"
+	}
+}

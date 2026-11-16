@@ -1,7 +1,8 @@
 {
   "functions": {
     "targets": [
-      "management_function"
+      "management_function",
+      "zia_function"
     ],
     "ignore": [],
     "source": "functions"
