@@ -1,0 +1,4 @@
+Advance ID (ROWID),Advance Number,Employee Name,Employee Email,Amount (INR),Reason / Purpose,Advance Date,Status,Approval Level,Created Time,Modified Time
+98838000000026081,ADV-003,Submiter,kumar.r@rcidigital.com,12500,Client Onsite Workshop & Travel Advance,2026-11-13,level_1_approved,Level 2 - Finance Review,2026-11-14 14:50:48:513,2026-11-14 14:50:48:513
+98838000000030079,ADV-002,kumar lakavthu,kumarlakavthu@gmail.com,5000,Advance for Client Visit and Regional Meetings,2026-11-13,approved,Level 3 - Approved & Disbursed,2026-11-14 14:50:48:417,2026-11-14 14:50:48:417
+98838000000032389,ADV-001,kumar lakavthu,kumarlakavthu@gmail.com,1,Advance payment for trip expenses,2026-11-13,approved,Level 3 - Approved & Disbursed,2026-11-14 14:50:48:325,2026-11-14 14:50:48:325

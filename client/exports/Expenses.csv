@@ -1,0 +1,7 @@
+Expense ID (ROWID),Zoho Expense ID,Expense Name / Merchant,Category,Amount (INR),Expense Date,Paid By,Status,Created Time,Modified Time
+98838000000026084,4208449000000057341,jmhbv,Job Costing,1000,2026-11-12,Submiter,submitted,2026-11-14 16:38:21:392,2026-11-16 13:02:34:428
+98838000000041896,4208449000000037395,uyjkbn,Labor,1000,2026-11-13,Submiter,submitted,2026-11-14 16:38:21:549,2026-11-16 13:02:34:561
+98838000000043382,4208449000000037414,khygfd,Construction Loans,8765,2026-11-13,Submiter,submitted,2026-11-14 16:38:21:494,2026-11-16 13:02:34:506
+98838000000046014,4208449000000037404,111,Automobile Expense,1000,2026-11-13,Submiter,submitted,2026-11-14 16:16:55:480,2026-11-16 13:02:34:535
+98838000000061004,4208449000000081002,Filed automatically via Catalyst Zia Smart OCR Scanner,Meals and Entertainment,556.5,2026-11-16,Submiter,unreported,2026-11-16 12:59:12:007,2026-11-16 13:02:34:375
+98838000000064005,4208449000000084001,Filed automatically via Catalyst Zia Smart OCR Scanner,IT and Internet Expenses,450,2026-11-18,Submiter,unreported,2026-11-16 12:21:27:345,2026-11-16 13:02:34:403

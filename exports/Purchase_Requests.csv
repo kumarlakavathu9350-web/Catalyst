@@ -1,0 +1,7 @@
+Request ID (ROWID),Item Name,Requester,Department,Vendor,Amount (INR),Request Date,Status,Approval Level,Created Time,Modified Time
+98838000000025029,MacBook Pro 16-inch M3 Max (36GB RAM),kumar lakavthu,Engineering,Apple India Pvt Ltd,249900,2026-11-13,level_1_approved,Level 2 - Finance Review,2026-11-14 14:50:50:645,2026-11-14 14:50:50:645
+98838000000034743,Jira Software & Confluence Cloud Subscription,Submiter,Products,Atlassian Inc,52000,2026-11-13,approved,Level 3 - Approved & Procured,2026-11-14 14:50:48:924,2026-11-14 14:50:48:924
+98838000000035024,Cisco Catalyst 24-Port Gigabit Managed Switch,Submiter,Products,Cisco Systems India,84000,2026-11-13,approved,Level 3 - Approved & Procured,2026-11-14 14:50:49:447,2026-11-14 14:50:49:447
+98838000000037174,Herman Miller Aeron Ergonomic Chair,kumar lakavthu,Operations,Herman Miller India,115000,2026-11-14,pending,Level 1 - Manager Review,2026-11-14 14:50:51:091,2026-11-14 14:50:51:091
+98838000000041881,Synology 4-Bay NAS Server with 32TB Storage,Submiter,Products,Synology Enterprise Store,95000,2026-11-13,approved,Level 3 - Approved & Procured,2026-11-14 14:50:49:023,2026-11-14 14:50:49:023
+98838000000046012,JetBrains All Products Pack Team License,Submiter,Products,JetBrains s.r.o.,45000,2026-11-13,approved,Level 3 - Approved & Procured,2026-11-14 14:50:50:043,2026-11-14 14:50:50:043

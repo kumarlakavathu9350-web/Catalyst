@@ -9,5 +9,7 @@
   },
   "author": "kumar.r@rcidigital.com",
   "license": "ISC",
-  "dependencies": {}
+  "devDependencies": {
+    "xlsx": "^0.18.5"
+  }
 }

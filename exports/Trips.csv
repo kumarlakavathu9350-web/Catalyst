@@ -1,0 +1,5 @@
+Trip ID (ROWID),Trip Number,Trip Name,Submitter,Departure City,Destination City,Budget (INR),Start Date,End Date,Status,Created Time,Modified Time
+98838000000028453,TRIP-00009,Vagamon2.1,Submiter,Al Asad,Akjoujt,0,2026-11-13,2026-12-05,submitted,2026-11-14 16:25:12:475,2026-11-16 13:02:34:054
+98838000000033068,TRIP-00007,Vagamon2.1,Submiter,Alderney,Aiken,0,2026-11-11,2026-11-28,approved,2026-11-14 16:25:12:524,2026-11-16 13:02:34:108
+98838000000037188,TRIP-00014,bza,Submiter,Alderney,Zabol,1111,2026-10-27,2026-11-18,approved,2026-11-14 16:25:12:418,2026-11-16 13:02:34:018
+98838000000044409,TRIP-00004,Vagamon2.1,Submiter,Aiken,Afutara,0,2026-11-05,2026-11-10,approved,2026-11-14 16:25:12:577,2026-11-16 13:02:34:150
