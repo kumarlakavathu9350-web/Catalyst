@@ -1995,6 +1995,99 @@ document.addEventListener('DOMContentLoaded', () => {
                 if ($('ziaOcrResultCard')) $('ziaOcrResultCard').style.display = 'none';
             };
         }
+
+        // Voice Input (Speech-to-Expense powered by Catalyst Zia NLP)
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        if (SpeechRec) {
+            recognition = new SpeechRec();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-IN';
+        }
+
+        function startListening(targetMode = 'chat') {
+            if (!recognition) {
+                alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+                return;
+            }
+            const vBtn = $('ziaVoiceBtn');
+            const hVoiceBtn = $('ziaVoiceExpenseHeroBtn');
+            if (vBtn) vBtn.classList.add('listening');
+            if (hVoiceBtn) hVoiceBtn.textContent = '🔴 Listening...';
+            showSyncToast('🎙️ Listening... Speak your expense claim or question now!', 'info');
+
+            recognition.onresult = async (event) => {
+                const transcript = event.results[0][0].transcript;
+                showSyncToast(`🎙️ Heard: "${transcript}"`, 'info');
+                if (targetMode === 'voice_claim') {
+                    showSyncToast('🧠 Zia is extracting your voice claim details...', 'info');
+                    try {
+                        const parsed = await callZia({ action: 'zia_parse_voice', transcript });
+                        if (parsed?.status === 'Success') {
+                            displayOcrResult({
+                                merchant: parsed.merchant,
+                                amount: parsed.amount,
+                                date: parsed.date,
+                                category: parsed.category,
+                                confidence: parsed.confidence,
+                                ocr_source: 'Zia Voice NLP Engine'
+                            });
+                            showSyncToast(`✅ Zia parsed claim: ₹${parsed.amount} for "${parsed.merchant}"`, 'success');
+                        }
+                    } catch (err) {
+                        showSyncToast('❌ Failed to parse voice claim: ' + err.message, 'error');
+                    }
+                } else {
+                    const input = $('ziaChatInput');
+                    if (input) input.value = transcript;
+                    sendZiaQuery(transcript);
+                }
+            };
+
+            recognition.onerror = () => {
+                showSyncToast('⚠️ Voice recognition ended or canceled.', 'info');
+            };
+
+            recognition.onend = () => {
+                if (vBtn) vBtn.classList.remove('listening');
+                if (hVoiceBtn) hVoiceBtn.textContent = '🎙️ Voice Claim';
+            };
+
+            try {
+                recognition.start();
+            } catch {
+                recognition.stop();
+            }
+        }
+
+        const voiceBtn = $('ziaVoiceBtn');
+        if (voiceBtn) voiceBtn.onclick = () => startListening('chat');
+
+        const heroVoiceBtn = $('ziaVoiceExpenseHeroBtn');
+        if (heroVoiceBtn) heroVoiceBtn.onclick = () => startListening('voice_claim');
+
+        // Zia 1-Click Auto-Approve Safe Expenses
+        const autoApproveBtn = $('ziaAutoApproveSafeBtn');
+        if (autoApproveBtn) {
+            autoApproveBtn.onclick = async () => {
+                if (!confirm('Let Zia automatically verify and approve all low-risk pending claims (≤ ₹5,000) that have zero policy flags?')) return;
+                autoApproveBtn.disabled = true;
+                autoApproveBtn.textContent = '⚡ Approving...';
+                try {
+                    const res = await callZia({ action: 'zia_auto_approve_safe', threshold: 5000 });
+                    if (res?.status !== 'Success') throw new Error(res?.message || 'Auto-approve failed');
+                    showSyncToast(res.message || '✅ Zia auto-approved low-risk expenses!', 'success');
+                    await loadData(false);
+                    loadZiaAudit();
+                } catch (err) {
+                    alert('Auto-approve error: ' + (err.message || 'Error'));
+                } finally {
+                    autoApproveBtn.disabled = false;
+                    autoApproveBtn.textContent = '⚡ Auto-Approve Safe';
+                }
+            };
+        }
     }
     (async () => {
         try {

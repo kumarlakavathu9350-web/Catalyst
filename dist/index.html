@@ -583,6 +583,7 @@
                         </div>
                         <div class="zia-hero-actions">
                             <span class="zia-health-pill"><span class="zia-dot"></span> Compliance: <strong id="ziaComplianceScore">96%</strong></span>
+                            <button type="button" id="ziaVoiceExpenseHeroBtn" class="btn btn-zia-outline">🎙️ Voice Claim</button>
                             <button type="button" id="ziaRunAuditHeaderBtn" class="btn btn-zia-outline">🛡️ Audit Expenses</button>
                         </div>
                     </div>
@@ -641,6 +642,7 @@
                             <!-- Input Bar -->
                             <form id="ziaChatForm" class="zia-input-bar">
                                 <input type="text" id="ziaChatInput" placeholder="Ask Zia about expenses, budgets, departments, or policies..." autocomplete="off" required>
+                                <button type="button" id="ziaVoiceBtn" class="btn btn-zia-voice" title="Speak to Zia (Voice Input)">🎙️</button>
                                 <button type="submit" id="ziaSendBtn" class="btn btn-zia-primary">Ask Zia</button>
                             </form>
                         </div>
@@ -713,7 +715,10 @@
                                         <span style="font-size: 18px;">🛡️</span>
                                         <h3 style="margin: 0;">Policy &amp; Anomaly Radar</h3>
                                     </div>
-                                    <button type="button" id="ziaAuditRefreshBtn" class="btn btn-light" style="padding: 4px 8px; font-size: 11.5px;">Run Audit</button>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button type="button" id="ziaAutoApproveSafeBtn" class="btn btn-success" style="padding: 4px 9px; font-size: 11px; background: #059669; color: #fff; border: none; border-radius: 6px; cursor: pointer;">⚡ Auto-Approve Safe</button>
+                                        <button type="button" id="ziaAuditRefreshBtn" class="btn btn-light" style="padding: 4px 8px; font-size: 11.5px;">Run Audit</button>
+                                    </div>
                                 </div>
                                 <div id="ziaAnomalyList" class="zia-anomaly-container">
                                     <div style="text-align: center; color: #64748b; padding: 20px; font-size: 13px;">
