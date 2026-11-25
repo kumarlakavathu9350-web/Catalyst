@@ -2471,15 +2471,13 @@ module.exports = async (context, basicIO) => {
 				}
 			}
 
-			let dataFetches = await fetchAllRows(dataFetchTable);
-			if (dataFetches.length === 0 || shouldSync) {
-				try {
-					await syncZohoExpenseDataFetch(dataFetchTable);
-					dataFetches = await fetchAllRows(dataFetchTable);
-				} catch (dfErr) {
-					console.warn('Auto-sync Data_fetch error:', dfErr.message);
-				}
+			let dataFetches = [];
+			try {
+				await syncZohoExpenseDataFetch(dataFetchTable);
+			} catch (dfErr) {
+				console.warn('Auto-sync Data_fetch error:', dfErr.message);
 			}
+			dataFetches = await fetchAllRows(dataFetchTable);
 
 			const expenses = await fetchAllRows(expenseTable);
 			const reports = await fetchAllRows(reportTable);

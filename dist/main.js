@@ -80,6 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelDataFetchModalBtn = $('cancelDataFetchModalBtn');
     const syncDataFetchBtn = $('syncDataFetchBtn');
     const dataFetchSearch = $('dataFetchSearch');
+    const expenseUserScopeSelect = $('expenseUserScopeSelect');
+    const dataFetchUserScopeSelect = $('dataFetchUserScopeSelect');
 
     // Sidebar navigation tabs
     const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
@@ -134,6 +136,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchQuery = '';
     let selectedRowIds = new Set();
     let currentViewMode = 'table'; // 'table' or 'card'
+    let currentLoggedInUser = {
+        name: '',
+        email: '',
+        role: 'submitter'
+    };
+    let expenseUserScope = 'my';
+    let dataFetchUserScope = 'my';
 
     // =========================================================================
     // Sidebar Tab Switching
@@ -181,7 +190,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Modal controls
     function openExpenseModal() {
-        if (expenseModal) expenseModal.style.display = 'flex';
+        if (expenseModal) {
+            if ($('expenseUserSelect') && currentLoggedInUser.email) {
+                $('expenseUserSelect').value = currentLoggedInUser.email;
+            }
+            expenseModal.style.display = 'flex';
+        }
     }
     function closeExpenseModal() {
         if (expenseModal) expenseModal.style.display = 'none';
@@ -267,7 +281,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Data Fetch Modal controls
     function openDataFetchModal() {
-        if (dataFetchModal) dataFetchModal.style.display = 'flex';
+        if (dataFetchModal) {
+            if ($('dfEmployeeNameInput') && !$('dfEmployeeNameInput').value) {
+                $('dfEmployeeNameInput').value = currentLoggedInUser.name || '';
+            }
+            if ($('dfEmailInput') && !$('dfEmailInput').value) {
+                $('dfEmailInput').value = currentLoggedInUser.email || '';
+            }
+            dataFetchModal.style.display = 'flex';
+        }
     }
     function closeDataFetchModal() {
         if (dataFetchModal) dataFetchModal.style.display = 'none';
@@ -514,6 +536,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const rawDataFetches = data.dataFetches || [];
         allDataFetches = rawDataFetches.map((r) => r.Data_fetch || r);
 
+        if ($('expenseUserSelect') && Array.isArray(appUsers) && appUsers.length > 0) {
+            const currentVal = $('expenseUserSelect').value;
+            $('expenseUserSelect').innerHTML = '';
+            appUsers.forEach(u => {
+                const opt = document.createElement('option');
+                const mail = u.emp_mail || '';
+                const name = u.Emp_name || mail;
+                opt.value = mail;
+                opt.textContent = `${name} (${mail})`;
+                if (mail.toLowerCase() === (currentLoggedInUser.email || '').toLowerCase()) {
+                    opt.selected = true;
+                }
+                $('expenseUserSelect').appendChild(opt);
+            });
+            if (!$('expenseUserSelect').value && currentVal) {
+                $('expenseUserSelect').value = currentVal;
+            }
+        }
+
         // 1. Calculate Executive KPIs
         let totalSpend = 0;
         let approvedSpend = 0;
@@ -628,6 +669,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentFilter === 'pending' && status !== 'pending' && status !== 'submitted') return false;
             if (currentFilter === 'reimbursed' && status !== 'reimbursed') return false;
             if (currentFilter === 'unreported' && status !== 'unreported') return false;
+
+            // User scope filter: 'my' filters against current logged-in user
+            if (expenseUserScope === 'my' && currentLoggedInUser.email) {
+                const paidBy = String(r.Paid_by || '').toLowerCase();
+                const userEmail = currentLoggedInUser.email.toLowerCase();
+                const userName = (currentLoggedInUser.name || '').toLowerCase();
+                const matchEmail = paidBy.includes(userEmail);
+                const matchName = userName && paidBy.includes(userName);
+                if (!matchEmail && !matchName) return false;
+            }
 
             // Search query filter
             if (searchQuery) {
@@ -1741,15 +1792,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     function renderDataFetchesView(records) {
         if (!dataFetchTableBody) return;
-        if (dataFetchCountBadge) {
-            dataFetchCountBadge.textContent = `${records.length} ${records.length === 1 ? 'Record' : 'Records'}`;
+
+        let displayRecords = records;
+        if (dataFetchUserScope === 'my' && currentLoggedInUser.email) {
+            const userEmail = currentLoggedInUser.email.toLowerCase();
+            const userName = (currentLoggedInUser.name || '').toLowerCase();
+            displayRecords = records.filter(item => {
+                const r = item.Data_fetch || item;
+                const recEmail = String(r.Email || '').toLowerCase();
+                const recName = String(r.Employee_name || '').toLowerCase();
+                return recEmail.includes(userEmail) || (userName && recName.includes(userName));
+            });
         }
 
-        if (!records.length) {
+        if (dataFetchCountBadge) {
+            const scopeLabel = dataFetchUserScope === 'my' ? 'My Records' : 'All Records';
+            dataFetchCountBadge.textContent = `${displayRecords.length} ${scopeLabel}`;
+        }
+
+        if (!displayRecords.length) {
             dataFetchTableBody.innerHTML = `
                 <tr>
                     <td colspan="9" style="text-align: center; padding: 28px; color: #64748b;">
-                        No Data Fetch records found in Catalyst Datastore or Zoho Expense.
+                        No Data Fetch records found for <strong>${escapeHtml(currentLoggedInUser.name || currentLoggedInUser.email || 'current user')}</strong> (${escapeHtml(currentLoggedInUser.email || '')}).<br>
+                        <span style="font-size: 12px; color: #94a3b8;">Switch dropdown to "👥 All Records" to view entire organization data or click "+ New Record".</span>
                     </td>
                 </tr>
             `;
@@ -1757,7 +1823,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         dataFetchTableBody.innerHTML = '';
-        records.forEach((item) => {
+        displayRecords.forEach((item) => {
             const r = item.Data_fetch || item;
             const rowId = r.ROWID || '';
             const zohoRecId = r.Zoho_record_id || '';
@@ -1815,6 +1881,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             dataFetchTableBody.appendChild(tr);
         });
+    }
+
+    if (expenseUserScopeSelect) {
+        expenseUserScopeSelect.onchange = () => {
+            expenseUserScope = expenseUserScopeSelect.value;
+            renderAllViews();
+        };
+    }
+
+    if (dataFetchUserScopeSelect) {
+        dataFetchUserScopeSelect.onchange = () => {
+            dataFetchUserScope = dataFetchUserScopeSelect.value;
+            renderDataFetchesView(allDataFetches);
+        };
     }
 
     // Search filter for Data Fetch
@@ -2457,6 +2537,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const displayName = check.user?.Emp_name || catalystName || activeEmail.split('@')[0];
             const emailStr = (check.email || activeEmail).toLowerCase();
+            const userRole = (check.user?.Role || 'submitter').toLowerCase();
+
+            currentLoggedInUser = {
+                name: displayName,
+                email: emailStr,
+                role: userRole
+            };
 
             if (currentUserEl) {
                 currentUserEl.textContent = `${displayName} (${emailStr})`;
@@ -2465,9 +2552,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 userInitialEl.textContent = (displayName[0] || 'U').toUpperCase();
             }
 
-            await loadData(false);
-            // Silently run live sync with Zoho Expense in the background
-            loadData(true).catch(() => {});
+            // Sync with Zoho Expense and load data for current user
+            await loadData(true);
         } catch {
             window.location.replace(LOGIN_URL);
         }
