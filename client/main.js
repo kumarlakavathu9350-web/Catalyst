@@ -70,6 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelAddUserModalBtn = $('cancelAddUserModalBtn');
     const syncUsersBtn = $('syncUsersBtn');
 
+    // Custom Module: Data Fetches Elements
+    const dataFetchTableBody = $('dataFetchTableBody');
+    const dataFetchCountBadge = $('dataFetchCountBadge');
+    const dataFetchModal = $('dataFetchModal');
+    const dataFetchForm = $('dataFetchForm');
+    const openDataFetchModalBtn = $('openDataFetchModalBtn');
+    const closeDataFetchModalBtn = $('closeDataFetchModalBtn');
+    const cancelDataFetchModalBtn = $('cancelDataFetchModalBtn');
+    const syncDataFetchBtn = $('syncDataFetchBtn');
+    const dataFetchSearch = $('dataFetchSearch');
+
     // Sidebar navigation tabs
     const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
     const viewPanels = document.querySelectorAll('.view-panel');
@@ -118,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let allExpenses = [];
     let allTrips = [];
+    let allDataFetches = [];
     let currentFilter = 'all';
     let searchQuery = '';
     let selectedRowIds = new Set();
@@ -253,6 +265,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeAddUserModalBtn) closeAddUserModalBtn.onclick = closeAddUserModal;
     if (cancelAddUserModalBtn) cancelAddUserModalBtn.onclick = closeAddUserModal;
 
+    // Data Fetch Modal controls
+    function openDataFetchModal() {
+        if (dataFetchModal) dataFetchModal.style.display = 'flex';
+    }
+    function closeDataFetchModal() {
+        if (dataFetchModal) dataFetchModal.style.display = 'none';
+    }
+    if (openDataFetchModalBtn) openDataFetchModalBtn.onclick = openDataFetchModal;
+    if (closeDataFetchModalBtn) closeDataFetchModalBtn.onclick = closeDataFetchModal;
+    if (cancelDataFetchModalBtn) cancelDataFetchModalBtn.onclick = closeDataFetchModal;
+
     window.onclick = (e) => {
         if (e.target === expenseModal) closeExpenseModal();
         if (e.target === tripModal) closeTripModal();
@@ -261,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === purchaseModal) closePurchaseModal();
         if (e.target === cardModal) closeCardModal();
         if (e.target === addUserModal) closeAddUserModal();
+        if (e.target === dataFetchModal) closeDataFetchModal();
     };
 
     if ($('refreshBtn')) {
@@ -487,6 +511,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const allPurchases = data.purchaseRequests || [];
         const allCards = data.cards || [];
         const appUsers = data.appUsers || [];
+        const rawDataFetches = data.dataFetches || [];
+        allDataFetches = rawDataFetches.map((r) => r.Data_fetch || r);
 
         // 1. Calculate Executive KPIs
         let totalSpend = 0;
@@ -553,6 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAdvancesView(allAdvances);
         renderPurchasesView(allPurchases);
         renderCardsView(allCards);
+        renderDataFetchesView(allDataFetches);
         renderSettingsView(appUsers);
 
         // 5. Render Full Analytics View
@@ -1705,6 +1732,178 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 syncUsersBtn.disabled = false;
                 syncUsersBtn.textContent = '🔄 Sync Zoho Users';
+            }
+        };
+    }
+
+    // =========================================================================
+    // Custom Module: Data Fetches View & Operations
+    // =========================================================================
+    function renderDataFetchesView(records) {
+        if (!dataFetchTableBody) return;
+        if (dataFetchCountBadge) {
+            dataFetchCountBadge.textContent = `${records.length} ${records.length === 1 ? 'Record' : 'Records'}`;
+        }
+
+        if (!records.length) {
+            dataFetchTableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 28px; color: #64748b;">
+                        No Data Fetch records found in Catalyst Datastore or Zoho Expense.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        dataFetchTableBody.innerHTML = '';
+        records.forEach((item) => {
+            const r = item.Data_fetch || item;
+            const rowId = r.ROWID || '';
+            const zohoRecId = r.Zoho_record_id || '';
+            const customId = r.Custom_id || r.Record_name || 'Cus-000';
+            const empName = r.Employee_name || '—';
+            const email = r.Email || '—';
+            const accountName = r.Customer_account_name || '—';
+            const ifsc = r.Ifsc || '—';
+            const accNum = r.Account_number || '—';
+            const amount = Number(parseFloat(r.Amount)) || 0;
+            const status = (r.Status || 'draft').toLowerCase();
+
+            let statusBadge = '<span class="status-badge-chip chip-unreported">Draft</span>';
+            if (status === 'active') {
+                statusBadge = '<span class="status-badge-chip chip-approved">Active</span>';
+            } else if (status === 'verified') {
+                statusBadge = '<span class="status-badge-chip chip-reimbursed">Verified</span>';
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong style="color: #0369a1; font-family: monospace; font-size: 13px;">${escapeHtml(customId)}</strong></td>
+                <td><strong>${escapeHtml(empName)}</strong></td>
+                <td style="color: #64748b; font-size: 12.5px;">${escapeHtml(email)}</td>
+                <td>${escapeHtml(accountName)}</td>
+                <td><code style="font-size: 12px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${escapeHtml(ifsc)}</code></td>
+                <td style="font-family: monospace;">${escapeHtml(accNum)}</td>
+                <td style="font-weight: 700; color: #0284c7;">${formatINR(amount)}</td>
+                <td>${statusBadge}</td>
+                <td style="text-align: right;">
+                    <button class="btn-row-delete btn-delete-datafetch" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-zoho-id="${escapeHtml(zohoRecId)}">🗑️</button>
+                </td>
+            `;
+
+            const delBtn = tr.querySelector('.btn-delete-datafetch');
+            if (delBtn) {
+                delBtn.onclick = async () => {
+                    if (!confirm(`Delete custom module record "${customId}"? This will delete it from both Zoho Expense and Catalyst Datastore.`)) return;
+                    delBtn.disabled = true;
+                    try {
+                        const res = await callFunction({
+                            action: 'delete_data_fetch',
+                            row_id: rowId,
+                            zoho_record_id: zohoRecId
+                        });
+                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
+                        showSyncToast('Record deleted successfully.', 'success');
+                        await loadData();
+                    } catch (err) {
+                        alert('Delete error: ' + (err.message || 'Error'));
+                        delBtn.disabled = false;
+                    }
+                };
+            }
+
+            dataFetchTableBody.appendChild(tr);
+        });
+    }
+
+    // Search filter for Data Fetch
+    if (dataFetchSearch) {
+        dataFetchSearch.oninput = () => {
+            const q = dataFetchSearch.value.trim().toLowerCase();
+            if (!q) {
+                renderDataFetchesView(allDataFetches);
+                return;
+            }
+            const filtered = allDataFetches.filter((item) => {
+                const r = item.Data_fetch || item;
+                return (
+                    (r.Custom_id || '').toLowerCase().includes(q) ||
+                    (r.Record_name || '').toLowerCase().includes(q) ||
+                    (r.Employee_name || '').toLowerCase().includes(q) ||
+                    (r.Email || '').toLowerCase().includes(q) ||
+                    (r.Customer_account_name || '').toLowerCase().includes(q) ||
+                    (r.Ifsc || '').toLowerCase().includes(q) ||
+                    (r.Account_number || '').toLowerCase().includes(q)
+                );
+            });
+            renderDataFetchesView(filtered);
+        };
+    }
+
+    // Sync button for Data Fetch
+    if (syncDataFetchBtn) {
+        syncDataFetchBtn.onclick = async () => {
+            syncDataFetchBtn.disabled = true;
+            syncDataFetchBtn.textContent = '🔄 Syncing...';
+            showSyncToast('🔄 Fetching custom module records from Zoho Expense cm_data_fetch...', 'info');
+            try {
+                const res = await callFunction({ action: 'sync_data_fetch' });
+                if (res.status !== 'Success') throw new Error(res.message || 'Sync failed');
+                await loadData();
+                showSyncToast(res.message || 'Custom module synced successfully!', 'success');
+            } catch (err) {
+                showSyncToast('Sync error: ' + (err.message || 'Error'), 'error');
+            } finally {
+                syncDataFetchBtn.disabled = false;
+                syncDataFetchBtn.textContent = '🔄 Sync from Zoho';
+            }
+        };
+    }
+
+    // Modal form submit for Data Fetch
+    if (dataFetchForm) {
+        dataFetchForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const custom_id = $('dfCustomIdInput').value.trim();
+            const employee_name = $('dfEmployeeNameInput').value.trim();
+            const email = $('dfEmailInput').value.trim();
+            const customer_account_name = $('dfAccountNameInput').value.trim();
+            const ifsc = $('dfIfscInput').value.trim();
+            const account_number = $('dfAccountNumberInput').value.trim();
+            const amount = $('dfAmountInput').value.trim();
+            const status = $('dfStatusSelect').value;
+
+            const submitBtn = $('saveDataFetchBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+            }
+
+            try {
+                const res = await callFunction({
+                    action: 'add_data_fetch',
+                    custom_id,
+                    employee_name,
+                    email,
+                    customer_account_name,
+                    ifsc,
+                    account_number,
+                    amount: amount || 0,
+                    status
+                });
+                if (res.status !== 'Success') throw new Error(res.message || 'Failed to save record');
+                closeDataFetchModal();
+                dataFetchForm.reset();
+                showSyncToast('✅ Custom module record created successfully!', 'success');
+                await loadData();
+            } catch (err) {
+                alert('Error creating custom module record: ' + (err.message || 'Error'));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save Record to Zoho & DB';
+                }
             }
         };
     }

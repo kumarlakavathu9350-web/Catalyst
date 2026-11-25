@@ -45,6 +45,19 @@
                     <span class="nav-label">Home</span>
                 </a>
 
+                <!-- Custom Module: Data Fetches (Placed directly below Home) -->
+                <a class="nav-link" data-tab="datafetch" title="Custom Module - Data Fetches">
+                    <span class="nav-icon" style="color: #0284c7;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Data Fetches</span>
+                    <span class="badge" style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 999px; margin-left: auto; font-weight: 600;">Custom</span>
+                </a>
+
                 <a class="nav-link" data-tab="trips" title="Business Trips">
                     <span class="nav-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
@@ -348,6 +361,61 @@
                                 <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Financial Analytics</h4>
                                 <p style="font-size: 12.5px; color: #64748b;">Inspect department budgets, categories, and reimbursement cycle times.</p>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     CUSTOM MODULE: Data Fetches (cm_data_fetch)
+                     ============================================================ -->
+                <section id="view-datafetch" class="view-panel">
+                    <div class="white-card">
+                        <div class="card-header-bar">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3>🗄️ Custom Module — Data Fetches</h3>
+                                <span class="badge-pill" id="dataFetchCountBadge">1 Record</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" id="syncDataFetchBtn" class="btn btn-sync" style="padding: 5px 12px; font-size: 12px;">🔄 Sync from Zoho</button>
+                                <button type="button" id="openDataFetchModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Record</button>
+                            </div>
+                        </div>
+                        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
+                            Official custom module records (<code>cm_data_fetch</code>) synchronized with Zoho Expense and persisted in your Catalyst Datastore table (<code>Data_fetch</code>).
+                        </p>
+
+                        <div class="table-toolbar" style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                            <div class="search-input-wrap" style="flex: 1; max-width: 420px; position: relative;">
+                                <input type="text" id="dataFetchSearch" class="form-control" placeholder="Search by Custom ID, Employee, Bank, IFSC, or Email..." style="width: 100%; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                            </div>
+                            <div style="font-size: 12.5px; color: #64748b;">
+                                Module: <strong>Data Fetch</strong> · API: <code>cm_data_fetch</code>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Custom ID</th>
+                                        <th>Employee Name</th>
+                                        <th>Email</th>
+                                        <th>Account Name (Bank)</th>
+                                        <th>IFSC Code</th>
+                                        <th>Account Number</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dataFetchTableBody">
+                                    <tr>
+                                        <td colspan="9" style="text-align: center; padding: 36px; color: #64748b;">
+                                            Loading Data Fetch records...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -1169,6 +1237,75 @@
             <div class="modal-actions" style="margin-top: 16px;">
                 <button type="button" id="cancelAddUserModalBtn" class="btn btn-light">Cancel</button>
                 <button type="submit" class="btn btn-primary">Create User in Zoho &amp; DB</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         New Custom Module Record Modal (Data Fetch)
+         ================================================================ -->
+    <div id="dataFetchModal" class="modal-backdrop">
+        <form id="dataFetchForm" class="modal-box">
+            <div class="modal-header-row">
+                <h3>🗄️ New Data Fetch Record</h3>
+                <button type="button" id="closeDataFetchModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dfCustomIdInput">Custom ID / Record Name *</label>
+                    <input type="text" id="dfCustomIdInput" placeholder="e.g. Cus - 002" required>
+                </div>
+                <div class="form-group">
+                    <label for="dfEmployeeNameInput">Employee Name *</label>
+                    <input type="text" id="dfEmployeeNameInput" placeholder="e.g. Lakavathu Kumar" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dfEmailInput">Employee Email *</label>
+                    <input type="email" id="dfEmailInput" placeholder="e.g. kumar@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="dfAccountNameInput">Account / Bank Name *</label>
+                    <input type="text" id="dfAccountNameInput" placeholder="e.g. SBI or HDFC" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dfIfscInput">IFSC Code *</label>
+                    <input type="text" id="dfIfscInput" placeholder="e.g. SBIN0000800" required>
+                </div>
+                <div class="form-group">
+                    <label for="dfAccountNumberInput">Account Number *</label>
+                    <input type="text" id="dfAccountNumberInput" placeholder="e.g. 00123456789" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dfAmountInput">Amount (₹) *</label>
+                    <input type="number" id="dfAmountInput" placeholder="100.00" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="dfStatusSelect">Status</label>
+                    <select id="dfStatusSelect">
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                        <option value="verified">Verified</option>
+                    </select>
+                </div>
+            </div>
+
+            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                ⚡ This record will be created in <strong>Zoho Expense Custom Module (cm_data_fetch)</strong> and automatically stored in Catalyst Datastore (<strong>Data_fetch</strong> table).
+            </p>
+
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button type="button" id="cancelDataFetchModalBtn" class="btn btn-light">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveDataFetchBtn">Save Record to Zoho &amp; DB</button>
             </div>
         </form>
     </div>

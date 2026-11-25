@@ -977,6 +977,140 @@ async function findAppUserByEmail(appUserTable, email) {
 	return match ? (match.App_user || match) : null;
 }
 
+async function syncZohoExpenseDataFetch(dataFetchTable) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const res = await fetch(`https://www.zohoapis.in/expense/v1/cm_data_fetch?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`, {
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+			}
+		});
+		const json = await res.json();
+		if (json.code === 0 && Array.isArray(json.module_records)) {
+			const existingRows = await fetchAllRows(dataFetchTable);
+			const existingMap = new Map();
+			existingRows.forEach(r => {
+				const row = r.Data_fetch || r;
+				if (row.Zoho_record_id) existingMap.set(String(row.Zoho_record_id), row);
+				if (row.Custom_id) existingMap.set(String(row.Custom_id), row);
+			});
+
+			for (const rec of json.module_records) {
+				const zohoId = String(rec.module_record_id || '');
+				const customId = rec.cf_custom_id || rec.record_name || 'Cus - 001';
+				const rowData = {
+					Record_name: rec.record_name || customId,
+					Custom_id: customId,
+					Customer_account_name: rec.cf_customer_account_name || '',
+					Ifsc: rec.cf_ifsc || '',
+					Account_number: rec.cf_account_number || '',
+					Employee_name: rec.cf_employee_name || '',
+					Email: rec.cf_email || '',
+					Amount: Number(rec.cf_amount) || 0,
+					Status: rec.status || 'draft',
+					Zoho_record_id: zohoId
+				};
+
+				const existing = existingMap.get(zohoId) || existingMap.get(customId);
+				if (existing && existing.ROWID) {
+					rowData.ROWID = existing.ROWID;
+					await dataFetchTable.updateRow(rowData);
+				} else {
+					await dataFetchTable.insertRow(rowData);
+				}
+			}
+			return json.module_records;
+		}
+	} catch (e) {
+		console.error('syncZohoExpenseDataFetch error:', e.message);
+	}
+	return [];
+}
+
+async function createZohoExpenseDataFetch(details) {
+	const accessToken = await getZohoExpenseAccessToken();
+	const zohoPayload = {
+		record_name: details.record_name || details.custom_id || 'Cus-Record',
+		cf_custom_id: details.custom_id || details.record_name || 'Cus-001',
+		cf_customer_account_name: details.customer_account_name || '',
+		cf_ifsc: details.ifsc || '',
+		cf_account_number: details.account_number || '',
+		cf_employee_name: details.employee_name || '',
+		cf_email: details.email || '',
+		cf_amount: Number(details.amount) || 0,
+		status: details.status || 'draft'
+	};
+
+	const postData = querystring.stringify({
+		JSONString: JSON.stringify(zohoPayload)
+	});
+
+	const url = `https://www.zohoapis.in/expense/v1/cm_data_fetch?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+
+	return new Promise((resolve, reject) => {
+		const req = https.request(url, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					const json = JSON.parse(data);
+					if (json.code === 0 && json.module_record) {
+						resolve(json.module_record);
+					} else {
+						reject(new Error(json.message || `Zoho Error ${json.code}`));
+					}
+				} catch (e) {
+					reject(new Error(`Failed to parse Zoho response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+}
+
+async function deleteZohoExpenseDataFetch(zohoRecordId) {
+	try {
+		const accessToken = await getZohoExpenseAccessToken();
+		const url = `https://www.zohoapis.in/expense/v1/cm_data_fetch/${zohoRecordId}?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+		return new Promise((resolve) => {
+			const req = https.request(url, {
+				method: 'DELETE',
+				headers: {
+					'Authorization': `Zoho-oauthtoken ${accessToken}`,
+					'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+				}
+			}, (res) => {
+				let data = '';
+				res.on('data', chunk => data += chunk);
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json.code === 0);
+					} catch {
+						resolve(false);
+					}
+				});
+			});
+			req.on('error', () => resolve(false));
+			req.end();
+		});
+	} catch (e) {
+		console.error('deleteZohoExpenseDataFetch error:', e.message);
+		return false;
+	}
+}
+
 module.exports = async (context, basicIO) => {
 	try {
 		const adminApp = await zcAuth.init(context, { appName: 'adminCtx', scope: 'admin' });
@@ -992,6 +1126,7 @@ module.exports = async (context, basicIO) => {
 		const advanceTable = datastore.table('Advance');
 		const reportTable = datastore.table('Report');
 		const cardTable = datastore.table('Card');
+		const dataFetchTable = datastore.table('Data_fetch');
 
 		const allArgs = typeof basicIO.getAllArguments === 'function' ? basicIO.getAllArguments() : {};
 
@@ -2158,35 +2293,86 @@ module.exports = async (context, basicIO) => {
 			});
 
 			writeOutput(basicIO, { status: 'Success', action: 'add_report', data: inserted, zoho_report: zohoReport });
-		} else if (action === 'get_custom_module_data_fetch' || action === 'get_custom_modules') {
-			let customRecords = [];
-			try {
-				const accessToken = await getZohoExpenseAccessToken();
-				const res = await fetch(`https://www.zohoapis.in/expense/v1/cm_data_fetch?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`, {
-					headers: {
-						'Authorization': `Zoho-oauthtoken ${accessToken}`,
-						'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
-					}
-				});
-				const data = await res.json();
-				if (data.code === 0 && Array.isArray(data.module_records)) {
-					customRecords = data.module_records;
-				}
-			} catch (cmErr) {
-				console.warn('[CustomModule] Error fetching cm_data_fetch:', cmErr.message);
+		} else if (action === 'get_data_fetch' || action === 'sync_data_fetch' || action === 'get_custom_module_data_fetch') {
+			const shouldSync = arg('sync') === 'true' || arg('refresh') === 'true' || action === 'sync_data_fetch';
+			let dataFetches = await fetchAllRows(dataFetchTable);
+			if (dataFetches.length === 0 || shouldSync) {
+				await syncZohoExpenseDataFetch(dataFetchTable);
+				dataFetches = await fetchAllRows(dataFetchTable);
 			}
 
 			writeOutput(basicIO, {
 				status: 'Success',
 				module: 'Data Fetch',
 				module_api_name: 'cm_data_fetch',
-				count: customRecords.length,
-				records: customRecords
+				count: dataFetches.length,
+				records: dataFetches
 			});
+		} else if (action === 'add_data_fetch') {
+			const customId = arg('custom_id') || arg('Custom_id') || arg('record_name') || `Cus-${Date.now().toString().slice(-4)}`;
+			const customerAccountName = arg('customer_account_name') || arg('Customer_account_name') || '';
+			const ifsc = arg('ifsc') || arg('Ifsc') || '';
+			const accountNumber = arg('account_number') || arg('Account_number') || '';
+			const employeeName = arg('employee_name') || arg('Employee_name') || 'Team Member';
+			const email = arg('email') || arg('Email') || '';
+			const amount = parseFloat(arg('amount') || arg('Amount') || '0');
+			const status = arg('status') || arg('Status') || 'draft';
+
+			let zohoRecord = null;
+			try {
+				zohoRecord = await createZohoExpenseDataFetch({
+					record_name: customId,
+					custom_id: customId,
+					customer_account_name: customerAccountName,
+					ifsc,
+					account_number: accountNumber,
+					employee_name: employeeName,
+					email,
+					amount,
+					status
+				});
+			} catch (zErr) {
+				console.warn('[DataFetch] Zoho API create error (proceeding to Datastore):', zErr.message);
+			}
+
+			const inserted = await dataFetchTable.insertRow({
+				Record_name: customId,
+				Custom_id: customId,
+				Customer_account_name: customerAccountName,
+				Ifsc: ifsc,
+				Account_number: accountNumber,
+				Employee_name: employeeName,
+				Email: email,
+				Amount: amount,
+				Status: status,
+				Zoho_record_id: zohoRecord?.module_record_id ? String(zohoRecord.module_record_id) : ''
+			});
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				action: 'add_data_fetch',
+				data: inserted,
+				zoho_record: zohoRecord,
+				message: `Record ${customId} created successfully in Catalyst Datastore and Zoho Expense.`
+			});
+		} else if (action === 'delete_data_fetch') {
+			if (!rowId) throw new Error('row_id is required to delete a data fetch record.');
+			let dataFetchRow = null;
+			try {
+				dataFetchRow = await dataFetchTable.getRow(rowId);
+			} catch {}
+
+			const zohoRecId = arg('zoho_record_id') || dataFetchRow?.Zoho_record_id;
+			if (zohoRecId) {
+				await deleteZohoExpenseDataFetch(zohoRecId);
+			}
+			await dataFetchTable.deleteRow(rowId);
+			writeOutput(basicIO, { status: 'Success', message: 'Data fetch record deleted successfully.' });
 		} else if (action === 'sync_all_from_expense') {
 			const syncedTrips = await syncZohoExpenseTrips(tripTable);
 			const syncedExpenses = await syncZohoExpenseExpenses(expenseTable);
 			const syncedReports = await syncZohoExpenseReports(reportTable);
+			await syncZohoExpenseDataFetch(dataFetchTable);
 			await initZohoExpenseAdvances(advanceTable);
 			await initPurchaseRequests(prTable);
 
@@ -2212,6 +2398,7 @@ module.exports = async (context, basicIO) => {
 			const currentAdvances = await fetchAllRows(advanceTable);
 			const currentPRs = await fetchAllRows(prTable);
 			const currentCards = await fetchAllRows(cardTable);
+			const currentDataFetches = await fetchAllRows(dataFetchTable);
 			const currentUsers = (await fetchAllRows(appUserTable)).map(sanitizeAppUser);
 
 			writeOutput(basicIO, {
@@ -2222,6 +2409,7 @@ module.exports = async (context, basicIO) => {
 				synced_advances: currentAdvances.length,
 				synced_purchases: currentPRs.length,
 				synced_cards: currentCards.length,
+				synced_data_fetches: currentDataFetches.length,
 				synced_users: currentUsers.length,
 				expenses: currentExpenses,
 				trips: currentTrips,
@@ -2229,8 +2417,9 @@ module.exports = async (context, basicIO) => {
 				advances: currentAdvances,
 				purchaseRequests: currentPRs,
 				cards: currentCards,
+				dataFetches: currentDataFetches,
 				appUsers: currentUsers,
-				message: `Synced with Zoho Expense: ${currentReports.length} reports, ${currentExpenses.length} expenses, ${currentTrips.length} trips, ${currentUsers.length} users.`
+				message: `Synced with Zoho Expense: ${currentReports.length} reports, ${currentExpenses.length} expenses, ${currentTrips.length} trips, ${currentDataFetches.length} data fetch records, ${currentUsers.length} users.`
 			});
 		} else {
 			const shouldSync = arg('sync') === 'true' || arg('refresh') === 'true';
@@ -2280,6 +2469,16 @@ module.exports = async (context, basicIO) => {
 				}
 			}
 
+			let dataFetches = await fetchAllRows(dataFetchTable);
+			if (dataFetches.length === 0 || shouldSync) {
+				try {
+					await syncZohoExpenseDataFetch(dataFetchTable);
+					dataFetches = await fetchAllRows(dataFetchTable);
+				} catch (dfErr) {
+					console.warn('Auto-sync Data_fetch error:', dfErr.message);
+				}
+			}
+
 			const expenses = await fetchAllRows(expenseTable);
 			const reports = await fetchAllRows(reportTable);
 			const advances = await fetchAllRows(advanceTable);
@@ -2302,7 +2501,8 @@ module.exports = async (context, basicIO) => {
 				reports,
 				trips,
 				advances,
-				cards
+				cards,
+				dataFetches
 			});
 		}
 	} catch (e) {
