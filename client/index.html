@@ -380,12 +380,11 @@
                                 <span class="badge-pill" id="dataFetchCountBadge">1 Record</span>
                             </div>
                             <div style="display: flex; gap: 8px;">
-                                <button type="button" id="syncDataFetchBtn" class="btn btn-sync" style="padding: 5px 12px; font-size: 12px;">🔄 Sync from Zoho</button>
-                                <button type="button" id="openDataFetchModalBtn" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">+ New Record</button>
+                                <button type="button" id="syncDataFetchBtn" class="btn btn-sync" style="padding: 6px 14px; font-size: 12.5px;">🔄 Sync from Zoho Expense</button>
                             </div>
                         </div>
                         <p style="color: #64748b; font-size: 13.5px; margin-bottom: 16px;">
-                            Official custom module records (<code>cm_data_fetch</code>) synchronized with Zoho Expense and persisted in your Catalyst Datastore table (<code>Data_fetch</code>).
+                            Records are added in <strong>Zoho Expense</strong> (Custom Modules &rarr; Data Fetches) and synchronized automatically into Catalyst. Choose any record below to add it directly as an <strong>Expense</strong> for your account.
                         </p>
 
                         <div class="table-toolbar" style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
@@ -890,6 +889,19 @@
             <div class="modal-header-row">
                 <h3>+ New Expense</h3>
                 <button type="button" id="closeExpenseModalBtn" class="btn-close-modal">&times;</button>
+            </div>
+
+            <!-- Quick Autofill from Zoho Data Fetch records -->
+            <div class="form-group" style="background: #f0f9ff; padding: 12px 14px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 14px;">
+                <label for="expenseDataFetchSelect" style="font-weight: 600; color: #0369a1; display: flex; align-items: center; gap: 6px; margin-bottom: 5px;">
+                    <span>⚡ Choose from My Data Fetch Records (Optional):</span>
+                </label>
+                <select id="expenseDataFetchSelect" style="width: 100%; padding: 8px 10px; border: 1px solid #7dd3fc; border-radius: 6px; font-size: 13px; background: #ffffff;">
+                    <option value="">-- Or enter expense manually below --</option>
+                </select>
+                <div style="font-size: 11.5px; color: #0284c7; margin-top: 5px;">
+                    💡 Selecting a record automatically fills the description, amount (₹), bank details, and employee email.
+                </div>
             </div>
 
             <div class="form-group">

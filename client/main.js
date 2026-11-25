@@ -189,8 +189,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Modal controls
+    function populateExpenseDataFetchDropdown() {
+        const sel = $('expenseDataFetchSelect');
+        if (!sel) return;
+        const currentVal = sel.value;
+        sel.innerHTML = '<option value="">-- Choose Data Fetch Record or Enter Manually Below --</option>';
+
+        const userEmail = (currentLoggedInUser.email || '').toLowerCase();
+        const userName = (currentLoggedInUser.name || '').toLowerCase();
+
+        const userRecords = allDataFetches.filter(item => {
+            const r = item.Data_fetch || item;
+            const recEmail = String(r.Email || '').toLowerCase();
+            const recName = String(r.Employee_name || '').toLowerCase();
+            return !userEmail || recEmail.includes(userEmail) || (userName && recName.includes(userName));
+        });
+
+        userRecords.forEach(item => {
+            const r = item.Data_fetch || item;
+            const customId = r.Custom_id || r.Record_name || 'Cus-000';
+            const bank = r.Customer_account_name || 'Bank';
+            const amt = Number(parseFloat(r.Amount)) || 0;
+            const opt = document.createElement('option');
+            opt.value = customId;
+            opt.textContent = `${customId} · ${bank} · ${formatINR(amt)} (${r.Employee_name || r.Email})`;
+            sel.appendChild(opt);
+        });
+
+        if (currentVal) sel.value = currentVal;
+    }
+
+    function fillExpenseFormFromDataFetch(r) {
+        if (!r) return;
+        const customId = r.Custom_id || r.Record_name || '';
+        const bank = r.Customer_account_name || 'Bank';
+        const amt = Number(parseFloat(r.Amount)) || 0;
+        const email = r.Email || currentLoggedInUser.email || '';
+
+        if ($('expenseNameInput')) {
+            $('expenseNameInput').value = `[${customId}] ${bank} - Reimbursement`;
+        }
+        if ($('expenseAmountInput')) {
+            $('expenseAmountInput').value = amt.toFixed(2);
+        }
+        if ($('expenseDateInput')) {
+            $('expenseDateInput').value = new Date().toISOString().slice(0, 10);
+        }
+        if ($('expenseUserSelect') && email) {
+            $('expenseUserSelect').value = email;
+        }
+        if ($('expenseCategorySelect')) {
+            $('expenseCategorySelect').value = 'Office Supplies';
+        }
+    }
+
+    if ($('expenseDataFetchSelect')) {
+        $('expenseDataFetchSelect').onchange = () => {
+            const customId = $('expenseDataFetchSelect').value;
+            if (!customId) return;
+            const found = allDataFetches.find(item => {
+                const r = item.Data_fetch || item;
+                return (r.Custom_id || r.Record_name) === customId;
+            });
+            if (found) {
+                fillExpenseFormFromDataFetch(found.Data_fetch || found);
+            }
+        };
+    }
+
     function openExpenseModal() {
         if (expenseModal) {
+            populateExpenseDataFetchDropdown();
             if ($('expenseUserSelect') && currentLoggedInUser.email) {
                 $('expenseUserSelect').value = currentLoggedInUser.email;
             }
@@ -622,6 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCardsView(allCards);
         renderDataFetchesView(allDataFetches);
         renderSettingsView(appUsers);
+        populateExpenseDataFetchDropdown();
 
         // 5. Render Full Analytics View
         renderAnalyticsView(totalSpend, approvedSpend, pendingSpend, reimbursedSpend, categoryMap);
@@ -1060,7 +1130,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 closeExpenseModal();
                 expenseForm.reset();
+                showSyncToast(`✅ Expense of ${formatINR(Amount)} recorded successfully!`, 'success');
                 await loadData();
+
+                // Automatically switch to Expenses tab to show the record against the user
+                const expensesNav = document.querySelector('.sidebar-nav .nav-link[data-tab="expenses"]');
+                if (expensesNav) expensesNav.click();
             } catch (err) {
                 alert('Error adding expense: ' + (err.message || 'Error'));
             } finally {
@@ -1853,10 +1928,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="font-family: monospace;">${escapeHtml(accNum)}</td>
                 <td style="font-weight: 700; color: #0284c7;">${formatINR(amount)}</td>
                 <td>${statusBadge}</td>
-                <td style="text-align: right;">
+                <td style="text-align: right; white-space: nowrap;">
+                    <button class="btn btn-primary btn-claim-to-expense" type="button" style="padding: 4px 10px; font-size: 11.5px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-right: 6px;" title="Choose this record and add to Expenses">
+                        <span>➕ Add to Expense</span>
+                    </button>
                     <button class="btn-row-delete btn-delete-datafetch" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-zoho-id="${escapeHtml(zohoRecId)}">🗑️</button>
                 </td>
             `;
+
+            const claimBtn = tr.querySelector('.btn-claim-to-expense');
+            if (claimBtn) {
+                claimBtn.onclick = () => {
+                    openExpenseModal();
+                    if ($('expenseDataFetchSelect')) {
+                        $('expenseDataFetchSelect').value = customId;
+                    }
+                    fillExpenseFormFromDataFetch(r);
+                };
+            }
 
             const delBtn = tr.querySelector('.btn-delete-datafetch');
             if (delBtn) {
