@@ -351,11 +351,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data Fetch Modal controls
     function openDataFetchModal() {
         if (dataFetchModal) {
-            if ($('dfEmployeeNameInput') && !$('dfEmployeeNameInput').value) {
-                $('dfEmployeeNameInput').value = currentLoggedInUser.name || '';
-            }
-            if ($('dfEmailInput') && !$('dfEmailInput').value) {
-                $('dfEmailInput').value = currentLoggedInUser.email || '';
+            // Automatically find current logged-in user's existing bank record
+            const userEmail = (currentLoggedInUser.email || '').toLowerCase().trim();
+            const userName = (currentLoggedInUser.name || '').toLowerCase().trim();
+
+            const existing = allDataFetches.find(item => {
+                const r = item.Data_fetch || item;
+                const recEmail = String(r.Email || '').toLowerCase().trim();
+                const recName = String(r.Employee_name || '').toLowerCase().trim();
+                return (userEmail && recEmail === userEmail) || (userName && recName === userName);
+            });
+
+            if (existing) {
+                const r = existing.Data_fetch || existing;
+                if ($('dfAccountNameInput')) $('dfAccountNameInput').value = r.Customer_account_name || '';
+                if ($('dfIfscInput')) $('dfIfscInput').value = r.Ifsc || '';
+                if ($('dfAccountNumberInput')) $('dfAccountNumberInput').value = r.Account_number || '';
+                if ($('dfEmployeeNameInput')) $('dfEmployeeNameInput').value = r.Employee_name || currentLoggedInUser.name || '';
+                if ($('dfEmailInput')) $('dfEmailInput').value = r.Email || currentLoggedInUser.email || '';
+                if ($('dfAmountInput')) $('dfAmountInput').value = r.Amount ? Number(r.Amount).toFixed(2) : '';
+            } else {
+                if ($('dfEmployeeNameInput')) $('dfEmployeeNameInput').value = currentLoggedInUser.name || '';
+                if ($('dfEmailInput')) $('dfEmailInput').value = currentLoggedInUser.email || '';
             }
             dataFetchModal.style.display = 'flex';
         }
