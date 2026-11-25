@@ -20,7 +20,7 @@ const ZOHO_EXPENSE_CONFIG = {
 	apiUrl: 'https://www.zohoapis.in/expense/v1',
 	clientId: '1000.S1KTSSPRXHMAYOY20SY3CP93G79ZPB',
 	clientSecret: '68b084222d8104a939b142dfe7f63e6d4667cda54b',
-	refreshToken: '1000.c1e8858a4f463d7378ff1af83ecd5ed6.a5f53fd9a4dd54187b12defec0ff69fd',
+	refreshToken: '1000.306d569a597e5e2f468f00d3e2038949.1917ec47abd064e8f0f8c469ab9b2d3a',
 	organizationId: '60095930892'
 };
 
@@ -2158,6 +2158,31 @@ module.exports = async (context, basicIO) => {
 			});
 
 			writeOutput(basicIO, { status: 'Success', action: 'add_report', data: inserted, zoho_report: zohoReport });
+		} else if (action === 'get_custom_module_data_fetch' || action === 'get_custom_modules') {
+			let customRecords = [];
+			try {
+				const accessToken = await getZohoExpenseAccessToken();
+				const res = await fetch(`https://www.zohoapis.in/expense/v1/cm_data_fetch?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`, {
+					headers: {
+						'Authorization': `Zoho-oauthtoken ${accessToken}`,
+						'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId
+					}
+				});
+				const data = await res.json();
+				if (data.code === 0 && Array.isArray(data.module_records)) {
+					customRecords = data.module_records;
+				}
+			} catch (cmErr) {
+				console.warn('[CustomModule] Error fetching cm_data_fetch:', cmErr.message);
+			}
+
+			writeOutput(basicIO, {
+				status: 'Success',
+				module: 'Data Fetch',
+				module_api_name: 'cm_data_fetch',
+				count: customRecords.length,
+				records: customRecords
+			});
 		} else if (action === 'sync_all_from_expense') {
 			const syncedTrips = await syncZohoExpenseTrips(tripTable);
 			const syncedExpenses = await syncZohoExpenseExpenses(expenseTable);
