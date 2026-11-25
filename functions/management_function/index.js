@@ -11,7 +11,9 @@ const SENDER_EMAIL = 'kumarlakavathu9350@gmail.com';
 // Strict Authorization: Verified Organization Members in Zoho Expense (KR Tech Solutions - 60095930892)
 const VERIFIED_EXPENSE_EMAILS = new Set([
 	'kumarlakavthu@gmail.com',
-	'kumar.r@rcidigital.com'
+	'lakavathukumar.r.2026@rkmshome.org',
+	'kumar.r@rcidigital.com',
+	'kumarlakavathu0@gmail.com'
 ]);
 
 // 2-Way Sync Integration: Zoho Expense OAuth & REST APIs
