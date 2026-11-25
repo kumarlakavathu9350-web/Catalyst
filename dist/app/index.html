@@ -406,20 +406,18 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Custom ID</th>
-                                        <th>Employee Name</th>
-                                        <th>Email</th>
-                                        <th>Account Name (Bank)</th>
+                                        <th>Customer Account Name</th>
                                         <th>IFSC Code</th>
                                         <th>Account Number</th>
+                                        <th>Employee Name</th>
+                                        <th>Email</th>
                                         <th>Amount</th>
-                                        <th>Status</th>
                                         <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="dataFetchTableBody">
                                     <tr>
-                                        <td colspan="9" style="text-align: center; padding: 36px; color: #64748b;">
+                                        <td colspan="7" style="text-align: center; padding: 36px; color: #64748b;">
                                             Loading Data Fetch records...
                                         </td>
                                     </tr>
@@ -1275,54 +1273,39 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="dfCustomIdInput">Custom ID / Record Name *</label>
-                    <input type="text" id="dfCustomIdInput" placeholder="e.g. Cus - 002" required>
+                    <label for="dfAccountNameInput">Customer Account Name *</label>
+                    <input type="text" id="dfAccountNameInput" placeholder="e.g. State Bank of India (SBI)" required>
                 </div>
                 <div class="form-group">
-                    <label for="dfEmployeeNameInput">Employee Name *</label>
-                    <input type="text" id="dfEmployeeNameInput" placeholder="e.g. Lakavathu Kumar" required>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="dfEmailInput">Employee Email *</label>
-                    <input type="email" id="dfEmailInput" placeholder="e.g. kumar@gmail.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="dfAccountNameInput">Account / Bank Name *</label>
-                    <input type="text" id="dfAccountNameInput" placeholder="e.g. SBI or HDFC" required>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="dfIfscInput">IFSC Code *</label>
+                    <label for="dfIfscInput">IFSC *</label>
                     <input type="text" id="dfIfscInput" placeholder="e.g. SBIN0000800" required>
                 </div>
+            </div>
+
+            <div class="form-row">
                 <div class="form-group">
                     <label for="dfAccountNumberInput">Account Number *</label>
                     <input type="text" id="dfAccountNumberInput" placeholder="e.g. 00123456789" required>
                 </div>
+                <div class="form-group">
+                    <label for="dfEmployeeNameInput">Employee Name *</label>
+                    <input type="text" id="dfEmployeeNameInput" placeholder="e.g. Kumar Lakavathu" required>
+                </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="dfAmountInput">Amount (₹) *</label>
-                    <input type="number" id="dfAmountInput" placeholder="100.00" step="0.01" min="0" required>
+                    <label for="dfEmailInput">Email *</label>
+                    <input type="email" id="dfEmailInput" placeholder="e.g. kumarlakavthu@gmail.com" required>
                 </div>
                 <div class="form-group">
-                    <label for="dfStatusSelect">Status</label>
-                    <select id="dfStatusSelect">
-                        <option value="draft">Draft</option>
-                        <option value="active">Active</option>
-                        <option value="verified">Verified</option>
-                    </select>
+                    <label for="dfAmountInput">Amount (₹)</label>
+                    <input type="number" id="dfAmountInput" placeholder="1500.00" step="0.01" min="0">
                 </div>
             </div>
 
             <p style="font-size: 12px; color: #64748b; margin-top: 4px;">
-                ⚡ This record will be created in <strong>Zoho Expense Custom Module (cm_data_fetch)</strong> and automatically stored in Catalyst Datastore (<strong>Data_fetch</strong> table).
+                ⚡ This record will be synchronized with <strong>Zoho Expense Custom Module (cm_data_fetch)</strong> and stored in Catalyst Datastore (<strong>Data_fetch</strong> table) with the exact 6 form fields.
             </p>
 
             <div class="modal-actions" style="margin-top: 16px;">

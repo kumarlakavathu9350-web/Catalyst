@@ -991,32 +991,26 @@ async function syncZohoExpenseDataFetch(dataFetchTable) {
 		const json = await res.json();
 		if (json.code === 0 && Array.isArray(json.module_records)) {
 			const existingRows = await fetchAllRows(dataFetchTable);
-			const existingMap = new Map();
-			existingRows.forEach(r => {
-				const row = r.Data_fetch || r;
-				if (row.Zoho_record_id) existingMap.set(String(row.Zoho_record_id), row);
-				if (row.Custom_id) existingMap.set(String(row.Custom_id), row);
-			});
 
 			for (const rec of json.module_records) {
-				const zohoId = String(rec.module_record_id || '');
-				const customId = rec.cf_custom_id || rec.record_name || 'Cus - 001';
 				const rowData = {
-					Record_name: rec.record_name || customId,
-					Custom_id: customId,
 					Customer_account_name: rec.cf_customer_account_name || '',
 					Ifsc: rec.cf_ifsc || '',
 					Account_number: rec.cf_account_number || '',
 					Employee_name: rec.cf_employee_name || '',
 					Email: rec.cf_email || '',
-					Amount: Number(rec.cf_amount) || 0,
-					Status: rec.status || 'draft',
-					Zoho_record_id: zohoId
+					Amount: Number(rec.cf_amount) || 0
 				};
 
-				const existing = existingMap.get(zohoId) || existingMap.get(customId);
-				if (existing && existing.ROWID) {
-					rowData.ROWID = existing.ROWID;
+				const existing = existingRows.find(item => {
+					const row = item.Data_fetch || item;
+					return (row.Account_number && row.Account_number === rowData.Account_number) ||
+						(row.Email === rowData.Email && Math.abs(Number(row.Amount) - rowData.Amount) < 0.01 && row.Ifsc === rowData.Ifsc);
+				});
+
+				if (existing) {
+					const row = existing.Data_fetch || existing;
+					rowData.ROWID = row.ROWID;
 					await dataFetchTable.updateRow(rowData);
 				} else {
 					await dataFetchTable.insertRow(rowData);
@@ -2338,16 +2332,12 @@ module.exports = async (context, basicIO) => {
 			}
 
 			const inserted = await dataFetchTable.insertRow({
-				Record_name: customId,
-				Custom_id: customId,
 				Customer_account_name: customerAccountName,
 				Ifsc: ifsc,
 				Account_number: accountNumber,
 				Employee_name: employeeName,
 				Email: email,
-				Amount: amount,
-				Status: status,
-				Zoho_record_id: zohoRecord?.module_record_id ? String(zohoRecord.module_record_id) : ''
+				Amount: amount
 			});
 
 			writeOutput(basicIO, {

@@ -207,12 +207,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         userRecords.forEach(item => {
             const r = item.Data_fetch || item;
-            const customId = r.Custom_id || r.Record_name || 'Cus-000';
             const bank = r.Customer_account_name || 'Bank';
             const amt = Number(parseFloat(r.Amount)) || 0;
+            const rowId = String(r.ROWID || '');
             const opt = document.createElement('option');
-            opt.value = customId;
-            opt.textContent = `${customId} · ${bank} · ${formatINR(amt)} (${r.Employee_name || r.Email})`;
+            opt.value = rowId;
+            opt.textContent = `${bank} · ${formatINR(amt)} · A/C: ${r.Account_number || 'N/A'} (${r.Employee_name || r.Email})`;
             sel.appendChild(opt);
         });
 
@@ -221,13 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function fillExpenseFormFromDataFetch(r) {
         if (!r) return;
-        const customId = r.Custom_id || r.Record_name || '';
         const bank = r.Customer_account_name || 'Bank';
         const amt = Number(parseFloat(r.Amount)) || 0;
         const email = r.Email || currentLoggedInUser.email || '';
+        const acc = r.Account_number ? ` (A/C: ${r.Account_number})` : '';
 
         if ($('expenseNameInput')) {
-            $('expenseNameInput').value = `[${customId}] ${bank} - Reimbursement`;
+            $('expenseNameInput').value = `${bank}${acc} - Reimbursement`;
         }
         if ($('expenseAmountInput')) {
             $('expenseAmountInput').value = amt.toFixed(2);
@@ -245,11 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if ($('expenseDataFetchSelect')) {
         $('expenseDataFetchSelect').onchange = () => {
-            const customId = $('expenseDataFetchSelect').value;
-            if (!customId) return;
+            const rowId = $('expenseDataFetchSelect').value;
+            if (!rowId) return;
             const found = allDataFetches.find(item => {
                 const r = item.Data_fetch || item;
-                return (r.Custom_id || r.Record_name) === customId;
+                return String(r.ROWID) === String(rowId);
             });
             if (found) {
                 fillExpenseFormFromDataFetch(found.Data_fetch || found);
@@ -1888,9 +1888,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!displayRecords.length) {
             dataFetchTableBody.innerHTML = `
                 <tr>
-                    <td colspan="9" style="text-align: center; padding: 28px; color: #64748b;">
+                    <td colspan="7" style="text-align: center; padding: 28px; color: #64748b;">
                         No Data Fetch records found for <strong>${escapeHtml(currentLoggedInUser.name || currentLoggedInUser.email || 'current user')}</strong> (${escapeHtml(currentLoggedInUser.email || '')}).<br>
-                        <span style="font-size: 12px; color: #94a3b8;">Switch dropdown to "👥 All Records" to view entire organization data or click "+ New Record".</span>
+                        <span style="font-size: 12px; color: #94a3b8;">Switch dropdown to "👥 All Records" to view entire organization data or click "🔄 Sync from Zoho Expense".</span>
                     </td>
                 </tr>
             `;
@@ -1901,38 +1901,25 @@ document.addEventListener('DOMContentLoaded', () => {
         displayRecords.forEach((item) => {
             const r = item.Data_fetch || item;
             const rowId = r.ROWID || '';
-            const zohoRecId = r.Zoho_record_id || '';
-            const customId = r.Custom_id || r.Record_name || 'Cus-000';
             const empName = r.Employee_name || '—';
             const email = r.Email || '—';
             const accountName = r.Customer_account_name || '—';
             const ifsc = r.Ifsc || '—';
             const accNum = r.Account_number || '—';
             const amount = Number(parseFloat(r.Amount)) || 0;
-            const status = (r.Status || 'draft').toLowerCase();
-
-            let statusBadge = '<span class="status-badge-chip chip-unreported">Draft</span>';
-            if (status === 'active') {
-                statusBadge = '<span class="status-badge-chip chip-approved">Active</span>';
-            } else if (status === 'verified') {
-                statusBadge = '<span class="status-badge-chip chip-reimbursed">Verified</span>';
-            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong style="color: #0369a1; font-family: monospace; font-size: 13px;">${escapeHtml(customId)}</strong></td>
-                <td><strong>${escapeHtml(empName)}</strong></td>
-                <td style="color: #64748b; font-size: 12.5px;">${escapeHtml(email)}</td>
-                <td>${escapeHtml(accountName)}</td>
+                <td><strong style="color: #0369a1;">${escapeHtml(accountName)}</strong></td>
                 <td><code style="font-size: 12px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${escapeHtml(ifsc)}</code></td>
                 <td style="font-family: monospace;">${escapeHtml(accNum)}</td>
+                <td><strong>${escapeHtml(empName)}</strong></td>
+                <td style="color: #64748b; font-size: 12.5px;">${escapeHtml(email)}</td>
                 <td style="font-weight: 700; color: #0284c7;">${formatINR(amount)}</td>
-                <td>${statusBadge}</td>
                 <td style="text-align: right; white-space: nowrap;">
-                    <button class="btn btn-primary btn-claim-to-expense" type="button" style="padding: 4px 10px; font-size: 11.5px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-right: 6px;" title="Choose this record and add to Expenses">
+                    <button class="btn btn-primary btn-claim-to-expense" type="button" style="padding: 5px 12px; font-size: 12px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" title="Choose this record and add to Expenses">
                         <span>➕ Add to Expense</span>
                     </button>
-                    <button class="btn-row-delete btn-delete-datafetch" type="button" title="Delete record" data-id="${escapeHtml(rowId)}" data-zoho-id="${escapeHtml(zohoRecId)}">🗑️</button>
                 </td>
             `;
 
@@ -1941,30 +1928,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 claimBtn.onclick = () => {
                     openExpenseModal();
                     if ($('expenseDataFetchSelect')) {
-                        $('expenseDataFetchSelect').value = customId;
+                        $('expenseDataFetchSelect').value = rowId;
                     }
                     fillExpenseFormFromDataFetch(r);
-                };
-            }
-
-            const delBtn = tr.querySelector('.btn-delete-datafetch');
-            if (delBtn) {
-                delBtn.onclick = async () => {
-                    if (!confirm(`Delete custom module record "${customId}"? This will delete it from both Zoho Expense and Catalyst Datastore.`)) return;
-                    delBtn.disabled = true;
-                    try {
-                        const res = await callFunction({
-                            action: 'delete_data_fetch',
-                            row_id: rowId,
-                            zoho_record_id: zohoRecId
-                        });
-                        if (res.status !== 'Success') throw new Error(res.message || 'Error');
-                        showSyncToast('Record deleted successfully.', 'success');
-                        await loadData();
-                    } catch (err) {
-                        alert('Delete error: ' + (err.message || 'Error'));
-                        delBtn.disabled = false;
-                    }
                 };
             }
 
@@ -1997,13 +1963,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const filtered = allDataFetches.filter((item) => {
                 const r = item.Data_fetch || item;
                 return (
-                    (r.Custom_id || '').toLowerCase().includes(q) ||
-                    (r.Record_name || '').toLowerCase().includes(q) ||
-                    (r.Employee_name || '').toLowerCase().includes(q) ||
-                    (r.Email || '').toLowerCase().includes(q) ||
                     (r.Customer_account_name || '').toLowerCase().includes(q) ||
                     (r.Ifsc || '').toLowerCase().includes(q) ||
-                    (r.Account_number || '').toLowerCase().includes(q)
+                    (r.Account_number || '').toLowerCase().includes(q) ||
+                    (r.Employee_name || '').toLowerCase().includes(q) ||
+                    (r.Email || '').toLowerCase().includes(q) ||
+                    String(r.Amount || '').toLowerCase().includes(q)
                 );
             });
             renderDataFetchesView(filtered);
@@ -2034,14 +1999,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dataFetchForm) {
         dataFetchForm.onsubmit = async (e) => {
             e.preventDefault();
-            const custom_id = $('dfCustomIdInput').value.trim();
-            const employee_name = $('dfEmployeeNameInput').value.trim();
-            const email = $('dfEmailInput').value.trim();
-            const customer_account_name = $('dfAccountNameInput').value.trim();
-            const ifsc = $('dfIfscInput').value.trim();
-            const account_number = $('dfAccountNumberInput').value.trim();
-            const amount = $('dfAmountInput').value.trim();
-            const status = $('dfStatusSelect').value;
+            const customer_account_name = $('dfAccountNameInput') ? $('dfAccountNameInput').value.trim() : '';
+            const ifsc = $('dfIfscInput') ? $('dfIfscInput').value.trim() : '';
+            const account_number = $('dfAccountNumberInput') ? $('dfAccountNumberInput').value.trim() : '';
+            const employee_name = $('dfEmployeeNameInput') ? $('dfEmployeeNameInput').value.trim() : '';
+            const email = $('dfEmailInput') ? $('dfEmailInput').value.trim() : '';
+            const amount = $('dfAmountInput') ? $('dfAmountInput').value.trim() : '0';
 
             const submitBtn = $('saveDataFetchBtn');
             if (submitBtn) {
@@ -2052,14 +2015,12 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await callFunction({
                     action: 'add_data_fetch',
-                    custom_id,
-                    employee_name,
-                    email,
                     customer_account_name,
                     ifsc,
                     account_number,
-                    amount: amount || 0,
-                    status
+                    employee_name,
+                    email,
+                    amount: amount || 0
                 });
                 if (res.status !== 'Success') throw new Error(res.message || 'Failed to save record');
                 closeDataFetchModal();
