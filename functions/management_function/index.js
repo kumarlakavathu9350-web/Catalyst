@@ -2304,6 +2304,83 @@ module.exports = async (context, basicIO) => {
 				count: dataFetches.length,
 				records: dataFetches
 			});
+		} else if (action === 'get_user_data_fetch' || action === 'get_user_bank_data') {
+			const targetEmail = (arg('email') || '').toLowerCase().trim();
+			const allRows = await fetchAllRows(dataFetchTable);
+			let match = null;
+			if (targetEmail) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					return (r.Email || '').toLowerCase().trim() === targetEmail;
+				});
+			}
+			if (match) {
+				const r = match.Data_fetch || match;
+				writeOutput(basicIO, {
+					status: 'Success',
+					found: true,
+					data: {
+						Customer_account_name: r.Customer_account_name || '',
+						Ifsc: r.Ifsc || '',
+						Account_number: r.Account_number || '',
+						Employee_name: r.Employee_name || '',
+						Email: r.Email || '',
+						Amount: Number(r.Amount) || 0
+					}
+				});
+			} else {
+				writeOutput(basicIO, {
+					status: 'Success',
+					found: false,
+					message: `No record found for email ${targetEmail}`,
+					data: null
+				});
+			}
+		} else if (action === 'create_expense_record_for_user' || action === 'sync_user_to_expense') {
+			const targetEmail = (arg('email') || '').toLowerCase().trim();
+			const allRows = await fetchAllRows(dataFetchTable);
+			let match = null;
+			if (targetEmail) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					return (r.Email || '').toLowerCase().trim() === targetEmail;
+				});
+			}
+			if (!match && allRows.length > 0) {
+				match = allRows[0];
+			}
+
+			if (match) {
+				const r = match.Data_fetch || match;
+				try {
+					const customId = `Cus-${Date.now().toString().slice(-4)}`;
+					const createdZoho = await createZohoExpenseDataFetch({
+						record_name: customId,
+						custom_id: customId,
+						customer_account_name: r.Customer_account_name || '',
+						ifsc: r.Ifsc || '',
+						account_number: r.Account_number || '',
+						employee_name: r.Employee_name || '',
+						email: r.Email || '',
+						amount: Number(r.Amount) || 0
+					});
+					writeOutput(basicIO, {
+						status: 'Success',
+						message: `Created Data Fetch record in Zoho Expense for ${r.Employee_name} (${r.Customer_account_name})!`,
+						record: createdZoho
+					});
+				} catch (createErr) {
+					writeOutput(basicIO, {
+						status: 'Error',
+						message: `Failed to create in Zoho: ${createErr.message}`
+					});
+				}
+			} else {
+				writeOutput(basicIO, {
+					status: 'Error',
+					message: `No bank data found in Catalyst Datastore for ${targetEmail}`
+				});
+			}
 		} else if (action === 'add_data_fetch') {
 			const customId = arg('custom_id') || arg('Custom_id') || arg('record_name') || `Cus-${Date.now().toString().slice(-4)}`;
 			const customerAccountName = arg('customer_account_name') || arg('Customer_account_name') || '';
