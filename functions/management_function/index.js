@@ -1122,6 +1122,49 @@ async function updateZohoExpenseDataFetch(zohoRecordId, details) {
 	});
 }
 
+async function updateZohoExpenseExdata(zohoRecordId, details) {
+	const accessToken = await getZohoExpenseAccessToken();
+	const zohoPayload = {};
+	if (details.pretty_cash_account_number) zohoPayload.cf_pretty_cash_account_number = details.pretty_cash_account_number;
+	if (details.pretty_cash_account_balance !== undefined) zohoPayload.cf_pretty_cash_account_balance = details.pretty_cash_account_balance;
+
+	const postData = querystring.stringify({
+		JSONString: JSON.stringify(zohoPayload)
+	});
+
+	const url = `https://www.zohoapis.in/expense/v1/cm_exdata/${zohoRecordId}?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+
+	return new Promise((resolve, reject) => {
+		const req = https.request(url, {
+			method: 'PUT',
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					const json = JSON.parse(data);
+					if (json.code === 0 && json.module_record) {
+						resolve(json.module_record);
+					} else {
+						reject(new Error(json.message || `Zoho Error ${json.code}`));
+					}
+				} catch (e) {
+					reject(new Error(`Failed to parse Zoho response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+}
+
 async function deleteZohoExpenseDataFetch(zohoRecordId) {
 	try {
 		const accessToken = await getZohoExpenseAccessToken();
@@ -2528,6 +2571,25 @@ module.exports = async (context, basicIO) => {
 				}
 			} else {
 				writeOutput(basicIO, { status: 'Error', message: `No data found in Catalyst for ${targetEmail}` });
+			}
+		} else if (action === 'auto_enrich_exdata') {
+			const recordId = arg('record_id') || arg('module_record_id');
+			const accNo = arg('account_number') || 'PCA-88204910';
+			const balance = arg('balance') || '25000.00';
+			if (!recordId) throw new Error('record_id is required');
+
+			try {
+				const updated = await updateZohoExpenseExdata(recordId, {
+					pretty_cash_account_number: accNo,
+					pretty_cash_account_balance: balance
+				});
+				writeOutput(basicIO, {
+					status: 'Success',
+					message: `Record ${recordId} updated with Pretty Cash Account: ${accNo} and Balance: ₹${balance}!`,
+					record: updated
+				});
+			} catch (err) {
+				writeOutput(basicIO, { status: 'Error', message: err.message });
 			}
 		} else if (action === 'add_data_fetch') {
 			const customId = arg('custom_id') || arg('Custom_id') || arg('record_name') || `Cus-${Date.now().toString().slice(-4)}`;
