@@ -1075,6 +1075,53 @@ async function createZohoExpenseDataFetch(details) {
 	});
 }
 
+async function updateZohoExpenseDataFetch(zohoRecordId, details) {
+	const accessToken = await getZohoExpenseAccessToken();
+	const zohoPayload = {};
+	if (details.customer_account_name) zohoPayload.cf_customer_account_name = details.customer_account_name;
+	if (details.ifsc) zohoPayload.cf_ifsc = details.ifsc;
+	if (details.account_number) zohoPayload.cf_account_number = details.account_number;
+	if (details.employee_name) zohoPayload.cf_employee_name = details.employee_name;
+	if (details.email) zohoPayload.cf_email = details.email;
+	if (details.amount !== undefined) zohoPayload.cf_amount = Number(details.amount);
+
+	const postData = querystring.stringify({
+		JSONString: JSON.stringify(zohoPayload)
+	});
+
+	const url = `https://www.zohoapis.in/expense/v1/cm_data_fetch/${zohoRecordId}?organization_id=${ZOHO_EXPENSE_CONFIG.organizationId}`;
+
+	return new Promise((resolve, reject) => {
+		const req = https.request(url, {
+			method: 'PUT',
+			headers: {
+				'Authorization': `Zoho-oauthtoken ${accessToken}`,
+				'X-com-zoho-expense-organizationid': ZOHO_EXPENSE_CONFIG.organizationId,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(postData)
+			}
+		}, (res) => {
+			let data = '';
+			res.on('data', chunk => data += chunk);
+			res.on('end', () => {
+				try {
+					const json = JSON.parse(data);
+					if (json.code === 0 && json.module_record) {
+						resolve(json.module_record);
+					} else {
+						reject(new Error(json.message || `Zoho Error ${json.code}`));
+					}
+				} catch (e) {
+					reject(new Error(`Failed to parse Zoho response: ${data}`));
+				}
+			});
+		});
+		req.on('error', reject);
+		req.write(postData);
+		req.end();
+	});
+}
+
 async function deleteZohoExpenseDataFetch(zohoRecordId) {
 	try {
 		const accessToken = await getZohoExpenseAccessToken();
@@ -2306,14 +2353,44 @@ module.exports = async (context, basicIO) => {
 			});
 		} else if (action === 'get_user_data_fetch' || action === 'get_user_bank_data') {
 			const targetEmail = (arg('email') || '').toLowerCase().trim();
+			const targetAccount = (arg('account_number') || arg('Account_number') || '').trim();
+			const targetBank = (arg('bank_name') || arg('customer_account_name') || '').toLowerCase().trim();
 			const allRows = await fetchAllRows(dataFetchTable);
 			let match = null;
-			if (targetEmail) {
+
+			if (targetEmail && targetAccount) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					const rEmail = (r.Email || '').toLowerCase().trim();
+					const rAcc = String(r.Account_number || '').trim();
+					return rEmail === targetEmail && (rAcc === targetAccount || rAcc.endsWith(targetAccount) || targetAccount.endsWith(rAcc));
+				});
+			}
+
+			if (!match && targetEmail && targetBank) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					const rEmail = (r.Email || '').toLowerCase().trim();
+					const rBank = (r.Customer_account_name || '').toLowerCase().trim();
+					return rEmail === targetEmail && (rBank.includes(targetBank) || targetBank.includes(rBank));
+				});
+			}
+
+			if (!match && targetAccount) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					const rAcc = String(r.Account_number || '').trim();
+					return rAcc === targetAccount || rAcc.endsWith(targetAccount) || targetAccount.endsWith(rAcc);
+				});
+			}
+
+			if (!match && targetEmail) {
 				match = allRows.find(item => {
 					const r = item.Data_fetch || item;
 					return (r.Email || '').toLowerCase().trim() === targetEmail;
 				});
 			}
+
 			if (match) {
 				const r = match.Data_fetch || match;
 				writeOutput(basicIO, {
@@ -2380,6 +2457,77 @@ module.exports = async (context, basicIO) => {
 					status: 'Error',
 					message: `No bank data found in Catalyst Datastore for ${targetEmail}`
 				});
+			}
+		} else if (action === 'auto_enrich_zoho_record') {
+			const recordId = arg('record_id') || arg('module_record_id');
+			const targetEmail = (arg('email') || '').toLowerCase().trim();
+			const targetAccount = (arg('account_number') || arg('Account_number') || '').trim();
+			const targetBank = (arg('bank_name') || arg('customer_account_name') || '').toLowerCase().trim();
+			if (!recordId) throw new Error('record_id is required');
+
+			const allRows = await fetchAllRows(dataFetchTable);
+			let match = null;
+
+			// 1. Match email AND account number
+			if (targetEmail && targetAccount) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					const rEmail = (r.Email || '').toLowerCase().trim();
+					const rAcc = String(r.Account_number || '').trim();
+					return rEmail === targetEmail && (rAcc === targetAccount || rAcc.endsWith(targetAccount) || targetAccount.endsWith(rAcc));
+				});
+			}
+
+			// 2. Match email AND bank name
+			if (!match && targetEmail && targetBank) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					const rEmail = (r.Email || '').toLowerCase().trim();
+					const rBank = (r.Customer_account_name || '').toLowerCase().trim();
+					return rEmail === targetEmail && (rBank.includes(targetBank) || targetBank.includes(rBank));
+				});
+			}
+
+			// 3. Match account number only
+			if (!match && targetAccount) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					const rAcc = String(r.Account_number || '').trim();
+					return rAcc === targetAccount || rAcc.endsWith(targetAccount) || targetAccount.endsWith(rAcc);
+				});
+			}
+
+			// 4. Match email only
+			if (!match && targetEmail) {
+				match = allRows.find(item => {
+					const r = item.Data_fetch || item;
+					return (r.Email || '').toLowerCase().trim() === targetEmail;
+				});
+			}
+
+			if (!match && allRows.length > 0) match = allRows[0];
+
+			if (match) {
+				const r = match.Data_fetch || match;
+				try {
+					const updated = await updateZohoExpenseDataFetch(recordId, {
+						customer_account_name: r.Customer_account_name,
+						ifsc: r.Ifsc,
+						account_number: r.Account_number,
+						employee_name: r.Employee_name,
+						email: r.Email,
+						amount: r.Amount
+					});
+					writeOutput(basicIO, {
+						status: 'Success',
+						message: `Record ${recordId} updated for ${r.Employee_name} (${r.Customer_account_name})!`,
+						record: updated
+					});
+				} catch (err) {
+					writeOutput(basicIO, { status: 'Error', message: err.message });
+				}
+			} else {
+				writeOutput(basicIO, { status: 'Error', message: `No data found in Catalyst for ${targetEmail}` });
 			}
 		} else if (action === 'add_data_fetch') {
 			const customId = arg('custom_id') || arg('Custom_id') || arg('record_name') || `Cus-${Date.now().toString().slice(-4)}`;
